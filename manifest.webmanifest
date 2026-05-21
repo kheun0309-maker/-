@@ -1,0 +1,33 @@
+{
+  "name": "후쿠오카 · 유후인 여행 가이드",
+  "short_name": "후쿠오카 여행",
+  "description": "후쿠오카 · 유후인 2박 3일 여행 일정, 지도, 환율, 일본어 안내",
+  "lang": "ko",
+  "start_url": "./여행지.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7efe3",
+  "theme_color": "#203a57",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "navigation", "utilities"]
+}

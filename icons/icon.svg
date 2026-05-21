@@ -1,0 +1,9 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="후쿠오카 유후인 여행 가이드 아이콘">
+  <rect width="512" height="512" rx="112" fill="#f7efe3"/>
+  <circle cx="256" cy="156" r="78" fill="#c84733" opacity="0.9"/>
+  <circle cx="256" cy="156" r="34" fill="#fffdf7" opacity="0.92"/>
+  <path d="M104 318c72-92 134-120 190-82 26 18 44 52 86 54 22 1 42-7 60-20v112H104z" fill="#203a57"/>
+  <path d="M92 386h328" stroke="#bf9a4a" stroke-width="18" stroke-linecap="round"/>
+  <text x="256" y="340" text-anchor="middle" font-size="86" font-family="serif" font-weight="700" fill="#fffdf7">旅</text>
+  <text x="256" y="442" text-anchor="middle" font-size="42" font-family="sans-serif" font-weight="700" fill="#6f4528">FUK</text>
+</svg>
