@@ -673,7 +673,7 @@
           <input id="krwInput" type="number" value="30000" min="0" inputmode="decimal">
         </div>
       </div>
-      <p class="fx-note" id="fxNote">참고 환율 1 MYR ≈ 300원 · 실제 환율은 변동됩니다.</p>
+      <p class="fx-note" id="fxNote">최근 환율을 불러오는 중…</p>
       </div>
     </details>
 
@@ -1439,7 +1439,10 @@
       }
     })();
 
-    const MYR_TO_KRW = 300;
+    const FX_CACHE_KEY = 'kk-myr-krw-rate';
+    const FX_FALLBACK = 300;
+    let myrToKrw = FX_FALLBACK;
+    let fxMeta = { source: 'fallback', at: null };
     const koreaTime = document.getElementById('koreaTime');
     const koreaDate = document.getElementById('koreaDate');
     const kkTime = document.getElementById('kkTime');
@@ -1470,12 +1473,85 @@
       kkDate.textContent = my.day;
     };
 
+    const fxNoteText = () => {
+      const rate = Math.round(myrToKrw * 10) / 10;
+      if (fxMeta.source === 'live' && fxMeta.at) {
+        const when = new Date(fxMeta.at).toLocaleString('ko-KR', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        return `최근 환율 1 MYR ≈ ${rate.toLocaleString('ko-KR')}원 · ${when} 기준`;
+      }
+      if (fxMeta.source === 'cache' && fxMeta.at) {
+        const when = new Date(fxMeta.at).toLocaleString('ko-KR', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        return `저장된 환율 1 MYR ≈ ${rate.toLocaleString('ko-KR')}원 · ${when} 기준 (오프라인)`;
+      }
+      return `참고 환율 1 MYR ≈ ${rate.toLocaleString('ko-KR')}원 · 불러오기 실패 시 임시값`;
+    };
+
     const syncFx = source => {
       const myr = Number(myrInput.value);
       const krw = Number(krwInput.value);
-      if (source === 'myr' && Number.isFinite(myr)) krwInput.value = Math.round(myr * MYR_TO_KRW);
-      else if (source === 'krw' && Number.isFinite(krw)) myrInput.value = (krw / MYR_TO_KRW).toFixed(2);
-      fxNote.textContent = `참고 환율 1 MYR ≈ ${MYR_TO_KRW.toLocaleString('ko-KR')}원 · 실제 환율은 변동됩니다.`;
+      if (source === 'myr' && Number.isFinite(myr)) krwInput.value = Math.round(myr * myrToKrw);
+      else if (source === 'krw' && Number.isFinite(krw)) myrInput.value = (krw / myrToKrw).toFixed(2);
+      fxNote.textContent = fxNoteText();
+    };
+
+    const applyFxRate = (rate, source, at) => {
+      if (!Number.isFinite(rate) || rate < 50 || rate > 1000) return false;
+      myrToKrw = rate;
+      fxMeta = { source, at: at || Date.now() };
+      try {
+        localStorage.setItem(FX_CACHE_KEY, JSON.stringify({ rate: myrToKrw, at: fxMeta.at }));
+      } catch (_) {}
+      syncFx(fxDirection === 'myr-to-krw' ? 'myr' : 'krw');
+      return true;
+    };
+
+    const loadCachedFx = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FX_CACHE_KEY) || 'null');
+        if (saved && Number.isFinite(saved.rate)) {
+          applyFxRate(saved.rate, 'cache', saved.at);
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    };
+
+    const fetchLiveFx = async () => {
+      const endpoints = [
+        {
+          url: 'https://open.er-api.com/v6/latest/MYR',
+          pick: data => data?.rates?.KRW
+        },
+        {
+          url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/myr.json',
+          pick: data => data?.myr?.krw
+        },
+        {
+          url: 'https://latest.currency-api.pages.dev/v1/currencies/myr.json',
+          pick: data => data?.myr?.krw
+        }
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint.url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const rate = Number(endpoint.pick(data));
+          if (applyFxRate(rate, 'live', Date.now())) return;
+        } catch (_) {}
+      }
+
+      if (!loadCachedFx()) {
+        applyFxRate(FX_FALLBACK, 'fallback', null);
+      } else {
+        fxMeta.source = 'cache';
+        fxNote.textContent = fxNoteText() + ' · 최신 갱신 실패';
+      }
     };
 
     myrInput.addEventListener('input', () => syncFx('myr'));
@@ -1539,7 +1615,11 @@
 
     tickClocks();
     setInterval(tickClocks, 1000);
+    loadCachedFx();
     syncFx('myr');
+    fetchLiveFx();
+    // Refresh FX about every 6 hours while the page stays open
+    setInterval(fetchLiveFx, 6 * 60 * 60 * 1000);
 
     /* ===== 동선 지도 · 내 위치 · 구글지도 길찾기 ===== */
     const places = {

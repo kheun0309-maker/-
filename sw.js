@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v15';
+const CACHE_NAME = 'kota-kinabalu-guide-v16';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,8 +29,8 @@ const APP_SHELL = [
   './images/kk-jetski.jpg'
 ];
 
-function isFirebaseRequest(url) {
-  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google/.test(url.hostname)
+function isNetworkOnlyRequest(url) {
+  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google|open\.er-api\.com|jsdelivr\.net|currency-api\.pages\.dev/.test(url.hostname)
     || url.pathname.includes('/js/trip-room.js')
     || url.pathname.includes('/js/firebase-config.js');
 }
