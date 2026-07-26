@@ -123,11 +123,11 @@ export const DEFAULT_DAYS = [
       },
       {
         time: '19:30~',
-        place: '시내 스파',
+        place: '시내 스파 (Warisan / Asia City)',
         task: '마사지',
-        note: '호핑 후 피로 풀기. 끝나면 그랩으로 리조트 복귀(밤길 50분 내외)',
+        note: '추천: Sunset Kinabalu · Chillax(Warisan) · Kama\'A(Asia City). 발 60분 MYR 45~70 / 전신 60분 MYR 60~120. 상세는 앱 ‘마사지’ 섹션. 끝나면 그랩으로 리조트 복귀(밤길 50분 내외)',
         imageUrl: '',
-        placeMapsUrl: ''
+        placeMapsUrl: 'https://www.google.com/maps/search/?api=1&query=Warisan+Square+Kota+Kinabalu'
       }
     ]
   },
