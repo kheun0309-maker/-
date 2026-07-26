@@ -696,13 +696,17 @@ function bindUi() {
     });
   });
 
+  let markReadLockUntil = 0;
   const onMarkRead = event => {
     event.preventDefault();
     event.stopPropagation();
+    const now = Date.now();
+    if (now < markReadLockUntil) return;
+    markReadLockUntil = now + 500;
     markRead();
   };
-  // pointerdown feels instant on mobile; click as fallback
-  markReadBtn?.addEventListener('pointerdown', onMarkRead);
+  // pointerup is snappy on mobile and avoids double-firing with click
+  markReadBtn?.addEventListener('pointerup', onMarkRead);
   markReadBtn?.addEventListener('click', onMarkRead);
 
   unreadBanner?.addEventListener('click', event => {
