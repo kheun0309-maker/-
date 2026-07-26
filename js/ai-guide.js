@@ -13,7 +13,7 @@ const DEFAULT_MODEL = 'gpt-5.6-luna';
 const MAX_HISTORY = 20;
 const MAX_TOOL_ROUNDS = 8;
 
-const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변·제안의 1순위 근거는 앱 가이드입니다.
+const SYSTEM_PROMPT = `당신은 이 여행 앱의 코파일럿입니다. 질문 답변뿐 아니라 일정·가이드·섹션·짐·항공 편집 제안까지 합니다. 1순위 근거는 앱 가이드입니다.
 
 역할:
 1) 가이드(get_guide_section) + 일정(get_itinerary) + 편집 스냅샷(get_editable_content)으로 답변
@@ -1194,7 +1194,7 @@ export function initAiGuide() {
     history = [];
     proposals.clear();
     if (logEl) {
-      logEl.innerHTML = '<div class="ai-chat-empty" id="aiChatEmpty">질문을 보내면 여기에 답변이 쌓여요. 위 칩으로도 바로 물어볼 수 있어요.</div>';
+      logEl.innerHTML = '<div class="ai-chat-empty" id="aiChatEmpty">일정 추가, 가이드 수정, 섹션 만들기까지 요청할 수 있어요. 위 칩으로 바로 시작해 보세요.</div>';
     }
     refreshKeyUi('API 키를 이 기기에서 삭제했어요.');
     openKeyFold();

@@ -1,18 +1,19 @@
 /** 앱 가이드 요약 · 섹션별 본문 (AI 컨텍스트용) */
 
 export const GUIDE_SECTIONS = [
+  { id: 'trip', title: '함께 준비', hash: '#trip' },
+  { id: 'itinerary', title: '일자별 일정', hash: '#itinerary' },
+  { id: 'flights', title: '항공', hash: '#flights' },
+  { id: 'resort', title: '리조트·픽업·셔틀', hash: '#resort' },
+  { id: 'map', title: '지도·동선', hash: '#map' },
+  { id: 'hopping', title: '호핑투어', hash: '#hopping' },
   { id: 'food', title: '맛집', hash: '#food' },
   { id: 'massage', title: '마사지', hash: '#massage' },
-  { id: 'hopping', title: '호핑투어', hash: '#hopping' },
-  { id: 'resort', title: '리조트·픽업·셔틀', hash: '#resort' },
-  { id: 'flights', title: '항공', hash: '#flights' },
   { id: 'late-rest', title: '귀국·휴식', hash: '#late-rest' },
   { id: 'tips', title: '주의사항', hash: '#tips' },
   { id: 'pack', title: '짐', hash: '#pack' },
-  { id: 'map', title: '지도·동선', hash: '#map' },
   { id: 'live', title: '시각·환율', hash: '#live' },
-  { id: 'itinerary', title: '일자별 일정', hash: '#itinerary' },
-  { id: 'trip', title: '함께 준비', hash: '#trip' },
+  { id: 'ai', title: '여행 코파일럿', hash: '#ai' },
   { id: 'settings', title: '설정', hash: '#settings' }
 ];
 

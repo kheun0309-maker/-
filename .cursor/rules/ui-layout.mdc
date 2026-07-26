@@ -32,6 +32,13 @@ alwaysApply: true
 - 안내 카드 본문은 `display:block; width:100%`, `overflow-wrap:anywhere` 또는 `word-break:keep-all`
 - 일정 시간 칸처럼 좁은 컬럼에는 짧은 라벨만; 긴 문장은 `t-body` 등 넓은 칸
 
+## 섹션 순서 (여행 흐름)
+
+메인 fold 권장 순서: `trip → itinerary → flights → resort → map → hopping → food → custom → massage → late-rest → tips → pack → booking → live → ai(코파일럿) → settings`
+
+- AI 섹션 이름은 **여행 코파일럿** (질문만이 아니라 일정·가이드·섹션·짐 편집)
+- `.check-list` / `.fact-list` 규칙을 지킬 것
+
 ## 배포 전 확인
 
 모바일 폭(~360px)에서 새 카드·목록이 **가로로 읽히는지** 확인. 글자가 세로 스택이면 레이아웃 클래스 오용이다.
