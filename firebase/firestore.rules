@@ -42,7 +42,22 @@ service cloud.firestore {
           && uid == request.auth.uid
           && validNick(request.resource.data.nickname)
           && request.resource.data.keys().hasAll(['nickname', 'joinedAt']);
-        allow delete: if signedIn() && uid == request.auth.uid;
+
+        // 본인 삭제 / 같은 닉네임 정리(재설치) / 어드민(은섹젤)
+        allow delete: if signedIn()
+          && validCode(tripId)
+          && (
+            uid == request.auth.uid
+            || (
+              exists(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid))
+              && get(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.nickname == '은섹젤'
+            )
+            || (
+              exists(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid))
+              && get(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.nickname
+                == resource.data.nickname
+            )
+          );
       }
 
       match /packItems/{itemId} {

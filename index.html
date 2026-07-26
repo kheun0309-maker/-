@@ -493,10 +493,19 @@
     }
     .trip-members { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .trip-member {
+      display: inline-flex; align-items: center; gap: 4px;
       font-size: 0.72rem; font-weight: 700; padding: 5px 9px; border-radius: 999px;
       background: #e8fffb; color: var(--teal); border: 1px solid var(--line);
     }
     .trip-member.is-me { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+    .trip-member.is-admin { border-color: var(--coral); }
+    .trip-member-x {
+      border: 0; background: transparent; color: inherit; opacity: 0.75;
+      font: inherit; font-size: 0.78rem; font-weight: 900; line-height: 1;
+      padding: 0 0 0 2px; cursor: pointer;
+    }
+    .trip-member-x:active { opacity: 1; }
+    .trip-admin-hint { font-size: 0.72rem; color: var(--muted); margin: -4px 0 10px; }
     .trip-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
     .trip-tabs button {
       flex: 1; border: 1px solid var(--line); background: #fff; color: var(--muted);
@@ -617,7 +626,7 @@
     <details class="widget fold-widget" id="trip" open>
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
-        <p class="trip-hint">닉네임으로 여행방에 들어가면 <b>준비물 · 출발 전 할 일 · 메모</b>를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
+        <p class="trip-hint">닉네임으로 여행방에 들어가면 <b>준비물 · 출발 전 할 일 · 공지</b>를 서로 실시간으로 공유할 수 있어요. 카톡으로 보낼 때는 <b>Chrome으로 열기</b>를 안내해 주세요.</p>
         <div class="trip-unread-banner" id="tripUnreadBanner" role="status">
           <span id="tripUnreadText"></span>
           <button type="button" id="tripMarkReadBtn">확인했어요</button>
@@ -666,11 +675,12 @@
             </div>
           </div>
           <div class="trip-members" id="tripMembers" aria-label="참가자"></div>
+          <p class="trip-admin-hint" id="tripAdminHint" hidden>어드민(은섹젤): 이름 옆 × 로 참가자를 정리할 수 있어요.</p>
 
           <div class="trip-tabs" role="tablist">
             <button type="button" class="active" data-trip-tab="pack">준비물<span class="tab-badge" data-tab-badge="pack">0</span></button>
             <button type="button" data-trip-tab="tasks">출발 전<span class="tab-badge" data-tab-badge="tasks">0</span></button>
-            <button type="button" data-trip-tab="notes">메모<span class="tab-badge" data-tab-badge="notes">0</span></button>
+            <button type="button" data-trip-tab="notes">공지<span class="tab-badge" data-tab-badge="notes">0</span></button>
           </div>
 
           <div data-trip-pane="pack">
@@ -694,10 +704,10 @@
           </div>
 
           <div data-trip-pane="notes" hidden>
-            <p class="trip-hint">예약 링크, 지도, 카톡 공유 링크 등을 그대로 붙여넣으면 눌러서 열 수 있어요.</p>
+            <p class="trip-hint">공지·예약 링크·지도 링크를 남겨 주세요. https:// 주소는 눌러서 바로 열립니다.</p>
             <ul class="trip-list" id="tripNoteList"></ul>
             <div class="trip-add-row">
-              <textarea id="tripNoteInput" maxlength="500" placeholder="예: 호핑 예약 https://..."></textarea>
+              <textarea id="tripNoteInput" maxlength="500" placeholder="예: 호핑 예약 링크 https://..."></textarea>
               <button type="button" id="tripNoteAdd">등록</button>
             </div>
           </div>
@@ -1847,6 +1857,51 @@
     });
 
     /* ===== 홈 화면 설치 (PWA) ===== */
+    const chromeGate = document.getElementById('chromeGate');
+    const openChromeBtn = document.getElementById('openChromeBtn');
+    const chromeGateLater = document.getElementById('chromeGateLater');
+    const CHROME_GATE_KEY = 'kk-chrome-gate-dismiss';
+
+    const isInAppBrowser = () => {
+      const ua = navigator.userAgent || '';
+      return /KAKAOTALK|FBAN|FBAV|Instagram|Line\//i.test(ua)
+        || (/Android/i.test(ua) && /; wv\)/i.test(ua));
+    };
+
+    const buildChromeIntentUrl = () => {
+      const abs = location.href;
+      try {
+        const u = new URL(abs);
+        // Android Chrome intent: opens this page in Chrome
+        return `intent://${u.host}${u.pathname}${u.search}${u.hash}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(abs)};end`;
+      } catch (_) {
+        return abs;
+      }
+    };
+
+    const showChromeGate = () => {
+      if (!chromeGate) return;
+      if (localStorage.getItem(CHROME_GATE_KEY) === '1') return;
+      if (!isInAppBrowser()) return;
+      chromeGate.classList.add('show');
+      if (openChromeBtn) openChromeBtn.href = buildChromeIntentUrl();
+    };
+
+    openChromeBtn?.addEventListener('click', event => {
+      // Keep default navigation to intent:// on Android
+      if (/Android/i.test(navigator.userAgent || '')) return;
+      // iOS / others: copy link and guide
+      event.preventDefault();
+      const abs = location.href;
+      navigator.clipboard?.writeText(abs).catch(() => {});
+      alert('링크를 복사했어요.\nSafari 또는 Chrome 주소창에 붙여넣고 열어 주세요.\n(카톡 안에서는 홈 화면 추가가 잘 안 됩니다)');
+    });
+
+    chromeGateLater?.addEventListener('click', () => {
+      localStorage.setItem(CHROME_GATE_KEY, '1');
+      chromeGate?.classList.remove('show');
+    });
+
     const installBanner = document.getElementById('installBanner');
     const installBtn = document.getElementById('installBtn');
     const installLaterBtn = document.getElementById('installLaterBtn');
@@ -1896,9 +1951,12 @@
       }
       const hash = (location.hash || '').replace('#', '');
       if (hash) openSection(hash, { closeOthers: true });
-      // iOS는 beforeinstallprompt가 없어 안내 배너를 바로 노출
-      if (isIos) showInstallBanner();
-      else setTimeout(showInstallBanner, 1200);
+      showChromeGate();
+      // 인앱 브라우저면 설치 배너보다 Chrome 유도가 우선
+      if (!isInAppBrowser()) {
+        if (isIos) showInstallBanner();
+        else setTimeout(showInstallBanner, 1200);
+      }
     });
   </script>
 </body>

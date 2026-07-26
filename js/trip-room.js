@@ -26,6 +26,7 @@ const STORAGE_KEY = 'kk-trip-room-session';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_NOTES = 40;
 const TITLE_BASE = '코타키나발루 · 라사 리아 4일';
+const ADMIN_NICKNAME = '은섹젤';
 
 function readKey(code) {
   return `kk-trip-read-${code}`;
@@ -386,6 +387,7 @@ async function createRoom() {
       nickname,
       joinedAt: serverTimestamp()
     });
+    await pruneDuplicateNicknames(nickname);
     await seedList('packItems', DEFAULT_PACK, nickname);
     await seedList('taskItems', DEFAULT_TASKS, nickname);
     saveSession();
@@ -425,6 +427,7 @@ async function joinRoom() {
       nickname,
       joinedAt: serverTimestamp()
     }, { merge: true });
+    await pruneDuplicateNicknames(nickname);
     saveSession();
     await enterRoom();
     setStatus(`${tripCode} 방에 입장했습니다.`);
@@ -436,14 +439,70 @@ async function joinRoom() {
   }
 }
 
+function isAdmin() {
+  return nickname === ADMIN_NICKNAME;
+}
+
+async function pruneDuplicateNicknames(nick) {
+  if (!tripCode || !uid || !nick) return;
+  try {
+    const snap = await getDocs(collection(db, 'trips', tripCode, 'members'));
+    const stale = snap.docs.filter(d => d.id !== uid && (d.data().nickname || '') === nick);
+    await Promise.all(stale.map(d => deleteDoc(d.ref).catch(() => {})));
+  } catch (_) {}
+}
+
+async function removeMember(memberUid, memberNick) {
+  if (!tripCode || !memberUid) return;
+  if (memberUid === uid) {
+    setStatus('내 이름은 나가기로 정리하세요.', true);
+    return;
+  }
+  if (!isAdmin()) {
+    setStatus('어드민(은섹젤)만 다른 참가자를 삭제할 수 있어요.', true);
+    return;
+  }
+  if (!confirm(`참가자 "${memberNick || '익명'}" 을(를) 목록에서 삭제할까요?`)) return;
+  try {
+    await deleteDoc(doc(db, 'trips', tripCode, 'members', memberUid));
+    setStatus(`"${memberNick || '익명'}" 참가자를 삭제했어요.`);
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || '참가자 삭제에 실패했습니다.', true);
+  }
+}
+
 function renderMembers(docs) {
   el.members.innerHTML = '';
+  const adminHint = document.getElementById('tripAdminHint');
+  if (adminHint) adminHint.hidden = !isAdmin();
+
   docs.forEach(d => {
     const data = d.data();
+    const nick = data.nickname || '익명';
     const chip = document.createElement('span');
     chip.className = 'trip-member';
-    chip.textContent = data.nickname || '익명';
     if (d.id === uid) chip.classList.add('is-me');
+    if (nick === ADMIN_NICKNAME) chip.classList.add('is-admin');
+
+    const nameEl = document.createElement('span');
+    nameEl.textContent = nick;
+    chip.appendChild(nameEl);
+
+    if (isAdmin() && d.id !== uid) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'trip-member-x';
+      x.setAttribute('aria-label', `${nick} 삭제`);
+      x.textContent = '×';
+      x.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        removeMember(d.id, nick);
+      });
+      chip.appendChild(x);
+    }
+
     el.members.appendChild(chip);
   });
 }
@@ -520,7 +579,7 @@ function appendLinkedText(container, text) {
 function renderNotes(docs) {
   el.noteList.innerHTML = '';
   if (!docs.length) {
-    el.noteList.innerHTML = '<li class="trip-empty">아직 메모가 없습니다. 링크(https://…)도 같이 남겨 보세요.</li>';
+    el.noteList.innerHTML = '<li class="trip-empty">아직 공지가 없습니다. 링크(https://…)도 같이 남겨 보세요.</li>';
     return;
   }
   docs.forEach(d => {
@@ -657,21 +716,29 @@ async function copyCode() {
 }
 
 async function shareCode() {
-  const url = `${location.origin}${location.pathname}?room=${tripCode}`;
+  const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(tripCode)}`;
   const payload = {
     title: '코타키나발루 여행방',
-    text: `여행방 코드: ${tripCode}\n닉네임 정하고 함께 준비해요.`,
-    url
+    text: [
+      '코타키나발루 함께 준비방',
+      `방 코드: ${tripCode}`,
+      '',
+      '1) 링크를 Chrome으로 열어 주세요 (카톡 안에서 열면 앱 설치가 안 됩니다)',
+      '2) Chrome 메뉴(⋮) → 앱 설치 / 홈 화면에 추가',
+      '3) 닉네임 입력 후 방 코드로 참여',
+      '',
+      url
+    ].join('\n')
   };
   if (navigator.share) {
     try {
-      await navigator.share(payload);
+      await navigator.share({ title: payload.title, text: payload.text, url });
       return;
     } catch (_) {}
   }
   try {
-    await navigator.clipboard.writeText(`${payload.text}\n${url}`);
-    setStatus('공유 문구를 복사했어요.');
+    await navigator.clipboard.writeText(payload.text);
+    setStatus('공유 문구를 복사했어요. 카톡에 붙여넣기 하세요.');
   } catch (_) {
     setStatus(`코드 ${tripCode}`, false);
   }
@@ -831,6 +898,7 @@ async function boot() {
         nickname,
         joinedAt: serverTimestamp()
       }, { merge: true });
+      await pruneDuplicateNicknames(nickname);
       await enterRoom();
       setStatus(`${tripCode} 방에 다시 입장했습니다.`);
     } catch (err) {
