@@ -346,6 +346,39 @@
     }
     .timeline li:last-child { padding-bottom: 0; }
     .timeline li:last-child::before { display: none; }
+    .itin-item { display: grid; grid-template-columns: 18px 64px 1fr; gap: 8px; align-items: start; }
+    .itin-item:not(.is-editable) { grid-template-columns: 64px 1fr; }
+    .itin-item .t-time { grid-column: auto; }
+    .itin-item.is-editable::before { left: 90px; }
+    .itin-item.is-editable .itin-drag { color: var(--soft); font-size: 0.85rem; cursor: grab; padding-top: 10px; }
+    .itin-item.is-dragging { opacity: 0.55; }
+    .itin-item.drag-over { outline: 2px dashed var(--teal); border-radius: 10px; }
+    .itin-item-photo { margin-top: 8px; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; background: #dceef2; }
+    .itin-item-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .itin-maps { display: inline-block; margin-top: 6px; font-size: 0.78rem; font-weight: 800; color: var(--ocean); }
+    .itin-item-actions, .itin-day-actions, .itin-place-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .itin-btn, .itin-add {
+      border: 1px solid var(--line); background: #fff; color: var(--ocean);
+      border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer;
+    }
+    .itin-btn.primary, .itin-add { background: var(--coral); border-color: var(--coral); color: #fff; }
+    .itin-btn.danger { color: var(--coral); }
+    .itin-add { width: 100%; margin-top: 10px; }
+    .itin-empty { list-style: none; color: var(--muted); font-size: 0.86rem; padding: 8px 2px; }
+    .itin-modal {
+      position: fixed; inset: 0; z-index: 80; background: rgba(10, 30, 40, 0.45);
+      display: flex; align-items: flex-end; justify-content: center; padding: 12px;
+    }
+    .itin-modal-card {
+      width: min(520px, 100%); max-height: 88vh; overflow: auto; background: #fff;
+      border-radius: 18px; padding: 14px; box-shadow: var(--shadow);
+    }
+    .itin-modal-card h3 { margin: 0 0 10px; color: var(--ocean); font-size: 1.05rem; }
+    .itin-modal-card label { display: grid; gap: 4px; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .itin-modal-card input, .itin-modal-card textarea {
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; color: var(--ink);
+    }
+    .itin-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
     .t-time { font-size: 0.78rem; font-weight: 700; color: var(--teal); padding-top: 2px; font-variant-numeric: tabular-nums; }
     .t-body { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
     .t-place { font-size: 0.76rem; color: var(--coral); font-weight: 600; margin-bottom: 2px; }
@@ -918,203 +951,8 @@
     <details class="widget fold-widget" id="itinerary" open>
       <summary>📅 일자별 일정</summary>
       <div class="fold-body">
-      <div class="day-tabs" role="tablist">
-        <button class="day-tab active" data-day="day1" type="button">Day1 · 13</button>
-        <button class="day-tab" data-day="day2" type="button">Day2 · 14</button>
-        <button class="day-tab" data-day="day3" type="button">Day3 · 15</button>
-        <button class="day-tab" data-day="day4" type="button">Day4 · 16</button>
-      </div>
-
-      <article class="day-panel active" id="day1">
-        <div class="day-head">
-          <span class="day-badge">DAY 1 · 8/13 목</span>
-          <h2>야간 도착 &amp; 리조트 휴식</h2>
-          <p>늦게 도착하니 이동만 하고 바로 잡니다.</p>
-        </div>
-        <div class="day-photo">
-          <img src="./images/kkia-airport.jpg" alt="코타키나발루 국제공항" loading="lazy">
-        </div>
-        <ul class="timeline">
-          <li>
-            <div class="t-time">16:15~</div>
-            <div class="t-body">
-              <div class="t-place">인천공항 T2</div>
-              <div class="t-task">체크인 · 출국</div>
-              <div class="t-note">KE5761 기준 19:15 출발 → 최소 16:30 전 공항 도착 권장</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">19:15</div>
-            <div class="t-body">
-              <div class="t-place">ICN → BKI</div>
-              <div class="t-task">KE5761 이륙</div>
-              <div class="t-note">비행 약 5시간 20분 · 기내 눈가리개·양말 챙기기</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">23:35</div>
-            <div class="t-body">
-              <div class="t-place">KKIA T1</div>
-              <div class="t-task">입국 · 수하물 · 픽업 미팅</div>
-              <div class="t-note">수하물 → 도착홀에서 Shangri-La/이름 피켓. 상세는 ‘🏨 리조트 → 공항픽업’ 참고. 안 보이면 +60 88-797-888</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">00:20~</div>
-            <div class="t-body">
-              <div class="t-place">라사 리아</div>
-              <div class="t-task">체크인 · 휴식</div>
-              <div class="t-note">공항에서 약 45분. 늦은 도착이라 심야 할증 여부만 확인 후 바로 취침</div>
-            </div>
-          </li>
-        </ul>
-      </article>
-
-      <article class="day-panel" id="day2">
-        <div class="day-head">
-          <span class="day-badge">DAY 2 · 8/14 금</span>
-          <h2>리조트 풀데이 + 반딧불이</h2>
-          <p>늦잠·수영으로 쉬고, 저녁은 리조트 반딧불이 투어.</p>
-        </div>
-        <div class="day-photo">
-          <img src="./images/mangrove-boat.jpg" alt="맹그로브 리버 크루즈" loading="lazy">
-        </div>
-        <ul class="timeline">
-          <li>
-            <div class="t-time">늦잠</div>
-            <div class="t-body">
-              <div class="t-place">라사 리아</div>
-              <div class="t-task">여유롭게 기상 · 조식</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">오전~오후</div>
-            <div class="t-body">
-              <div class="t-place">비치 / 풀</div>
-              <div class="t-task">수영 · 산책 · 휴식</div>
-              <div class="t-note">시내 일정 없음. 선크림·모자·수분 보충</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">낮</div>
-            <div class="t-body">
-              <div class="t-place">Activity Information Centre</div>
-              <div class="t-task">반딧불이 투어 예약·확인</div>
-              <div class="t-note">Garden Wing The Shop(2층) 또는 Ocean Wing에서 예약. 당일 취소 가능 여부 확인</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">저녁</div>
-            <div class="t-body">
-              <div class="t-place">리조트 리버 크루즈</div>
-              <div class="t-task">Sunset Cruise &amp; Fireflies Watching</div>
-              <div class="t-note">
-                리조트 공식 프로그램 · 약 2시간 30분<br>
-                성인 MYR 180 / 아동(4–11) MYR 95 (SST 포함, 공식 요금표 기준)<br>
-                모기약·얇은 긴팔·미끄럼 방지 신발 착용
-              </div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">밤</div>
-            <div class="t-body">
-              <div class="t-place">리조트</div>
-              <div class="t-task">귀가 · 휴식</div>
-              <div class="t-note">내일 호핑을 위해 일찍 자는 편이 좋음</div>
-            </div>
-          </li>
-        </ul>
-      </article>
-
-      <article class="day-panel" id="day3">
-        <div class="day-head">
-          <span class="day-badge">DAY 3 · 8/15 토</span>
-          <h2>호핑투어 + 시내 저녁</h2>
-          <p>리조트가 멀어서 아침 일찍 시내/선착장으로 나갑니다.</p>
-        </div>
-        <div class="day-photo">
-          <img src="./images/manukan-beach.jpg" alt="마누칸 섬 해변 호핑" loading="lazy">
-        </div>
-        <ul class="timeline">
-          <li>
-            <div class="t-time">06:30~</div>
-            <div class="t-body">
-              <div class="t-place">라사 리아 → 시내</div>
-              <div class="t-task">그랩/리조트 차량으로 이동</div>
-              <div class="t-note">시내·제티까지 보통 45~60분. 호핑 집결 시간에 맞춰 전날 픽업 예약</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">오전~오후</div>
-            <div class="t-body">
-              <div class="t-place">티만만 · 마뭉군 · 수피 등</div>
-              <div class="t-task">섬 호핑 · 스노클링</div>
-              <div class="t-note">수영복·래시가드·방수팩·여분 옷·현금. 점심은 상품에 포함되는지 확인</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">17:30~</div>
-            <div class="t-body">
-              <div class="t-place">시내 (제티 근처)</div>
-              <div class="t-task">샤워·옷 갈아입기 후 저녁</div>
-              <div class="t-note">해산물·가야스트리트/워터프론트 쪽 식사 추천</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">19:30~</div>
-            <div class="t-body">
-              <div class="t-place">시내 스파</div>
-              <div class="t-task">마사지</div>
-              <div class="t-note">호핑 후 피로 풀기. 끝나면 그랩으로 리조트 복귀(밤길 50분 내외)</div>
-            </div>
-          </li>
-        </ul>
-      </article>
-
-      <article class="day-panel" id="day4">
-        <div class="day-head">
-          <span class="day-badge">DAY 4 · 8/16 일</span>
-          <h2>체크아웃 · 시내 · 귀국 대기</h2>
-          <p>낮에는 시내, 밤은 공항으로. 서울은 17일 새벽 도착.</p>
-        </div>
-        <div class="day-photo">
-          <img src="./images/gaya-market.jpg" alt="가야 스트리트 시내" loading="lazy">
-        </div>
-        <ul class="timeline">
-          <li>
-            <div class="t-time">오전</div>
-            <div class="t-body">
-              <div class="t-place">라사 리아</div>
-              <div class="t-task">조식 · 체크아웃</div>
-              <div class="t-note">캐리어는 시내 락커/트렌스퍼 차량에 실을지, 공항으로 직행할지 전날 결정</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">낮</div>
-            <div class="t-body">
-              <div class="t-place">시내</div>
-              <div class="t-task">쇼핑 · 맛집</div>
-              <div class="t-note">임필리아 / 필리피노 마켓 / 가야 스트리트 · 맛집은 아래 ‘시내 추천 맛집’ 참고</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">저녁</div>
-            <div class="t-body">
-              <div class="t-place">시내 또는 공항</div>
-              <div class="t-task">여유 식사 · 공항 이동</div>
-              <div class="t-note">늦은 비행이면 아래 ‘늦게 쉴 대안’ 참고. 리조트에서 바로 가면 여유를 두고 출발</div>
-            </div>
-          </li>
-          <li>
-            <div class="t-time">00:35</div>
-            <div class="t-body">
-              <div class="t-place">BKI → ICN</div>
-              <div class="t-task">KE5762 이륙 (추천·미정)</div>
-              <div class="t-note">서울 06:55 도착 예상 · 실제 예약 시간으로 교체하세요</div>
-            </div>
-          </li>
-        </ul>
-      </article>
+        <p class="tiny" id="itinEditHint">여행방에 입장하면 일정을 함께 수정·드래그·사진 업로드할 수 있어요.</p>
+        <div id="itineraryApp"></div>
       </div>
     </details>
 
@@ -1637,14 +1475,7 @@
       syncFx(fxDirection === 'myr-to-krw' ? 'myr' : 'krw');
     });
 
-    document.querySelectorAll('.day-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.day).classList.add('active');
-      });
-    });
+    /* day tabs are handled by js/itinerary-editor.js */
 
     const openSection = (id, { closeOthers = true } = {}) => {
       const target = document.getElementById(id);

@@ -112,6 +112,35 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if signedIn() && validCode(tripId);
       }
+
+      match /dayMeta/{dayId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && dayId.matches('^day[1-4]$')
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 80;
+        allow delete: if signedIn() && validCode(tripId);
+      }
+
+      match /items/{itemId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && request.resource.data.day is string
+          && request.resource.data.day.matches('^day[1-4]$')
+          && request.resource.data.order is int
+          && request.resource.data.time is string
+          && request.resource.data.time.size() <= 40
+          && request.resource.data.place is string
+          && request.resource.data.place.size() <= 120
+          && request.resource.data.task is string
+          && request.resource.data.task.size() <= 160
+          && request.resource.data.note is string
+          && request.resource.data.note.size() <= 800;
+        allow delete: if signedIn() && validCode(tripId);
+      }
     }
   }
 }
