@@ -101,7 +101,7 @@ let tripCode = '';
 let unsubs = [];
 let lastReadAt = 0;
 let seenSet = new Set();
-let dataCache = { pack: [], tasks: [], notes: [] };
+let dataCache = { pack: [], tasks: [], notes: [], itin: [] };
 const unreadBanner = document.getElementById('tripUnreadBanner');
 const unreadText = document.getElementById('tripUnreadText');
 const markReadBtn = document.getElementById('tripMarkReadBtn');
@@ -152,6 +152,11 @@ function itemFingerprint(kind, docSnap) {
   return `${kind}:${docSnap.id}:${toMs(data.updatedAt)}:${data.done ? 1 : 0}:${data.doneBy || ''}:${data.updatedBy || ''}:${data.text || ''}`;
 }
 
+function itinFingerprint(docSnap) {
+  const data = docSnap.data() || {};
+  return `itin:${docSnap.id}:${toMs(data.updatedAt)}:${data.kind || ''}:${data.summary || ''}`;
+}
+
 function isOtherNote(data) {
   const author = String(data?.author || '').trim();
   return Boolean(author && author !== myNick());
@@ -159,6 +164,11 @@ function isOtherNote(data) {
 
 function isOtherItem(data) {
   const actor = String(data?.updatedBy || data?.doneBy || data?.createdBy || '').trim();
+  return Boolean(actor && actor !== myNick());
+}
+
+function isOtherItin(data) {
+  const actor = String(data?.updatedBy || '').trim();
   return Boolean(actor && actor !== myNick());
 }
 
@@ -174,8 +184,14 @@ function isItemUnread(kind, docSnap) {
   return !seenSet.has(itemFingerprint(kind, docSnap));
 }
 
+function isItinUnread(docSnap) {
+  const data = docSnap.data() || {};
+  if (!isOtherItin(data)) return false;
+  return !seenSet.has(itinFingerprint(docSnap));
+}
+
 function countUnreadByType() {
-  const counts = { pack: 0, tasks: 0, notes: 0, total: 0 };
+  const counts = { pack: 0, tasks: 0, notes: 0, itin: 0, total: 0 };
   if (!tripCode || !myNick()) return counts;
 
   dataCache.pack.forEach(docSnap => {
@@ -187,7 +203,10 @@ function countUnreadByType() {
   dataCache.notes.forEach(docSnap => {
     if (isNoteUnread(docSnap)) counts.notes += 1;
   });
-  counts.total = counts.pack + counts.tasks + counts.notes;
+  dataCache.itin.forEach(docSnap => {
+    if (isItinUnread(docSnap)) counts.itin += 1;
+  });
+  counts.total = counts.pack + counts.tasks + counts.notes + counts.itin;
   return counts;
 }
 
@@ -217,7 +236,7 @@ async function setHomeAppBadge(count) {
 }
 
 function clearUnreadUiNow() {
-  document.querySelectorAll('[data-trip-badge], [data-tab-badge]').forEach(badge => setBadgeEl(badge, 0));
+  document.querySelectorAll('[data-trip-badge], [data-tab-badge], [data-itin-badge]').forEach(badge => setBadgeEl(badge, 0));
   if (roomUnreadCount) {
     roomUnreadCount.textContent = '';
     roomUnreadCount.hidden = true;
@@ -240,6 +259,7 @@ function renderUnreadBadges() {
   const label = n > 99 ? '99+' : String(n);
 
   document.querySelectorAll('[data-trip-badge]').forEach(badge => setBadgeEl(badge, n));
+  document.querySelectorAll('[data-itin-badge]').forEach(badge => setBadgeEl(badge, counts.itin));
   setBadgeEl(document.querySelector('[data-tab-badge="pack"]'), counts.pack);
   setBadgeEl(document.querySelector('[data-tab-badge="tasks"]'), counts.tasks);
   setBadgeEl(document.querySelector('[data-tab-badge="notes"]'), counts.notes);
@@ -257,6 +277,7 @@ function renderUnreadBadges() {
   if (unreadBanner && unreadText) {
     if (n > 0) {
       const parts = [];
+      if (counts.itin) parts.push(`일정 ${counts.itin}`);
       if (counts.pack) parts.push(`준비물 ${counts.pack}`);
       if (counts.tasks) parts.push(`출발 전 ${counts.tasks}`);
       if (counts.notes) parts.push(`공지 ${counts.notes}`);
@@ -289,7 +310,24 @@ function captureAllAsSeen() {
   dataCache.pack.forEach(docSnap => seenSet.add(itemFingerprint('pack', docSnap)));
   dataCache.tasks.forEach(docSnap => seenSet.add(itemFingerprint('tasks', docSnap)));
   dataCache.notes.forEach(docSnap => seenSet.add(noteFingerprint(docSnap)));
+  dataCache.itin.forEach(docSnap => seenSet.add(itinFingerprint(docSnap)));
   saveSeen();
+}
+
+function captureItinAsSeen() {
+  dataCache.itin.forEach(docSnap => seenSet.add(itinFingerprint(docSnap)));
+  saveSeen();
+}
+
+function markItinRead() {
+  if (!tripCode || !dataCache.itin.length) {
+    refreshUnread();
+    return;
+  }
+  const before = countUnreadByType().itin;
+  if (!before) return;
+  captureItinAsSeen();
+  refreshUnread();
 }
 
 function markRead({ silent = false } = {}) {
@@ -655,13 +693,13 @@ async function enterRoom() {
   showRoom();
   clearUnsubs();
   loadSeen(tripCode);
-  dataCache = { pack: [], tasks: [], notes: [] };
+  dataCache = { pack: [], tasks: [], notes: [], itin: [] };
   let pendingInitialSeen = seenSet.size === 0;
-  const gotSnap = { pack: false, tasks: false, notes: false };
+  const gotSnap = { pack: false, tasks: false, notes: false, itin: false };
 
   const afterDataSnap = kind => {
     gotSnap[kind] = true;
-    if (pendingInitialSeen && gotSnap.pack && gotSnap.tasks && gotSnap.notes) {
+    if (pendingInitialSeen && gotSnap.pack && gotSnap.tasks && gotSnap.notes && gotSnap.itin) {
       captureAllAsSeen();
       pendingInitialSeen = false;
     }
@@ -702,6 +740,31 @@ async function enterRoom() {
           deleteDoc(extra.ref).catch(() => {});
         });
       }
+    }
+  ));
+
+  unsubs.push(onSnapshot(
+    query(collection(db, 'trips', tripCode, 'itinEvents'), orderBy('updatedAt', 'desc')),
+    snap => {
+      dataCache.itin = snap.docs;
+      afterDataSnap('itin');
+      // 일정 섹션을 보고 있는 중이면 새 변경도 바로 읽음 처리
+      const itinEl = document.getElementById('itinerary');
+      if (itinEl?.open) {
+        const rect = itinEl.getBoundingClientRect();
+        const vh = window.innerHeight || 0;
+        if (rect.top < vh * 0.8 && rect.bottom > vh * 0.15) markItinRead();
+      }
+      if (snap.docs.length > 40) {
+        snap.docs.slice(40).forEach(extra => {
+          deleteDoc(extra.ref).catch(() => {});
+        });
+      }
+    },
+    err => {
+      console.warn('itinEvents listen failed', err);
+      dataCache.itin = [];
+      afterDataSnap('itin');
     }
   ));
 
@@ -894,9 +957,55 @@ function bindUi() {
 
   unreadBanner?.addEventListener('click', event => {
     if (event.target.closest('#tripMarkReadBtn')) return;
+    const counts = countUnreadByType();
+    if (counts.itin && !counts.pack && !counts.tasks && !counts.notes) {
+      const itin = document.getElementById('itinerary');
+      if (itin) {
+        itin.open = true;
+        itin.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      markItinRead();
+      return;
+    }
     const trip = document.getElementById('trip');
     if (trip) trip.open = true;
   });
+
+  const isItineraryInView = () => {
+    const itin = document.getElementById('itinerary');
+    if (!itin?.open) return false;
+    const rect = itin.getBoundingClientRect();
+    const vh = window.innerHeight || 0;
+    return rect.top < vh * 0.8 && rect.bottom > vh * 0.15;
+  };
+
+  const maybeMarkItinSeen = () => {
+    if (isItineraryInView()) markItinRead();
+  };
+
+  const bindItinSeenOnOpen = () => {
+    const itin = document.getElementById('itinerary');
+    if (!itin) return;
+    itin.addEventListener('toggle', () => {
+      if (itin.open) window.setTimeout(maybeMarkItinSeen, 50);
+    });
+    document.querySelectorAll('[data-open="itinerary"]').forEach(link => {
+      link.addEventListener('click', () => {
+        window.setTimeout(maybeMarkItinSeen, 120);
+      });
+    });
+    window.addEventListener('hashchange', () => {
+      if (location.hash === '#itinerary') window.setTimeout(maybeMarkItinSeen, 120);
+    });
+    window.addEventListener('scroll', maybeMarkItinSeen, { passive: true });
+    if (typeof IntersectionObserver === 'function') {
+      const io = new IntersectionObserver(entries => {
+        if (entries.some(e => e.isIntersecting)) markItinRead();
+      }, { threshold: 0.2 });
+      io.observe(itin);
+    }
+  };
+  bindItinSeenOnOpen();
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshUnread();

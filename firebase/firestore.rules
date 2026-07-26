@@ -141,6 +141,24 @@ service cloud.firestore {
           && request.resource.data.note.size() <= 800;
         allow delete: if signedIn() && validCode(tripId);
       }
+
+      // 일정 변경 알림용 이벤트 (인앱 배지)
+      match /itinEvents/{eventId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create: if signedIn()
+          && validCode(tripId)
+          && request.resource.data.kind is string
+          && request.resource.data.kind.size() > 0
+          && request.resource.data.kind.size() <= 24
+          && request.resource.data.day is string
+          && request.resource.data.day.size() <= 12
+          && request.resource.data.summary is string
+          && request.resource.data.summary.size() <= 120
+          && validNick(request.resource.data.updatedBy)
+          && request.resource.data.keys().hasAll(['kind', 'day', 'summary', 'updatedBy', 'updatedAt']);
+        allow update: if false;
+        allow delete: if signedIn() && validCode(tripId);
+      }
     }
   }
 }

@@ -536,6 +536,9 @@
       font-size: 0.66rem; font-weight: 800; line-height: 16px; vertical-align: middle;
     }
     .tab-badge.is-on { display: inline-block; }
+    #itinerary > summary .quick-badge {
+      position: static; margin-left: 6px; vertical-align: middle;
+    }
     .trip-item.is-new, .trip-note.is-new {
       border-color: #ffb39a; background: #fff7f3;
       box-shadow: inset 3px 0 0 var(--coral);
@@ -746,7 +749,7 @@
 
     <nav class="quick-nav" aria-label="바로가기">
       <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
-      <a href="#itinerary" data-open="itinerary">📅 일정</a>
+      <a href="#itinerary" data-open="itinerary">📅 일정<span class="quick-badge" data-itin-badge>0</span></a>
       <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
       <a href="#food" data-open="food">🍽 맛집</a>
       <a href="#massage" data-open="massage">💆 마사지</a>
@@ -1048,7 +1051,7 @@
     </details>
 
     <details class="widget fold-widget" id="itinerary" open>
-      <summary>📅 일자별 일정</summary>
+      <summary>📅 일자별 일정 <span class="quick-badge" data-itin-badge>0</span></summary>
       <div class="fold-body">
         <p class="tiny" id="itinEditHint">여행방에 입장하면 일정을 함께 수정·드래그·사진 URL을 넣을 수 있어요.</p>
         <div id="itineraryApp"></div>
@@ -1480,7 +1483,7 @@
 
   <nav class="nav" aria-label="빠른 이동">
     <a href="#trip" data-open="trip"><span>👥</span>함께<span class="nav-badge" data-trip-badge>0</span></a>
-    <a href="#itinerary" data-open="itinerary"><span>📅</span>일정</a>
+    <a href="#itinerary" data-open="itinerary"><span>📅</span>일정<span class="nav-badge" data-itin-badge>0</span></a>
     <a href="#hopping" data-open="hopping"><span>🏝</span>호핑</a>
     <a href="#food" data-open="food"><span>🍽</span>맛집</a>
     <a href="#map" data-open="map"><span>🗺</span>지도</a>

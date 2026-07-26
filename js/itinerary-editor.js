@@ -20,6 +20,9 @@ if (!root) {
   // section not present
 }
 
+const MAX_ITIN_EVENTS = 40;
+const DAY_LABEL = { day1: 'DAY1', day2: 'DAY2', day3: 'DAY3', day4: 'DAY4' };
+
 let ctx = null; // { db, tripCode, nickname }
 let unsubs = [];
 let activeDay = 'day1';
@@ -27,6 +30,37 @@ let dayMeta = {};
 let itemsByDay = { day1: [], day2: [], day3: [], day4: [] };
 let dragId = null;
 let editable = false;
+
+async function logItinEvent({ kind, day = '', summary = '' }) {
+  if (!ctx?.db || !ctx?.tripCode || !ctx?.nickname) return;
+  try {
+    await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'itinEvents'), {
+      kind: String(kind || 'edit').slice(0, 24),
+      day: String(day || '').slice(0, 12),
+      summary: String(summary || '').slice(0, 120),
+      updatedBy: String(ctx.nickname).slice(0, 24),
+      updatedAt: serverTimestamp()
+    });
+    const snap = await getDocs(
+      query(collection(ctx.db, 'trips', ctx.tripCode, 'itinEvents'), orderBy('updatedAt', 'desc'))
+    );
+    if (snap.docs.length > MAX_ITIN_EVENTS) {
+      snap.docs.slice(MAX_ITIN_EVENTS).forEach(extra => {
+        deleteDoc(extra.ref).catch(() => {});
+      });
+    }
+  } catch (err) {
+    console.warn('itin event log failed', err);
+  }
+}
+
+function itemSummary(itemish) {
+  const time = String(itemish?.time || '').trim();
+  const place = String(itemish?.place || '').trim();
+  const task = String(itemish?.task || '').trim();
+  const core = [place, task].filter(Boolean).join(' · ') || '일정';
+  return time ? `${time} ${core}` : core;
+}
 
 function clearUnsubs() {
   unsubs.forEach(fn => {
@@ -393,7 +427,13 @@ function bindEditorEvents() {
     btn.addEventListener('click', async () => {
       if (!confirm('이 일정을 삭제할까요?')) return;
       try {
+        const prev = findItem(btn.dataset.delItem);
         await deleteDoc(doc(ctx.db, 'trips', ctx.tripCode, 'items', btn.dataset.delItem));
+        await logItinEvent({
+          kind: 'delete',
+          day: prev?.day || '',
+          summary: `${DAY_LABEL[prev?.day] || ''} 삭제: ${itemSummary(prev)}`.trim()
+        });
       } catch (e) {
         alert(e.message || '삭제 실패');
       }
@@ -449,6 +489,11 @@ function bindDrag() {
           });
         });
         await batch.commit();
+        await logItinEvent({
+          kind: 'reorder',
+          day: from.day,
+          summary: `${DAY_LABEL[from.day] || ''} 순서 변경`
+        });
       } catch (err) {
         alert(err.message || '순서 변경 실패');
       }
@@ -483,14 +528,20 @@ function openDayEditor(dayId) {
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
+      const title = el.querySelector('#mTitle').value.trim().slice(0, 80);
       await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
         badge: el.querySelector('#mBadge').value.trim().slice(0, 40),
-        title: el.querySelector('#mTitle').value.trim().slice(0, 80),
+        title,
         subtitle: el.querySelector('#mSub').value.trim().slice(0, 160),
         coverUrl: meta.coverUrl || '',
         updatedBy: ctx.nickname,
         updatedAt: serverTimestamp()
       }, { merge: true });
+      await logItinEvent({
+        kind: 'dayMeta',
+        day: dayId,
+        summary: `${DAY_LABEL[dayId] || dayId} 정보 수정: ${title || '하루 정보'}`
+      });
       close();
     } catch (e) {
       alert(e.message || '저장 실패');
@@ -530,6 +581,11 @@ function openCoverEditor(dayId) {
         updatedBy: ctx.nickname,
         updatedAt: serverTimestamp()
       }, { merge: true });
+      await logItinEvent({
+        kind: 'cover',
+        day: dayId,
+        summary: `${DAY_LABEL[dayId] || dayId} 대표 사진 변경`
+      });
       close();
     } catch (e) {
       alert(e.message || '저장 실패');
@@ -785,9 +841,19 @@ function openItemEditor(dayId, item) {
         const list = itemsByDay[dayId] || [];
         payload.order = list.length;
         await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'items'), payload);
+        await logItinEvent({
+          kind: 'add',
+          day: dayId,
+          summary: `${DAY_LABEL[dayId] || dayId} 추가: ${itemSummary(payload)}`
+        });
       } else {
         payload.order = item.order || 0;
         await updateDoc(doc(ctx.db, 'trips', ctx.tripCode, 'items', item.id), payload);
+        await logItinEvent({
+          kind: 'edit',
+          day: dayId,
+          summary: `${DAY_LABEL[dayId] || dayId} 수정: ${itemSummary(payload)}`
+        });
       }
       close();
     } catch (e) {

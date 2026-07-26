@@ -9,6 +9,7 @@
    - `kheun0309-maker.github.io`
 6. Firestore Database 생성 (프로덕션 모드)
 7. Firestore → Rules에 `firebase/firestore.rules` 내용 붙여넣고 게시
+   (일정 변경 알림용 `itinEvents` 규칙 포함 — 규칙 변경 후 반드시 다시 게시)
 
 **Firebase Storage는 필요 없습니다.** (유료 Blaze 업그레이드 없이 사용)
 일정 사진은 파일 업로드 대신 **이미지 URL**을 붙여넣는 방식입니다.
