@@ -537,6 +537,178 @@ function openCoverEditor(dayId) {
   };
 }
 
+function parseClockMinutes(timeStr) {
+  const s = String(timeStr || '').trim();
+  if (!s) return null;
+  const m = s.match(/(\d{1,2})\s*[:：.]\s*(\d{2})/);
+  if (m) {
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h >= 0 && h <= 23 && min >= 0 && min <= 59) return h * 60 + min;
+  }
+  if (/새벽|심야|취침|밤/.test(s)) return 22 * 60;
+  if (/저녁|석양|sunset/i.test(s)) return 18 * 60;
+  if (/오후/.test(s)) return 14 * 60;
+  if (/낮|점심/.test(s)) return 12 * 60;
+  if (/오전|아침|조식|늦잠|기상/.test(s)) return 9 * 60;
+  return null;
+}
+
+function formatClock(mins, withTilde = false) {
+  const total = ((mins % (24 * 60)) + (24 * 60)) % (24 * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const t = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return withTilde ? `${t}~` : t;
+}
+
+function minutesToTimeValue(mins) {
+  const total = ((mins % (24 * 60)) + (24 * 60)) % (24 * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function getPrevSchedule(dayId, item) {
+  const list = itemsByDay[dayId] || [];
+  if (!list.length) return null;
+  if (!item) return list[list.length - 1];
+  const idx = list.findIndex(it => it.id === item.id);
+  if (idx <= 0) return null;
+  return list[idx - 1];
+}
+
+function buildTimeFieldHtml(dayId, item, initialTime) {
+  const prev = getPrevSchedule(dayId, item);
+  const prevMins = prev ? parseClockMinutes(prev.time) : null;
+  const parsed = parseClockMinutes(initialTime);
+  const hasTilde = /~$/.test(String(initialTime || '').trim());
+  const clockValue = parsed != null ? minutesToTimeValue(parsed) : (prevMins != null ? minutesToTimeValue(prevMins + 60) : '10:00');
+  const suggestOffsets = [
+    { label: '+30분', add: 30 },
+    { label: '+1시간', add: 60 },
+    { label: '+1.5시간', add: 90 },
+    { label: '+2시간', add: 120 },
+    { label: '+3시간', add: 180 }
+  ];
+  const suggestBtns = prevMins != null
+    ? suggestOffsets.map(s => {
+        const t = formatClock(prevMins + s.add);
+        return `<button type="button" class="itin-chip" data-set-time="${esc(t)}">${esc(s.label)} · ${esc(t)}</button>`;
+      }).join('')
+    : '';
+
+  const prevHtml = prev
+    ? `<div class="itin-prev-schedule">
+        <span class="itin-prev-label">앞 일정</span>
+        <strong>${esc(prev.time || '시간 미정')}</strong>
+        <span>${esc([prev.place, prev.task].filter(Boolean).join(' · ') || '내용 없음')}</span>
+      </div>`
+    : `<div class="itin-prev-schedule is-empty">이 날의 첫 일정이에요. 아래에서 시간을 골라 주세요.</div>`;
+
+  return `
+    <div class="itin-time-box">
+      ${prevHtml}
+      ${suggestBtns ? `<div class="itin-time-suggest"><span class="tiny">앞 일정 기준 추천</span><div class="itin-chip-row">${suggestBtns}</div></div>` : ''}
+      <div class="itin-clock-panel">
+        <div class="itin-clock-face" aria-hidden="true">
+          <div class="itin-clock-hand" id="mClockHand"></div>
+          <div class="itin-clock-center"></div>
+          <span class="itin-clock-digit" style="--i:0">12</span>
+          <span class="itin-clock-digit" style="--i:1">3</span>
+          <span class="itin-clock-digit" style="--i:2">6</span>
+          <span class="itin-clock-digit" style="--i:3">9</span>
+        </div>
+        <div class="itin-clock-controls">
+          <label class="itin-clock-input-label">시계로 선택
+            <input id="mClock" type="time" value="${esc(clockValue)}">
+          </label>
+          <label class="itin-tilde"><input id="mTilde" type="checkbox" ${hasTilde || (!initialTime && prev) ? 'checked' : ''}> 이후(~) 표시</label>
+          <div class="itin-chip-row">
+            <button type="button" class="itin-chip" data-set-time="오전">오전</button>
+            <button type="button" class="itin-chip" data-set-time="낮">낮</button>
+            <button type="button" class="itin-chip" data-set-time="오후">오후</button>
+            <button type="button" class="itin-chip" data-set-time="저녁">저녁</button>
+            <button type="button" class="itin-chip" data-set-time="밤">밤</button>
+            <button type="button" class="itin-chip" data-set-time="늦잠">늦잠</button>
+          </div>
+        </div>
+      </div>
+      <label>표시될 시간<input id="mTime" type="text" maxlength="40" value="${esc(initialTime || (!item && prevMins != null ? formatClock(prevMins + 60, true) : ''))}" placeholder="예: 14:00~ 또는 오전"></label>
+    </div>
+  `;
+}
+
+function bindTimeField(el) {
+  const timeInput = el.querySelector('#mTime');
+  const clock = el.querySelector('#mClock');
+  const tilde = el.querySelector('#mTilde');
+  const hand = el.querySelector('#mClockHand');
+
+  const syncHand = (mins) => {
+    if (!hand || mins == null) return;
+    // 12시간제 시침 각도 (분 반영)
+    const hours12 = (Math.floor(mins / 60) % 12) + (mins % 60) / 60;
+    const deg = hours12 * 30;
+    hand.style.transform = `translate(-50%, -100%) rotate(${deg}deg)`;
+  };
+
+  const applyClockToText = () => {
+    if (!clock?.value) return;
+    const [h, m] = clock.value.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return;
+    const mins = h * 60 + m;
+    const text = formatClock(mins, Boolean(tilde?.checked));
+    if (timeInput) timeInput.value = text;
+    syncHand(mins);
+  };
+
+  const applyTextToClock = () => {
+    const mins = parseClockMinutes(timeInput?.value || '');
+    if (mins == null || !clock) return;
+    clock.value = minutesToTimeValue(mins);
+    if (tilde) tilde.checked = /~$/.test(String(timeInput.value || '').trim());
+    syncHand(mins);
+  };
+
+  clock?.addEventListener('input', applyClockToText);
+  clock?.addEventListener('change', applyClockToText);
+  tilde?.addEventListener('change', () => {
+    const mins = parseClockMinutes(timeInput?.value || clock?.value || '');
+    if (mins != null && timeInput) {
+      timeInput.value = formatClock(mins, Boolean(tilde.checked));
+      syncHand(mins);
+    } else {
+      applyClockToText();
+    }
+  });
+  timeInput?.addEventListener('change', applyTextToClock);
+
+  el.querySelectorAll('[data-set-time]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.getAttribute('data-set-time') || '';
+      if (!timeInput) return;
+      if (/^\d{1,2}:\d{2}$/.test(v)) {
+        timeInput.value = tilde?.checked ? `${v}~` : v;
+        if (clock) clock.value = v;
+        syncHand(parseClockMinutes(v));
+      } else {
+        timeInput.value = v;
+        const mins = parseClockMinutes(v);
+        if (mins != null && clock) {
+          clock.value = minutesToTimeValue(mins);
+          syncHand(mins);
+        }
+      }
+    });
+  });
+
+  // 초기 표시
+  const initMins = parseClockMinutes(timeInput?.value || clock?.value || '');
+  if (initMins != null) syncHand(initMins);
+  else if (clock?.value) applyClockToText();
+}
+
 function openItemEditor(dayId, item) {
   const isNew = !item;
   const data = item || {
@@ -549,7 +721,7 @@ function openItemEditor(dayId, item) {
   };
   const { wrap, close, el } = modal(`
     <h3>${isNew ? '일정 추가' : '일정 수정'}</h3>
-    <label>시간<input id="mTime" type="text" maxlength="40" value="${esc(data.time || '')}" placeholder="예: 14:00 또는 오전"></label>
+    ${buildTimeFieldHtml(dayId, item, data.time || '')}
     <label>장소<input id="mPlace" type="text" maxlength="120" value="${esc(data.place || '')}" placeholder="장소 이름"></label>
     <div class="itin-place-row">
       <button type="button" class="itin-btn" id="mMapsSearch">구글 지도에서 찾기</button>
@@ -561,16 +733,17 @@ function openItemEditor(dayId, item) {
     ${localImagePickerHtml('mImgUrl')}
     <label>또는 사진 URL<input id="mImgUrl" type="text" value="${esc(data.imageUrl || '')}" placeholder="https://...jpg (선택)"></label>
     <div id="mImgUrlPreview" class="itin-item-photo itin-preview" hidden>
-      <img alt="미리보기" referrerpolicy="no-referrer" onerror="this.closest('.itin-item-photo')?.classList.add('is-broken')">
+      <img alt="미리보기" referrerpolicy="no-referrer" onerror="var p=this.parentElement;if(p)p.classList.add('is-broken')">
       <div class="itin-photo-fail">미리보기가 안 되면 저장해도 화면에 안 나올 수 있어요.</div>
     </div>
-    <p class="tiny" style="margin:0 0 8px">카톡/블로그 글 주소 ❌ · 이미지 직접 링크(.jpg) 또는 위 썸네일 선택 ✅</p>
+    <p class="tiny" style="margin:0 0 8px">카톡/블로그 글 주소는 안 됩니다. 이미지 직접 링크(.jpg) 또는 위 썸네일을 선택하세요.</p>
     <div class="itin-modal-actions">
       <button type="button" class="itin-btn" data-cancel>취소</button>
       <button type="button" class="itin-btn primary" data-save>저장</button>
     </div>
   `);
 
+  bindTimeField(el);
   bindImageFields(el, 'mImgUrl');
   el.querySelector('#mMapsSearch').onclick = () => {
     const place = el.querySelector('#mPlace').value.trim();

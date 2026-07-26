@@ -387,6 +387,69 @@
     }
     .itin-local-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .itin-local-thumb:active { outline: 2px solid var(--teal); }
+    .itin-time-box {
+      margin-bottom: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px;
+      background: linear-gradient(160deg, #f3fbfc 0%, #fff 55%);
+    }
+    .itin-prev-schedule {
+      display: grid; gap: 2px; margin-bottom: 10px; padding: 10px 12px;
+      border-radius: 12px; background: #e7f5f7; border: 1px solid #cfe6ea;
+      font-size: 0.82rem; color: var(--ink);
+    }
+    .itin-prev-schedule.is-empty { color: var(--muted); font-weight: 600; }
+    .itin-prev-label {
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em;
+      color: var(--teal); text-transform: uppercase;
+    }
+    .itin-prev-schedule strong { color: var(--ocean); font-size: 0.95rem; }
+    .itin-time-suggest { margin-bottom: 10px; }
+    .itin-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .itin-chip {
+      border: 1px solid var(--line); background: #fff; color: var(--ocean);
+      border-radius: 999px; padding: 7px 10px; font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
+    }
+    .itin-chip:active { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+    .itin-clock-panel {
+      display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; margin-bottom: 10px;
+    }
+    .itin-clock-face {
+      position: relative; width: 96px; height: 96px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, #fff 0 34%, transparent 35%),
+        conic-gradient(from 0deg, #dff3f6, #fff 40%, #dff3f6 70%, #fff);
+      border: 2px solid #9ec9d1; box-shadow: inset 0 0 0 6px #f7fcfd;
+    }
+    .itin-clock-hand {
+      position: absolute; left: 50%; top: 50%; width: 3px; height: 28px;
+      background: var(--coral); border-radius: 3px; transform-origin: 50% 100%;
+      transform: translate(-50%, -100%) rotate(0deg);
+      transition: transform 0.2s ease;
+    }
+    .itin-clock-center {
+      position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ocean); transform: translate(-50%, -50%);
+    }
+    .itin-clock-digit {
+      position: absolute; left: 50%; top: 50%; width: 1.2em; margin-left: -0.6em; text-align: center;
+      font-size: 0.62rem; font-weight: 800; color: var(--ocean);
+      transform: rotate(calc(var(--i) * 90deg)) translateY(-36px) rotate(calc(var(--i) * -90deg));
+    }
+    .itin-clock-controls { display: grid; gap: 8px; min-width: 0; }
+    .itin-clock-input-label {
+      display: grid; gap: 4px; font-size: 0.78rem; font-weight: 700; color: var(--muted);
+    }
+    .itin-clock-input-label input[type="time"] {
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit;
+      font-size: 1.05rem; font-weight: 800; color: var(--ocean); width: 100%;
+      min-height: 46px; background: #fff;
+    }
+    .itin-tilde {
+      display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: var(--muted);
+    }
+    @media (max-width: 380px) {
+      .itin-clock-panel { grid-template-columns: 1fr; justify-items: center; }
+      .itin-clock-controls { width: 100%; }
+    }
     .itin-maps { display: inline-block; margin-top: 6px; font-size: 0.78rem; font-weight: 800; color: var(--ocean); }
     .itin-item-actions, .itin-day-actions, .itin-place-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .itin-btn, .itin-add {
