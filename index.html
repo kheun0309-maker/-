@@ -337,20 +337,31 @@
     .info-card:hover { border-color: rgba(0, 163, 163, 0.45); transform: translateY(-1px); transition: 0.2s ease; }
     .day-head p { font-size: 0.84rem; color: var(--muted); }
     .timeline { list-style: none; }
-    .timeline li {
-      position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 0 0 14px 6px;
+    .timeline li.itin-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 0 0 14px 6px;
     }
-    .timeline li::before {
+    .timeline li.itin-item.is-editable {
+      grid-template-columns: 18px 58px minmax(0, 1fr);
+      gap: 8px;
+    }
+    .timeline li.itin-item::before {
       content: ''; position: absolute; left: 64px; top: 10px; bottom: -2px; width: 2px;
       background: linear-gradient(180deg, var(--teal), transparent);
     }
-    .timeline li:last-child { padding-bottom: 0; }
-    .timeline li:last-child::before { display: none; }
-    .itin-item { display: grid; grid-template-columns: 18px 64px 1fr; gap: 8px; align-items: start; }
-    .itin-item:not(.is-editable) { grid-template-columns: 64px 1fr; }
-    .itin-item .t-time { grid-column: auto; }
-    .itin-item.is-editable::before { left: 90px; }
-    .itin-item.is-editable .itin-drag { color: var(--soft); font-size: 0.85rem; cursor: grab; padding-top: 10px; }
+    .timeline li.itin-item.is-editable::before { left: 90px; }
+    .timeline li.itin-item:last-child { padding-bottom: 0; }
+    .timeline li.itin-item:last-child::before { display: none; }
+    .itin-item .t-time { min-width: 0; word-break: keep-all; }
+    .itin-item .t-body { min-width: 0; }
+    .itin-item.is-editable .itin-drag {
+      color: var(--soft); font-size: 0.85rem; cursor: grab; padding-top: 10px;
+      text-align: center; user-select: none;
+    }
     .itin-item.is-dragging { opacity: 0.55; }
     .itin-item.drag-over { outline: 2px dashed var(--teal); border-radius: 10px; }
     .itin-item-photo { margin-top: 8px; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; background: #dceef2; }
@@ -364,7 +375,10 @@
     .itin-btn.primary, .itin-add { background: var(--coral); border-color: var(--coral); color: #fff; }
     .itin-btn.danger { color: var(--coral); }
     .itin-add { width: 100%; margin-top: 10px; }
-    .itin-empty { list-style: none; color: var(--muted); font-size: 0.86rem; padding: 8px 2px; }
+    .itin-empty {
+      list-style: none; display: block; color: var(--muted); font-size: 0.86rem; padding: 8px 2px;
+    }
+    .itin-empty::before { display: none !important; }
     .itin-modal {
       position: fixed; inset: 0; z-index: 80; background: rgba(10, 30, 40, 0.45);
       display: flex; align-items: flex-end; justify-content: center; padding: 12px;
