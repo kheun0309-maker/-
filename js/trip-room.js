@@ -201,7 +201,7 @@ function renderUnreadBadges() {
       const parts = [];
       if (counts.pack) parts.push(`준비물 ${counts.pack}`);
       if (counts.tasks) parts.push(`출발 전 ${counts.tasks}`);
-      if (counts.notes) parts.push(`메모 ${counts.notes}`);
+      if (counts.notes) parts.push(`공지 ${counts.notes}`);
       unreadText.textContent = `안 본 소식 ${label}개 (${parts.join(' · ')})`;
       unreadBanner.classList.add('is-on');
     } else {

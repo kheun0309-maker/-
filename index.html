@@ -415,6 +415,21 @@
       vertical-align: middle;
     }
     .footer-note { text-align: center; font-size: 0.7rem; color: var(--soft); margin-top: 8px; }
+    .chrome-gate {
+      display: none; margin: 0 0 12px; padding: 14px; border-radius: 18px;
+      background: linear-gradient(135deg, #1a73e8 0%, #174ea6 100%);
+      color: #fff; box-shadow: var(--shadow);
+    }
+    .chrome-gate.show { display: block; }
+    .chrome-gate strong { display: block; font-size: 0.95rem; font-weight: 800; margin-bottom: 4px; }
+    .chrome-gate p { margin: 0 0 10px; font-size: 0.8rem; line-height: 1.45; opacity: 0.95; }
+    .chrome-gate .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chrome-gate a, .chrome-gate button {
+      text-decoration: none; border: 0; border-radius: 12px; padding: 11px 14px;
+      font: inherit; font-size: 0.84rem; font-weight: 800; cursor: pointer;
+    }
+    .chrome-gate .primary { background: #fff; color: #174ea6; }
+    .chrome-gate .ghost { background: rgba(255,255,255,0.16); color: #fff; }
     .install-banner {
       display: none; position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
       background: linear-gradient(135deg, #067a8a 0%, #00a3a3 55%, #1f9d6a 100%);
@@ -557,21 +572,31 @@
   </header>
 
   <main>
+    <aside class="chrome-gate" id="chromeGate" aria-label="Chrome으로 열기">
+      <strong>카톡/인앱 브라우저에서는 앱 설치가 안 됩니다</strong>
+      <p>홈 화면 추가·알림 숫자 뱃지는 <b>Chrome</b>에서 열어야 가능해요. 아래 버튼으로 Chrome을 열어 주세요.</p>
+      <div class="actions">
+        <a class="primary" id="openChromeBtn" href="#">Chrome으로 열기</a>
+        <button class="ghost" id="chromeGateLater" type="button">나중에</button>
+      </div>
+    </aside>
+
     <aside class="install-banner" id="installBanner" aria-label="홈 화면 추가">
       <img src="./icons/icon-192.png" alt="코타키나발루 앱 아이콘">
       <div>
         <strong>홈 화면에 코타키나발루 추가</strong>
-        <p>바다·키나발루 아이콘으로 바로가기. 여행 전까지 매일 열어보세요.</p>
+        <p>Chrome에서 열었다면 바로 설치할 수 있어요. 바다·키나발루 아이콘으로 바로가기.</p>
       </div>
       <div class="actions">
         <button class="install-btn" id="installBtn" type="button">설치</button>
         <button class="later-btn" id="installLaterBtn" type="button">나중에</button>
       </div>
       <div class="install-help" id="installHelp">
+        <b>안드로이드 (추천)</b><br>
+        1) 카톡 링크 → <b>Chrome으로 열기</b><br>
+        2) Chrome 메뉴(⋮) → <b>앱 설치</b> / <b>홈 화면에 추가</b><br><br>
         <b>아이폰 Safari</b><br>
-        공유 버튼 → <b>홈 화면에 추가</b> → 추가<br><br>
-        <b>안드로이드 Chrome</b><br>
-        메뉴(⋮) → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>
+        공유 버튼 → <b>홈 화면에 추가</b> → 추가
       </div>
     </aside>
 
