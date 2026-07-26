@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v19';
+const CACHE_NAME = 'kota-kinabalu-guide-v20';
 const APP_SHELL = [
   './',
   './index.html',
@@ -49,6 +49,22 @@ self.addEventListener('activate', event => {
     )
   );
   self.clients.claim();
+});
+
+self.addEventListener('message', event => {
+  const data = event.data || {};
+  if (data.type !== 'SET_APP_BADGE') return;
+  const count = Math.max(0, Math.min(99, Number(data.count) || 0));
+  const apply = async () => {
+    try {
+      if (count > 0 && self.registration.setAppBadge) {
+        await self.registration.setAppBadge(count);
+      } else if (count === 0 && self.registration.clearAppBadge) {
+        await self.registration.clearAppBadge();
+      }
+    } catch (_) {}
+  };
+  event.waitUntil(apply());
 });
 
 self.addEventListener('fetch', event => {

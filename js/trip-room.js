@@ -155,6 +155,23 @@ function setBadgeEl(elBadge, count) {
   elBadge.classList.toggle('is-on', n > 0);
 }
 
+/** Android/Chrome 홈화면 앱 아이콘 숫자 뱃지 (Badging API) */
+async function setHomeAppBadge(count) {
+  const n = Math.max(0, Math.min(99, Number(count) || 0));
+  try {
+    if (n > 0) {
+      if (navigator.setAppBadge) await navigator.setAppBadge(n);
+    } else if (navigator.clearAppBadge) {
+      await navigator.clearAppBadge();
+    }
+  } catch (_) {}
+
+  try {
+    const reg = await navigator.serviceWorker?.ready;
+    reg?.active?.postMessage({ type: 'SET_APP_BADGE', count: n });
+  } catch (_) {}
+}
+
 function clearUnreadUiNow() {
   document.querySelectorAll('[data-trip-badge], [data-tab-badge]').forEach(badge => setBadgeEl(badge, 0));
   if (unreadBanner && unreadText) {
@@ -166,6 +183,7 @@ function clearUnreadUiNow() {
     node.classList.remove('is-new');
     node.querySelectorAll('.trip-new-tag').forEach(tag => tag.remove());
   });
+  setHomeAppBadge(0);
 }
 
 function renderUnreadBadges() {
@@ -193,6 +211,7 @@ function renderUnreadBadges() {
   }
 
   document.title = n > 0 ? `(${label}) ${TITLE_BASE}` : TITLE_BASE;
+  setHomeAppBadge(n);
 }
 
 function refreshUnread({ rerender = false } = {}) {
