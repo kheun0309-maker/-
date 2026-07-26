@@ -172,8 +172,43 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+/** 줄바꿈 + http(s) URL을 새 탭 링크로 (HTML 이스케이프 포함) */
+export function formatRichText(text) {
+  const source = String(text || '');
+  if (!source) return '';
+  const urlRe = /(https?:\/\/[^\s<>"'`]+)/gi;
+  let last = 0;
+  let match;
+  const parts = [];
+  const pushText = (chunk) => {
+    if (!chunk) return;
+    parts.push(esc(chunk).replace(/\n/g, '<br>'));
+  };
+  while ((match = urlRe.exec(source)) !== null) {
+    pushText(source.slice(last, match.index));
+    let href = match[1].replace(/[),.;!?…」』]+$/g, '');
+    const trailing = match[1].slice(href.length);
+    try {
+      const parsed = new URL(href);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        parts.push(
+          `<a class="rich-link" href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a>`
+        );
+        if (trailing) pushText(trailing);
+      } else {
+        pushText(match[1]);
+      }
+    } catch (_) {
+      pushText(match[1]);
+    }
+    last = match.index + match[1].length;
+  }
+  pushText(source.slice(last));
+  return parts.join('');
+}
+
 function nl2br(s) {
-  return esc(s).replace(/\n/g, '<br>');
+  return formatRichText(s);
 }
 
 export function normalizeImageUrl(raw) {

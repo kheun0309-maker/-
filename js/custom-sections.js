@@ -9,7 +9,7 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { logTripActivity } from './itinerary-editor.js';
-import { normalizeImageUrl } from './guide-content.js';
+import { normalizeImageUrl, formatRichText } from './guide-content.js';
 
 const MAX_SECTIONS = 12;
 const MAX_ITEMS = 20;
@@ -25,10 +25,6 @@ function esc(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function nl2br(s) {
-  return esc(s).replace(/\n/g, '<br>');
 }
 
 function canEdit() {
@@ -116,7 +112,7 @@ function renderSections() {
           ${photo}
           ${it.tag ? `<span class="tag ok">${esc(it.tag)}</span>` : ''}
           <b>${esc(it.title)}</b>
-          ${it.body ? `<p>${nl2br(it.body)}</p>` : ''}
+          ${it.body ? `<p>${formatRichText(it.body)}</p>` : ''}
           ${links.length ? `<div class="food-actions">${links.join('')}</div>` : ''}
           ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">item: ${esc(it.id)}</div>` : ''}
         </div>`;
@@ -126,7 +122,7 @@ function renderSections() {
       <details class="widget fold-widget custom-section" id="custom-${esc(sec.id)}" open>
         <summary>${esc(sec.title)}</summary>
         <div class="fold-body">
-          ${sec.intro ? `<p class="tiny" style="margin:-4px 0 10px">${esc(sec.intro)}</p>` : ''}
+          ${sec.intro ? `<p class="tiny" style="margin:-4px 0 10px">${formatRichText(sec.intro)}</p>` : ''}
           ${cards || '<p class="tiny">아직 항목이 없어요. AI로 정보를 추가해 보세요.</p>'}
           <p class="tiny" style="margin-top:8px">여행방 공유 섹션${canEdit() ? ` · id: ${esc(sec.id)}` : ''}</p>
         </div>

@@ -1,7 +1,7 @@
 /** 코타키나발루 가이드 AI — 가이드 컨텍스트·웹검색·일정/콘텐츠 제안(확인 후 적용) */
 
 import { getItineraryApi } from './itinerary-editor.js';
-import { getGuideContentApi } from './guide-content.js';
+import { getGuideContentApi, formatRichText } from './guide-content.js';
 import { getCustomSectionsApi } from './custom-sections.js';
 import { getTripPackApi } from './trip-room.js';
 import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
@@ -492,7 +492,43 @@ function esc(s) {
 }
 
 function linkify(text) {
-  return esc(text).replace(/(#([a-z0-9-]+))/gi, '<a href="$1" data-open-hash="$2">$1</a>');
+  // http(s) → 새 탭, #섹션id → 앱 내 이동 (한 패스로 겹침 방지)
+  const source = String(text || '');
+  if (!source) return '';
+  const re = /(https?:\/\/[^\s<>"'`]+)|(#([a-z0-9-]+))/gi;
+  let last = 0;
+  let match;
+  const parts = [];
+  const pushText = (chunk) => {
+    if (!chunk) return;
+    parts.push(esc(chunk).replace(/\n/g, '<br>'));
+  };
+  while ((match = re.exec(source)) !== null) {
+    pushText(source.slice(last, match.index));
+    if (match[1]) {
+      let href = match[1].replace(/[),.;!?…」』]+$/g, '');
+      const trailing = match[1].slice(href.length);
+      try {
+        const parsed = new URL(href);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          parts.push(
+            `<a class="rich-link" href="${esc(parsed.href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a>`
+          );
+          if (trailing) pushText(trailing);
+        } else {
+          pushText(match[1]);
+        }
+      } catch (_) {
+        pushText(match[1]);
+      }
+    } else {
+      const hash = match[3];
+      parts.push(`<a href="#${esc(hash)}" data-open-hash="${esc(hash)}">#${esc(hash)}</a>`);
+    }
+    last = match.index + match[0].length;
+  }
+  pushText(source.slice(last));
+  return parts.join('');
 }
 
 function fxHint() {
@@ -710,8 +746,8 @@ export function initAiGuide() {
         }
         if (proposal.caption) lines.push(`<div>캡션: ${esc(proposal.caption)}</div>`);
         if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
-        if (proposal.body || proposal.desc) lines.push(`<div>${esc(proposal.body || proposal.desc)}</div>`);
-        if (proposal.imageUrl) lines.push(`<div class="tiny">URL: ${esc(proposal.imageUrl)}</div>`);
+        if (proposal.body || proposal.desc) lines.push(`<div>${formatRichText(proposal.body || proposal.desc)}</div>`);
+        if (proposal.imageUrl) lines.push(`<div class="tiny">URL: ${formatRichText(proposal.imageUrl)}</div>`);
       }
       if (proposal.itemId) lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
@@ -720,7 +756,7 @@ export function initAiGuide() {
       if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
       lines.push('<div class="ai-proposal-body">');
       if (proposal.action === 'delete') lines.push(`<div>삭제 id: ${esc(proposal.itemId || '')}</div>`);
-      else if (proposal.text) lines.push(`<div>${esc(proposal.text)}</div>`);
+      else if (proposal.text) lines.push(`<div>${formatRichText(proposal.text)}</div>`);
       if (proposal.itemId && proposal.action !== 'add') lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
     } else if (proposal.type === 'custom') {
@@ -733,10 +769,10 @@ export function initAiGuide() {
       lines.push('<div class="ai-proposal-body">');
       if (proposal.sectionId) lines.push(`<div>sectionId: ${esc(proposal.sectionId)}</div>`);
       if (proposal.title) lines.push(`<div>섹션 제목: ${esc(proposal.title)}</div>`);
-      if (proposal.intro) lines.push(`<div>소개: ${esc(proposal.intro)}</div>`);
+      if (proposal.intro) lines.push(`<div>소개: ${formatRichText(proposal.intro)}</div>`);
       if (proposal.itemTitle) lines.push(`<div>항목: ${esc(proposal.itemTitle)}</div>`);
       if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
-      if (proposal.body) lines.push(`<div>${esc(proposal.body)}</div>`);
+      if (proposal.body) lines.push(`<div>${formatRichText(proposal.body)}</div>`);
       if (proposal.itemId) lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
     } else {
@@ -749,7 +785,7 @@ export function initAiGuide() {
         if (proposal.time) lines.push(`<div>시간: ${esc(proposal.time)}</div>`);
         if (proposal.place) lines.push(`<div>장소: ${esc(proposal.place)}</div>`);
         if (proposal.task) lines.push(`<div>할 일: ${esc(proposal.task)}</div>`);
-        if (proposal.note) lines.push(`<div>메모: ${esc(proposal.note)}</div>`);
+        if (proposal.note) lines.push(`<div>메모: ${formatRichText(proposal.note)}</div>`);
       }
       if (proposal.action !== 'add' && proposal.itemId) {
         lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
