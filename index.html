@@ -45,26 +45,51 @@
         linear-gradient(180deg, #f3fffd 0%, var(--bg) 42%, var(--bg-deep) 100%);
     }
     header {
-      position: relative; min-height: 56vh; padding: 0; text-align: center; color: #fff; overflow: hidden;
+      position: relative; min-height: 58vh; padding: 0; text-align: center; color: #fff; overflow: hidden;
       display: flex; flex-direction: column; justify-content: flex-end;
     }
-    .hero-bg {
+    .hero-slides {
+      position: absolute; inset: 0; overflow: hidden;
+    }
+    .hero-slide {
       position: absolute; inset: 0;
-      background:
-        linear-gradient(180deg, rgba(40, 12, 40, 0.18) 0%, rgba(90, 30, 20, 0.28) 40%, rgba(20, 10, 28, 0.78) 100%),
-        url('./images/kk-sunset.jpg') center 35%/cover no-repeat;
-      transform: scale(1.06);
-      animation: heroDrift 14s ease-in-out infinite alternate;
+      background-position: center 40%;
+      background-size: cover;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transform: scale(1.08);
+      transition: opacity 1.6s ease;
+      will-change: opacity, transform;
+    }
+    .hero-slide.is-active {
+      opacity: 1;
+      animation: heroDrift 9s ease-in-out infinite alternate;
+      z-index: 1;
+    }
+    .hero-veil {
+      position: absolute; inset: 0; z-index: 2; pointer-events: none;
+      background: linear-gradient(180deg, rgba(40, 12, 40, 0.18) 0%, rgba(90, 30, 20, 0.28) 40%, rgba(20, 10, 28, 0.78) 100%);
+    }
+    .hero-dots {
+      position: absolute; left: 0; right: 0; bottom: 78px; z-index: 3;
+      display: flex; justify-content: center; gap: 6px; pointer-events: none;
+    }
+    .hero-dots span {
+      width: 6px; height: 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.35); transition: width 0.35s ease, background 0.35s ease;
+    }
+    .hero-dots span.is-on {
+      width: 18px; background: rgba(255,255,255,0.9);
     }
     .hero-wave {
-      position: absolute; left: -10%; right: -10%; bottom: -2px; height: 70px;
+      position: absolute; left: -10%; right: -10%; bottom: -2px; height: 70px; z-index: 3;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'%3E%3Cpath fill='%23dff5f4' d='M0,64 C240,110 480,10 720,48 C960,86 1200,20 1440,56 L1440,100 L0,100 Z'/%3E%3C/svg%3E") bottom/100% 100% no-repeat;
       animation: waveSlide 7s ease-in-out infinite alternate;
       pointer-events: none;
     }
-    @keyframes heroDrift { from { transform: scale(1.06) translateY(0); } to { transform: scale(1.12) translateY(-10px); } }
+    @keyframes heroDrift { from { transform: scale(1.08) translateY(0); } to { transform: scale(1.16) translateY(-12px); } }
     @keyframes waveSlide { from { transform: translateX(-1.5%); } to { transform: translateX(1.5%); } }
-    .hero-inner { position: relative; z-index: 2; padding: 48px 22px 42px; }
+    .hero-inner { position: relative; z-index: 4; padding: 48px 22px 42px; }
     .eyebrow {
       display: inline-block; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
       color: var(--sand); margin-bottom: 12px; font-weight: 700;
@@ -379,11 +404,18 @@
 </head>
 <body>
   <header>
-    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-slides" id="heroSlides" aria-hidden="true">
+      <div class="hero-slide is-active" style="background-image:url('./images/kk-sunset.jpg')"></div>
+      <div class="hero-slide" style="background-image:url('./images/kk-sunset-2.jpg')"></div>
+      <div class="hero-slide" style="background-image:url('./images/kk-sunset-3.jpg')"></div>
+      <div class="hero-slide" style="background-image:url('./images/kk-sunset-4.jpg')"></div>
+      <div class="hero-slide" style="background-image:url('./images/kk-sunset-5.jpg')"></div>
+    </div>
+    <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-inner">
       <div class="eyebrow">Borneo Escape · Rasa Ria</div>
       <h1>코타키나발루</h1>
-      <p class="header-sub">바다에 뛰어들고, 섬을 Hopping하고, 버터새우에 미소 짓는 4일</p>
+      <p class="header-sub" id="heroCaption">노을이 질 때마다, 또 가고 싶어진다</p>
       <div class="header-meta">
         <span class="chip">8.13 → 8.17</span>
         <span class="chip">리조트 호캉스</span>
@@ -395,6 +427,7 @@
         <a class="ghost" href="#map">지도 열기</a>
       </div>
     </div>
+    <div class="hero-dots" id="heroDots" aria-hidden="true"></div>
     <div class="hero-wave" aria-hidden="true"></div>
   </header>
 
@@ -1166,6 +1199,59 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    (function initHeroSlideshow() {
+      const slides = Array.from(document.querySelectorAll('#heroSlides .hero-slide'));
+      const dotsWrap = document.getElementById('heroDots');
+      const caption = document.getElementById('heroCaption');
+      if (!slides.length) return;
+
+      const lines = [
+        '노을이 질 때마다, 또 가고 싶어진다',
+        '파라솔 아래서 보는 황금빛 수평선',
+        '야자수 사이로 스며드는 보라빛 저녁',
+        '바다가 불을 켜는 순간',
+        '보트를 타고 들어가고 싶은 석양'
+      ];
+
+      slides.forEach((_, i) => {
+        const dot = document.createElement('span');
+        if (i === 0) dot.classList.add('is-on');
+        dotsWrap.appendChild(dot);
+      });
+      const dots = Array.from(dotsWrap.children);
+
+      // Preload remaining slides so fades stay smooth
+      slides.slice(1).forEach(slide => {
+        const url = (slide.style.backgroundImage || '').replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+        if (url) { const img = new Image(); img.src = url; }
+      });
+
+      let index = 0;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const show = next => {
+        slides[index].classList.remove('is-active');
+        dots[index].classList.remove('is-on');
+        index = next;
+        slides[index].classList.add('is-active');
+        dots[index].classList.add('is-on');
+        if (caption) {
+          caption.style.opacity = '0';
+          caption.style.transform = 'translateY(6px)';
+          caption.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+          setTimeout(() => {
+            caption.textContent = lines[index % lines.length];
+            caption.style.opacity = '1';
+            caption.style.transform = 'none';
+          }, 220);
+        }
+      };
+
+      if (!reduceMotion) {
+        setInterval(() => show((index + 1) % slides.length), 4200);
+      }
+    })();
+
     const MYR_TO_KRW = 300;
     const koreaTime = document.getElementById('koreaTime');
     const koreaDate = document.getElementById('koreaDate');
