@@ -724,23 +724,31 @@ export function initAiGuide() {
     return { ok: false, error: `알 수 없는 도구: ${name}` };
   };
 
+  /** gpt-5.6* + tools 는 chat/completions에서 reasoning_effort 기본값이 막힘 → none 고정 */
+  const needsToolsReasoningNone = (model) => /^gpt-5\.6/i.test(String(model || ''));
+
   const chatWithTools = async (apiKey, model, messages) => {
     let clarificationText = '';
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
       setStatus(round ? `도구 실행 중… (${round + 1})` : '답변 작성 중…');
+      const payload = {
+        model,
+        messages,
+        tools: TOOLS,
+        tool_choice: 'auto'
+      };
+      if (needsToolsReasoningNone(model)) {
+        payload.reasoning_effort = 'none';
+      } else {
+        payload.temperature = 0.3;
+      }
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model,
-          temperature: 0.3,
-          messages,
-          tools: TOOLS,
-          tool_choice: 'auto'
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
