@@ -310,6 +310,38 @@
       color: var(--coral); font-weight: 700; font-size: 0.92em;
       white-space: nowrap;
     }
+    .itin-change-feed {
+      margin: 0 0 12px; padding: 10px 12px; border-radius: 14px;
+      background: #fff7f3; border: 1px solid #ffd2c4;
+    }
+    .itin-change-feed[hidden] { display: none !important; }
+    .itin-change-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;
+    }
+    .itin-change-head strong { color: var(--coral); font-size: 0.9rem; }
+    .itin-change-feed ul { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
+    .itin-change-feed li {
+      background: #fff; border: 1px solid #ffe0d4; border-radius: 12px; padding: 9px 11px;
+    }
+    .itin-change-feed .itin-change-meta {
+      display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline;
+      font-size: 0.78rem; color: var(--muted); margin-bottom: 3px;
+    }
+    .itin-change-feed .itin-change-meta b { color: var(--ocean); font-size: 0.86rem; }
+    .itin-change-feed .itin-change-kind {
+      display: inline-block; padding: 1px 7px; border-radius: 999px;
+      background: #ffe8df; color: var(--coral); font-size: 0.7rem; font-weight: 800;
+    }
+    .itin-change-feed .itin-change-summary {
+      font-size: 0.84rem; font-weight: 800; color: var(--ocean); margin-bottom: 2px;
+    }
+    .itin-change-feed .itin-change-detail {
+      font-size: 0.82rem; font-weight: 600; color: var(--ink); line-height: 1.4;
+    }
+    .itin-item.is-changed .t-body {
+      border-color: #ffb39a; background: #fff7f3;
+      box-shadow: inset 3px 0 0 var(--coral);
+    }
     .link-list { list-style: none; display: grid; gap: 8px; }
     .link-list a {
       display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
@@ -1157,6 +1189,13 @@
       <summary>📅 일자별 일정 <span class="quick-badge" data-itin-badge>0</span></summary>
       <div class="fold-body">
         <p class="tiny" id="itinEditHint">여행방에 입장하면 일정을 함께 수정·드래그·사진 URL을 넣을 수 있어요.</p>
+        <div class="itin-change-feed" id="itinChangeFeed" hidden>
+          <div class="itin-change-head">
+            <strong>새 일정 변경</strong>
+            <button type="button" class="itin-btn" id="itinMarkReadBtn">확인했어요</button>
+          </div>
+          <ul id="itinChangeList"></ul>
+        </div>
         <div id="itineraryApp"></div>
       </div>
     </details>

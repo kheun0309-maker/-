@@ -31,13 +31,15 @@ let itemsByDay = { day1: [], day2: [], day3: [], day4: [] };
 let dragId = null;
 let editable = false;
 
-async function logItinEvent({ kind, day = '', summary = '' }) {
+async function logItinEvent({ kind, day = '', summary = '', detail = '', itemId = '' }) {
   if (!ctx?.db || !ctx?.tripCode || !ctx?.nickname) return;
   try {
     await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'itinEvents'), {
       kind: String(kind || 'edit').slice(0, 24),
       day: String(day || '').slice(0, 12),
-      summary: String(summary || '').slice(0, 120),
+      summary: String(summary || '일정 변경').slice(0, 200),
+      detail: String(detail || '').slice(0, 400),
+      itemId: String(itemId || '').slice(0, 80),
       updatedBy: String(ctx.nickname).slice(0, 24),
       updatedAt: serverTimestamp()
     });
@@ -60,6 +62,53 @@ function itemSummary(itemish) {
   const task = String(itemish?.task || '').trim();
   const core = [place, task].filter(Boolean).join(' · ') || '일정';
   return time ? `${time} ${core}` : core;
+}
+
+function clipText(s, n = 40) {
+  const t = String(s || '').replace(/\s+/g, ' ').trim();
+  if (!t) return '(비움)';
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+}
+
+function fieldChangeLine(label, before, after) {
+  const a = String(before || '').trim();
+  const b = String(after || '').trim();
+  if (a === b) return '';
+  if (!a && b) return `${label} 추가: ${clipText(b)}`;
+  if (a && !b) return `${label} 삭제됨`;
+  return `${label} ${clipText(a, 28)} → ${clipText(b, 28)}`;
+}
+
+function diffItemFields(before, after) {
+  const lines = [
+    fieldChangeLine('시간', before?.time, after?.time),
+    fieldChangeLine('장소', before?.place, after?.place),
+    fieldChangeLine('할 일', before?.task, after?.task),
+    fieldChangeLine('메모', before?.note, after?.note),
+    fieldChangeLine('사진', before?.imageUrl, after?.imageUrl),
+    fieldChangeLine('지도', before?.placeMapsUrl, after?.placeMapsUrl)
+  ].filter(Boolean);
+  return lines.join(' · ');
+}
+
+function diffDayMetaFields(before, after) {
+  const lines = [
+    fieldChangeLine('배지', before?.badge, after?.badge),
+    fieldChangeLine('제목', before?.title, after?.title),
+    fieldChangeLine('설명', before?.subtitle, after?.subtitle)
+  ].filter(Boolean);
+  return lines.join(' · ');
+}
+
+function kindLabel(kind) {
+  return ({
+    add: '추가',
+    edit: '수정',
+    delete: '삭제',
+    reorder: '순서 변경',
+    cover: '대표 사진',
+    dayMeta: '하루 정보'
+  })[kind] || '변경';
 }
 
 function clearUnsubs() {
@@ -382,6 +431,11 @@ function afterPaint() {
       window.refreshMyrKrwLabels(root);
     }
   } catch (_) {}
+  try {
+    if (typeof window.refreshItinChangeHighlights === 'function') {
+      window.refreshItinChangeHighlights();
+    }
+  } catch (_) {}
 }
 
 function render() {
@@ -442,7 +496,9 @@ function bindEditorEvents() {
         await logItinEvent({
           kind: 'delete',
           day: prev?.day || '',
-          summary: `${DAY_LABEL[prev?.day] || ''} 삭제: ${itemSummary(prev)}`.trim()
+          itemId: prev?.id || btn.dataset.delItem || '',
+          summary: `${DAY_LABEL[prev?.day] || ''} ${kindLabel('delete')}: ${itemSummary(prev)}`.trim(),
+          detail: `삭제된 일정 · ${itemSummary(prev)}`
         });
       } catch (e) {
         alert(e.message || '삭제 실패');
@@ -502,7 +558,9 @@ function bindDrag() {
         await logItinEvent({
           kind: 'reorder',
           day: from.day,
-          summary: `${DAY_LABEL[from.day] || ''} 순서 변경`
+          itemId: moved?.id || '',
+          summary: `${DAY_LABEL[from.day] || ''} ${kindLabel('reorder')}`,
+          detail: `${itemSummary(moved)} 위치를 바꿈`
         });
       } catch (err) {
         alert(err.message || '순서 변경 실패');
@@ -538,11 +596,14 @@ function openDayEditor(dayId) {
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
-      const title = el.querySelector('#mTitle').value.trim().slice(0, 80);
-      await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
+      const next = {
         badge: el.querySelector('#mBadge').value.trim().slice(0, 40),
-        title,
-        subtitle: el.querySelector('#mSub').value.trim().slice(0, 160),
+        title: el.querySelector('#mTitle').value.trim().slice(0, 80),
+        subtitle: el.querySelector('#mSub').value.trim().slice(0, 160)
+      };
+      const detail = diffDayMetaFields(meta, next) || '하루 정보 저장';
+      await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
+        ...next,
         coverUrl: meta.coverUrl || '',
         updatedBy: ctx.nickname,
         updatedAt: serverTimestamp()
@@ -550,7 +611,8 @@ function openDayEditor(dayId) {
       await logItinEvent({
         kind: 'dayMeta',
         day: dayId,
-        summary: `${DAY_LABEL[dayId] || dayId} 정보 수정: ${title || '하루 정보'}`
+        summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('dayMeta')}: ${next.title || '하루 정보'}`,
+        detail
       });
       close();
     } catch (e) {
@@ -583,6 +645,7 @@ function openCoverEditor(dayId) {
   el.querySelector('[data-save]').onclick = async () => {
     try {
       const url = assertImageUrlOrEmpty(el.querySelector('#mUrl').value, true);
+      const prevCover = String(meta.coverUrl || '').trim();
       await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
         badge: meta.badge || '',
         title: meta.title || '',
@@ -594,7 +657,8 @@ function openCoverEditor(dayId) {
       await logItinEvent({
         kind: 'cover',
         day: dayId,
-        summary: `${DAY_LABEL[dayId] || dayId} 대표 사진 변경`
+        summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('cover')}`,
+        detail: prevCover ? `대표 사진 교체 (${clipText(url, 48)})` : `대표 사진 추가 (${clipText(url, 48)})`
       });
       close();
     } catch (e) {
@@ -850,19 +914,31 @@ function openItemEditor(dayId, item) {
       if (isNew) {
         const list = itemsByDay[dayId] || [];
         payload.order = list.length;
-        await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'items'), payload);
+        const ref = await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'items'), payload);
+        const bits = [
+          payload.time && `시간 ${payload.time}`,
+          payload.place && `장소 ${payload.place}`,
+          payload.task && `할 일 ${payload.task}`,
+          payload.note && '메모 있음',
+          payload.imageUrl && '사진 있음'
+        ].filter(Boolean);
         await logItinEvent({
           kind: 'add',
           day: dayId,
-          summary: `${DAY_LABEL[dayId] || dayId} 추가: ${itemSummary(payload)}`
+          itemId: ref.id,
+          summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('add')}: ${itemSummary(payload)}`,
+          detail: bits.join(' · ') || itemSummary(payload)
         });
       } else {
         payload.order = item.order || 0;
+        const detail = diffItemFields(item, payload) || '내용 저장';
         await updateDoc(doc(ctx.db, 'trips', ctx.tripCode, 'items', item.id), payload);
         await logItinEvent({
           kind: 'edit',
           day: dayId,
-          summary: `${DAY_LABEL[dayId] || dayId} 수정: ${itemSummary(payload)}`
+          itemId: item.id,
+          summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('edit')}: ${itemSummary(payload)}`,
+          detail
         });
       }
       close();

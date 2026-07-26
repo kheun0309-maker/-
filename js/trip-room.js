@@ -154,7 +154,88 @@ function itemFingerprint(kind, docSnap) {
 
 function itinFingerprint(docSnap) {
   const data = docSnap.data() || {};
-  return `itin:${docSnap.id}:${toMs(data.updatedAt)}:${data.kind || ''}:${data.summary || ''}`;
+  return `itin:${docSnap.id}:${toMs(data.updatedAt)}:${data.kind || ''}:${data.summary || ''}:${data.detail || ''}`;
+}
+
+function itinKindLabel(kind) {
+  return ({
+    add: '추가',
+    edit: '수정',
+    delete: '삭제',
+    reorder: '순서 변경',
+    cover: '대표 사진',
+    dayMeta: '하루 정보'
+  })[kind] || '변경';
+}
+
+function formatItinWhen(data) {
+  const ms = toMs(data?.updatedAt);
+  if (!ms) return '';
+  return new Date(ms).toLocaleString('ko-KR', {
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function unreadItinEvents() {
+  if (!tripCode || !myNick()) return [];
+  return dataCache.itin.filter(docSnap => isItinUnread(docSnap));
+}
+
+function highlightChangedItinItems() {
+  const app = document.getElementById('itineraryApp');
+  if (!app) return;
+  app.querySelectorAll('.itin-item.is-changed').forEach(node => node.classList.remove('is-changed'));
+  const ids = new Set(
+    unreadItinEvents()
+      .map(d => String((d.data() || {}).itemId || '').trim())
+      .filter(Boolean)
+  );
+  app.querySelectorAll('.itin-item[data-item-id]').forEach(li => {
+    if (ids.has(li.dataset.itemId)) li.classList.add('is-changed');
+  });
+}
+
+window.refreshItinChangeHighlights = highlightChangedItinItems;
+
+function renderItinChangeFeed() {
+  const feed = document.getElementById('itinChangeFeed');
+  const list = document.getElementById('itinChangeList');
+  if (!feed || !list) return;
+
+  const unread = unreadItinEvents().slice(0, 8);
+  if (!unread.length) {
+    feed.hidden = true;
+    list.innerHTML = '';
+    highlightChangedItinItems();
+    return;
+  }
+
+  feed.hidden = false;
+  list.innerHTML = '';
+  unread.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const li = document.createElement('li');
+    const kind = itinKindLabel(data.kind);
+    const when = formatItinWhen(data);
+    const summary = data.summary || '일정 변경';
+    const detail = data.detail || summary;
+    li.innerHTML = `
+      <div class="itin-change-meta">
+        <b></b>
+        <span class="itin-change-kind"></span>
+        <span class="itin-change-when"></span>
+      </div>
+      <div class="itin-change-summary"></div>
+      <div class="itin-change-detail"></div>
+    `;
+    li.querySelector('b').textContent = data.updatedBy || '누군가';
+    li.querySelector('.itin-change-kind').textContent = kind;
+    li.querySelector('.itin-change-when').textContent = when;
+    li.querySelector('.itin-change-summary').textContent = summary;
+    li.querySelector('.itin-change-detail').textContent = detail;
+    list.appendChild(li);
+  });
+  highlightChangedItinItems();
 }
 
 function isOtherNote(data) {
@@ -281,7 +362,14 @@ function renderUnreadBadges() {
       if (counts.pack) parts.push(`준비물 ${counts.pack}`);
       if (counts.tasks) parts.push(`출발 전 ${counts.tasks}`);
       if (counts.notes) parts.push(`공지 ${counts.notes}`);
-      unreadText.textContent = `안 본 소식 ${label}개 (${parts.join(' · ')})`;
+      let text = `안 본 소식 ${label}개 (${parts.join(' · ')})`;
+      if (counts.itin) {
+        const latest = unreadItinEvents()[0]?.data() || {};
+        const who = latest.updatedBy || '누군가';
+        const bit = latest.detail || latest.summary || '';
+        if (bit) text += ` · ${who}: ${bit}`;
+      }
+      unreadText.textContent = text;
       unreadBanner.classList.add('is-on');
     } else {
       unreadText.textContent = '';
@@ -289,6 +377,7 @@ function renderUnreadBadges() {
     }
   }
 
+  renderItinChangeFeed();
   document.title = n > 0 ? `(${label}) ${TITLE_BASE}` : TITLE_BASE;
   setHomeAppBadge(n);
 }
@@ -328,6 +417,18 @@ function markItinRead() {
   if (!before) return;
   captureItinAsSeen();
   refreshUnread();
+}
+
+function wireItinChangeFeedUi() {
+  const btn = document.getElementById('itinMarkReadBtn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    markItinRead();
+    setStatus('일정 변경을 확인했어요.');
+  });
 }
 
 function markRead({ silent = false } = {}) {
@@ -1006,6 +1107,7 @@ function bindUi() {
     }
   };
   bindItinSeenOnOpen();
+  wireItinChangeFeedUi();
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshUnread();

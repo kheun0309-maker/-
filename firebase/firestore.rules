@@ -153,9 +153,14 @@ service cloud.firestore {
           && request.resource.data.day is string
           && request.resource.data.day.size() <= 12
           && request.resource.data.summary is string
-          && request.resource.data.summary.size() <= 120
+          && request.resource.data.summary.size() > 0
+          && request.resource.data.summary.size() <= 200
+          && request.resource.data.detail is string
+          && request.resource.data.detail.size() <= 400
+          && request.resource.data.itemId is string
+          && request.resource.data.itemId.size() <= 80
           && validNick(request.resource.data.updatedBy)
-          && request.resource.data.keys().hasAll(['kind', 'day', 'summary', 'updatedBy', 'updatedAt']);
+          && request.resource.data.keys().hasAll(['kind', 'day', 'summary', 'detail', 'itemId', 'updatedBy', 'updatedAt']);
         allow update: if false;
         allow delete: if signedIn() && validCode(tripId);
       }
