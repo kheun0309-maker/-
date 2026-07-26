@@ -47,11 +47,144 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+const LOCAL_IMAGES = [
+  { label: '공항', url: './images/kkia-airport.jpg' },
+  { label: '노을1', url: './images/kk-sunset.jpg' },
+  { label: '노을2', url: './images/kk-sunset-2.jpg' },
+  { label: '노을3', url: './images/kk-sunset-3.jpg' },
+  { label: '노을4', url: './images/kk-sunset-4.jpg' },
+  { label: '노을5', url: './images/kk-sunset-5.jpg' },
+  { label: '탄중아루', url: './images/tanjung-aru-islands.jpg' },
+  { label: '마누칸', url: './images/manukan-beach.jpg' },
+  { label: '섬전경', url: './images/kk-islands.jpg' },
+  { label: '맹그로브', url: './images/mangrove-boat.jpg' },
+  { label: '가야마켓', url: './images/gaya-market.jpg' },
+  { label: '키나발루산', url: './images/mount-kinabalu.jpg' },
+  { label: '보트', url: './images/kk-tanjung-boat.jpg' },
+  { label: '해양액티비티', url: './images/kk-sea-activity.jpg' },
+  { label: '마누칸선착장', url: './images/manukan-jetty.jpg' },
+  { label: '마누칸뷰', url: './images/manukan-view.jpg' },
+  { label: '마무틱·술룩', url: './images/mamutik-sulug.jpg' },
+  { label: '제트스키', url: './images/kk-jetski.jpg' }
+];
+
+/** 공유 페이지 링크를 img에서 쓸 수 있는 직접 주소로 변환 */
+function normalizeImageUrl(raw) {
+  const input = String(raw || '').trim();
+  if (!input) return '';
+  let url = input.replace(/^<|>$/g, '').trim();
+
+  // Google Drive: /file/d/ID/view 또는 open?id=ID
+  const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+  if (driveFile) {
+    return `https://drive.google.com/uc?export=view&id=${driveFile[1]}`;
+  }
+  const driveOpen = url.match(/drive\.google\.com\/open\?[^#]*id=([^&]+)/i);
+  if (driveOpen) {
+    return `https://drive.google.com/uc?export=view&id=${decodeURIComponent(driveOpen[1])}`;
+  }
+  const driveUc = url.match(/drive\.google\.com\/uc\?[^#]*id=([^&]+)/i);
+  if (driveUc && !/export=/i.test(url)) {
+    return `https://drive.google.com/uc?export=view&id=${decodeURIComponent(driveUc[1])}`;
+  }
+
+  // Dropbox 공유 링크 → 직접 파일
+  if (/dropbox\.com\//i.test(url)) {
+    url = url.replace(/([?&])dl=0/, '$1dl=1');
+    if (!/[?&]dl=/.test(url)) {
+      url += (url.includes('?') ? '&' : '?') + 'raw=1';
+    }
+  }
+
+  // i.imgur.com 은 그대로, imgur 페이지면 .jpg 시도는 하지 않음(불확실)
+  return url;
+}
+
+function looksLikeDirectImageUrl(url) {
+  if (!url) return false;
+  if (url.startsWith('./') || url.startsWith('/')) return true;
+  if (/\.(jpe?g|png|gif|webp|avif)(\?|#|$)/i.test(url)) return true;
+  if (/drive\.google\.com\/uc\?/i.test(url)) return true;
+  if (/googleusercontent\.com|ggpht\.com|imgur\.com|cloudinary\.com|unsplash\.com|images\.unsplash\.com/i.test(url)) return true;
+  return /^https?:\/\//i.test(url);
+}
+
 function mapsUrlFor(place, existing) {
   if (existing) return existing;
   const q = String(place || '').trim();
   if (!q) return '';
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+function photoHtml(url, className = 'itin-item-photo') {
+  const src = normalizeImageUrl(url);
+  if (!src) return '';
+  return `
+    <div class="${className}">
+      <img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"
+        onerror="var p=this.parentElement;if(p)p.classList.add('is-broken')">
+      <div class="itin-photo-fail">이미지를 불러오지 못했어요. 직접 이미지 주소(.jpg/.png)나 앱 내 사진을 사용해 주세요.</div>
+    </div>
+  `;
+}
+
+function localImagePickerHtml(inputId) {
+  return `
+    <div class="itin-local-photos">
+      <div class="tiny" style="margin:0 0 6px">앱에 있는 사진 고르기 (추천 · 깨지지 않음)</div>
+      <div class="itin-local-grid">
+        ${LOCAL_IMAGES.map(img => `
+          <button type="button" class="itin-local-thumb" data-set-img="${esc(inputId)}" data-url="${esc(img.url)}" title="${esc(img.label)}">
+            <img src="${esc(img.url)}" alt="${esc(img.label)}" loading="lazy">
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function bindImageFields(el, inputId) {
+  const input = el.querySelector(`#${inputId}`);
+  const preview = el.querySelector(`#${inputId}Preview`);
+  const updatePreview = () => {
+    if (!preview) return;
+    const src = normalizeImageUrl(input?.value || '');
+    if (!src) {
+      preview.hidden = true;
+      preview.classList.remove('is-broken');
+      preview.querySelector('img').removeAttribute('src');
+      return;
+    }
+    preview.hidden = false;
+    preview.classList.remove('is-broken');
+    preview.querySelector('img').src = src;
+  };
+  el.querySelectorAll(`[data-set-img="${inputId}"]`).forEach(btn => {
+    btn.onclick = () => {
+      if (input) input.value = btn.getAttribute('data-url') || '';
+      updatePreview();
+    };
+  });
+  input?.addEventListener('input', updatePreview);
+  input?.addEventListener('change', () => {
+    if (input) input.value = normalizeImageUrl(input.value);
+    updatePreview();
+  });
+  updatePreview();
+}
+
+function assertImageUrlOrEmpty(raw, required = false) {
+  const url = normalizeImageUrl(raw);
+  if (!url) {
+    if (required) throw new Error('이미지 URL을 넣어 주세요.');
+    return '';
+  }
+  if (!looksLikeDirectImageUrl(url) && !url.startsWith('./')) {
+    // 저장은 허용하되 안내
+    const ok = confirm('이 주소는 이미지 직접 링크가 아닐 수 있어요.\n카카오톡/블로그 글 주소는 보통 안 보입니다.\n그래도 저장할까요?');
+    if (!ok) throw new Error('저장을 취소했습니다.');
+  }
+  return url;
 }
 
 async function seedItinerary() {
@@ -166,9 +299,7 @@ function buildShellHtml(days) {
             </div>
           ` : ''}
         </div>
-        <div class="day-photo">
-          <img src="${esc(meta.coverUrl || './images/kkia-airport.jpg')}" alt="${esc(meta.title || '')}" loading="lazy">
-        </div>
+        ${photoHtml(meta.coverUrl || './images/kkia-airport.jpg', 'day-photo')}
         <ul class="timeline" data-day-list="${dayId}">
           ${items.map(item => renderItem(item, dayId)).join('') || '<li class="itin-empty">일정이 없습니다. 추가해 보세요.</li>'}
         </ul>
@@ -196,7 +327,7 @@ function renderItem(item, dayId) {
         <div class="t-place">${esc(item.place || '')}</div>
         <div class="t-task">${esc(item.task || '')}</div>
         ${item.note ? `<div class="t-note">${esc(item.note).replace(/\n/g, '<br>')}</div>` : ''}
-        ${item.imageUrl ? `<div class="itin-item-photo"><img src="${esc(item.imageUrl)}" alt="" loading="lazy"></div>` : ''}
+        ${item.imageUrl ? photoHtml(item.imageUrl) : ''}
         ${maps ? `<a class="itin-maps" href="${esc(maps)}" target="_blank" rel="noopener">지도 보기</a>` : ''}
         ${editable ? `
           <div class="itin-item-actions">
@@ -371,18 +502,26 @@ function openCoverEditor(dayId) {
   const meta = dayMeta[dayId] || DEFAULT_DAYS.find(d => d.id === dayId);
   const { wrap, close, el } = modal(`
     <h3>대표 사진</h3>
-    <p class="tiny" style="margin:0 0 8px">사진 링크(URL)만 저장합니다. 카카오톡·구글 드라이브 공개 링크, 이미지 직접 주소 등을 붙여넣으세요.</p>
-    <label>이미지 URL<input id="mUrl" type="url" value="${esc(meta.coverUrl || '')}" placeholder="https://..."></label>
+    <p class="tiny" style="margin:0 0 8px">
+      <b>이미지 파일 주소</b>가 필요합니다. (.jpg/.png로 끝나는 링크)<br>
+      카카오톡·블로그 글 주소는 안 보여요. 구글 드라이브는 파일 공유 링크를 넣으면 자동 변환됩니다.
+    </p>
+    ${localImagePickerHtml('mUrl')}
+    <label>또는 이미지 URL<input id="mUrl" type="text" value="${esc(meta.coverUrl || '')}" placeholder="https://...jpg 또는 드라이브 공유 링크"></label>
+    <div id="mUrlPreview" class="itin-item-photo itin-preview" hidden>
+      <img alt="미리보기" referrerpolicy="no-referrer" onerror="var p=this.parentElement;if(p)p.classList.add('is-broken')">
+      <div class="itin-photo-fail">미리보기가 안 되면 저장해도 화면에 안 나올 수 있어요.</div>
+    </div>
     <div class="itin-modal-actions">
       <button type="button" class="itin-btn" data-cancel>취소</button>
       <button type="button" class="itin-btn primary" data-save>저장</button>
     </div>
   `);
+  bindImageFields(el, 'mUrl');
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
-      const url = el.querySelector('#mUrl').value.trim();
-      if (!url) throw new Error('이미지 URL을 넣어 주세요.');
+      const url = assertImageUrlOrEmpty(el.querySelector('#mUrl').value, true);
       await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
         badge: meta.badge || '',
         title: meta.title || '',
@@ -419,13 +558,20 @@ function openItemEditor(dayId, item) {
     <label>지도 링크<input id="mMaps" type="url" value="${esc(data.placeMapsUrl || '')}" placeholder="https://maps.google.com/..."></label>
     <label>할 일 / 제목<input id="mTask" type="text" maxlength="160" value="${esc(data.task || '')}"></label>
     <label>메모<textarea id="mNote" rows="4" maxlength="800">${esc(data.note || '')}</textarea></label>
-    <label>사진 URL<input id="mImgUrl" type="url" value="${esc(data.imageUrl || '')}" placeholder="https://... (선택)"></label>
+    ${localImagePickerHtml('mImgUrl')}
+    <label>또는 사진 URL<input id="mImgUrl" type="text" value="${esc(data.imageUrl || '')}" placeholder="https://...jpg (선택)"></label>
+    <div id="mImgUrlPreview" class="itin-item-photo itin-preview" hidden>
+      <img alt="미리보기" referrerpolicy="no-referrer" onerror="this.closest('.itin-item-photo')?.classList.add('is-broken')">
+      <div class="itin-photo-fail">미리보기가 안 되면 저장해도 화면에 안 나올 수 있어요.</div>
+    </div>
+    <p class="tiny" style="margin:0 0 8px">카톡/블로그 글 주소 ❌ · 이미지 직접 링크(.jpg) 또는 위 썸네일 선택 ✅</p>
     <div class="itin-modal-actions">
       <button type="button" class="itin-btn" data-cancel>취소</button>
       <button type="button" class="itin-btn primary" data-save>저장</button>
     </div>
   `);
 
+  bindImageFields(el, 'mImgUrl');
   el.querySelector('#mMapsSearch').onclick = () => {
     const place = el.querySelector('#mPlace').value.trim();
     const url = mapsUrlFor(place || 'Kota Kinabalu', '');
@@ -446,7 +592,7 @@ function openItemEditor(dayId, item) {
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
-      const imageUrl = el.querySelector('#mImgUrl').value.trim();
+      const imageUrl = assertImageUrlOrEmpty(el.querySelector('#mImgUrl').value, false);
       const place = el.querySelector('#mPlace').value.trim().slice(0, 120);
       const placeMapsUrl = el.querySelector('#mMaps').value.trim() || mapsUrlFor(place, '');
       const payload = {

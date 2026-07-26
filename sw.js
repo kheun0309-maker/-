@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'kota-kinabalu-guide-v29';
+﻿const CACHE_NAME = 'kota-kinabalu-guide-v30';
 const APP_SHELL = [
   './',
   './index.html',
@@ -79,6 +79,9 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // 외부 이미지/CDN 요청은 SW가 건드리지 않음 (깨진 이미지·HTML 폴백 방지)
+  if (url.origin !== self.location.origin) return;
 
   if (isNetworkOnlyRequest(url) || isNetworkFirst(url)) {
     event.respondWith(
