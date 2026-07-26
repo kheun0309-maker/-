@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'kota-kinabalu-guide-v63';
+﻿const CACHE_NAME = 'kota-kinabalu-guide-v64';
 const APP_SHELL = [
   './',
   './index.html',
@@ -23,6 +23,7 @@ const APP_SHELL = [
   './images/kk-sunset-3.jpg',
   './images/kk-sunset-4.jpg',
   './images/kk-sunset-5.jpg',
+  './images/kk-kk.jpg',
   './images/tanjung-aru-islands.jpg',
   './images/manukan-beach.jpg',
   './images/kk-islands.jpg',

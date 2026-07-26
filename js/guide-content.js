@@ -33,7 +33,8 @@ export const DEFAULT_HERO = {
     { id: 'h2', imageUrl: './images/kk-sunset-2.jpg', caption: '파라솔 아래서 보는 황금빛 수평선' },
     { id: 'h3', imageUrl: './images/kk-sunset-3.jpg', caption: '야자수 사이로 스며드는 보라빛 저녁' },
     { id: 'h4', imageUrl: './images/kk-sunset-4.jpg', caption: '바다가 불을 켜는 순간' },
-    { id: 'h5', imageUrl: './images/kk-sunset-5.jpg', caption: '보트를 타고 들어가고 싶은 석양' }
+    { id: 'h5', imageUrl: './images/kk-sunset-5.jpg', caption: '보트를 타고 들어가고 싶은 석양' },
+    { id: 'h6', imageUrl: './images/kk-kk.jpg', caption: '야자수 실루엣 너머로 번지는 주황빛 노을' }
   ]
 };
 

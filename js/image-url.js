@@ -7,6 +7,7 @@ export const LOCAL_IMAGES = [
   { label: '노을3', url: './images/kk-sunset-3.jpg', keys: ['야자수', '보라'] },
   { label: '노을4', url: './images/kk-sunset-4.jpg', keys: ['바다', '석양'] },
   { label: '노을5', url: './images/kk-sunset-5.jpg', keys: ['보트', '석양'] },
+  { label: '노을6', url: './images/kk-kk.jpg', keys: ['야자수', '실루엣', '노을', '석양', 'kk-kk'] },
   { label: '탄중아루', url: './images/tanjung-aru-islands.jpg', keys: ['탄중', 'tanjung'] },
   { label: '마누칸', url: './images/manukan-beach.jpg', keys: ['마누칸', 'manukan', '호핑', '섬', 'island', '스노클'] },
   { label: '섬전경', url: './images/kk-islands.jpg', keys: ['섬전경', 'islands', '호핑'] },
