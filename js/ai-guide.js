@@ -1,33 +1,51 @@
-/** 코타키나발루 가이드 AI — 질의·웹검색·일정 제안(확인 후 적용) */
+/** 코타키나발루 가이드 AI — 가이드 컨텍스트·웹검색·일정 제안(확인 후 적용) */
 
 import { getItineraryApi } from './itinerary-editor.js';
+import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
 
 const KEY_STORAGE = 'kk-openai-api-key';
 const MODEL_STORAGE = 'kk-openai-model';
 const DEFAULT_MODEL = 'gpt-5.6-luna';
 const MAX_HISTORY = 20;
-const MAX_TOOL_ROUNDS = 6;
+const MAX_TOOL_ROUNDS = 8;
 
-const SYSTEM_PROMPT = `당신은 코타키나발루 4일 여행 가이드 앱의 도우미입니다.
-일정: 2026-08-13~17, 숙소 Shangri-La Rasa Ria(시내·공항 약 45분).
-항공: KE5761 ICN→BKI 야간 도착, 귀국 KE5762(잠정).
-Day1 도착·픽업 / Day2 리조트·반딧불이 / Day3 호핑·맛집·마사지 / Day4 귀국 동선.
+const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변·일정 제안의 1순위 근거는 앱 가이드입니다.
 
 역할:
-1) 일반 질문 답변
-2) 필요하면 web_search로 최신/장소/요금 정보 확인
-3) 일정 추가·수정·삭제는 절대 바로 적용하지 말고 propose_itinerary_change로 제안
-4) 정보가 부족하거나 불확실하면 ask_clarification으로 짧게 질문 (추측으로 일정 쓰지 말 것)
+1) 가이드 요약/섹션(get_guide_section)과 현재 일정(get_itinerary)을 활용해 답변
+2) 앱에 없는 최신 정보만 web_search
+3) 맛집·마사지·호핑·셔틀 등을 일정에 넣을 때는 propose_itinerary_change로 제안 (즉시 저장 금지)
+4) day/시간/어느 가게인지 불명확하면 ask_clarification으로 질문
+
+일정 반영 요령:
+- 맛집 추가 예: day3, time 저녁, place 가게명, task 식사, note에 메뉴·팁, placeMapsUrl 가능하면 포함
+- 마사지 추가 예: day3, time 19:30~, place Chillax/Warisan, task 마사지
+- 수정/삭제는 get_itinerary로 itemId 확인 후 제안
+- 사용자에게 "적용"을 누르라고 안내
 
 규칙:
-- 한국어, 간결하게.
-- 일정 변경 전 day(day1~day4), 시간, 장소/할 일 중 핵심이 없으면 질문.
-- 수정/삭제는 get_itinerary로 id를 확인한 뒤 itemId를 넣어 제안.
-- 금액은 MYR 우선, 불확실하면 범위·출처 불확실을 명시.
-- 앱 섹션 링크는 #hopping #massage #resort-shuttle #airport-pickup #food #itinerary 등.
-- 위험·의료·불법은 일반 안내만.`;
+- 한국어, 간결하게. 앱 섹션 링크(#food #massage #hopping #resort-shuttle #itinerary 등) 활용
+- 금액 MYR 우선. 위험·의료는 일반 안내만.`;
 
 const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_guide_section',
+      description: '앱에 있는 가이드 본문/요약을 가져옵니다. 맛집·마사지·호핑 등 일정 반영 전에 우선 호출하세요.',
+      parameters: {
+        type: 'object',
+        properties: {
+          section: {
+            type: 'string',
+            description: 'summary|all|food|massage|hopping|resort|flights|tips|pack|map|live|itinerary|trip'
+          }
+        },
+        required: ['section'],
+        additionalProperties: false
+      }
+    }
+  },
   {
     type: 'function',
     function: {
@@ -40,7 +58,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'web_search',
-      description: '인터넷에서 장소·영업시간·요금·교통 등 사실을 검색합니다.',
+      description: '앱 가이드에 없는 최신·상세 정보만 인터넷 검색합니다.',
       parameters: {
         type: 'object',
         properties: {
@@ -55,7 +73,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'ask_clarification',
-      description: '일정을 제안하기 전에 사용자에게 확인이 필요할 때 사용합니다. 이 도구를 쓰면 이번 턴은 질문으로 끝납니다.',
+      description: '일정 제안 전 확인이 필요할 때 사용. 이번 턴은 질문으로 끝냅니다.',
       parameters: {
         type: 'object',
         properties: {
@@ -74,7 +92,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'propose_itinerary_change',
-      description: '일정 추가/수정/삭제 제안을 만듭니다. 사용자 확인 버튼이 뜬 뒤에만 실제로 저장됩니다.',
+      description: '맛집/마사지/호핑 등 일정 추가·수정·삭제 제안. 사용자 적용 버튼 후에만 저장됩니다.',
       parameters: {
         type: 'object',
         properties: {
@@ -86,7 +104,7 @@ const TOOLS = [
           task: { type: 'string' },
           note: { type: 'string' },
           placeMapsUrl: { type: 'string' },
-          reason: { type: 'string', description: '제안 이유·근거 한 줄' }
+          reason: { type: 'string', description: '제안 이유·가이드/검색 근거 한 줄' }
         },
         required: ['action', 'day', 'reason'],
         additionalProperties: false
@@ -352,6 +370,14 @@ export function initAiGuide() {
 
   const runTool = async (apiKey, name, args) => {
     const api = getItineraryApi();
+    if (name === 'get_guide_section') {
+      setStatus('가이드 확인 중…');
+      const section = args.section || 'summary';
+      if (section === 'list') {
+        return { sections: listGuideSections(), hint: '상세는 section 이름을 지정해 다시 호출하세요.' };
+      }
+      return getGuideContext(section);
+    }
     if (name === 'get_itinerary') {
       return api.getSnapshot();
     }
@@ -458,24 +484,30 @@ export function initAiGuide() {
   };
 
   saveBtn?.addEventListener('click', () => {
-    const raw = (keyInput?.value || '').trim();
-    if (!raw || raw.startsWith('••')) {
-      setStatus('새 API 키를 입력한 뒤 저장해 주세요.', true);
-      return;
-    }
-    if (!raw.startsWith('sk-')) {
-      setStatus('OpenAI API 키는 보통 sk- 로 시작합니다.', true);
-      return;
-    }
-    saveKey(raw);
-    saveModel(modelSelect?.value || DEFAULT_MODEL);
-    if (keyInput) keyInput.value = '••••••••••••';
-    setStatus('이 기기에 API 키를 저장했어요. (서버/깃허브에는 올리지 않음)');
+    persistKeyFromInput({ silent: false });
+  });
+
+  // 붙여넣기만 해도 저장 (저장 버튼 깜빡임 방지)
+  keyInput?.addEventListener('paste', () => {
+    window.setTimeout(() => persistKeyFromInput({ silent: false }), 0);
+  });
+  keyInput?.addEventListener('change', () => {
+    persistKeyFromInput({ silent: false });
+  });
+  keyInput?.addEventListener('blur', () => {
+    persistKeyFromInput({ silent: true });
   });
 
   clearBtn?.addEventListener('click', () => {
-    saveKey('');
-    if (keyInput) keyInput.value = '';
+    const result = saveKey('');
+    if (!result.ok) {
+      setStatus(result.error || '삭제 실패', true);
+      return;
+    }
+    if (keyInput) {
+      keyInput.value = '';
+      keyInput.placeholder = 'sk-... 붙여넣고 저장';
+    }
     history = [];
     proposals.clear();
     if (logEl) logEl.innerHTML = '';
@@ -563,9 +595,11 @@ export function initAiGuide() {
     const question = (input?.value || '').trim();
     if (!question) return;
 
+    // 입력란에만 붙여넣고 저장 안 누른 경우 전송 직전에 한번 더 저장 시도
+    persistKeyFromInput({ silent: true });
     const apiKey = loadKey();
     if (!apiKey) {
-      setStatus('먼저 OpenAI API 키를 저장해 주세요.', true);
+      setStatus('먼저 OpenAI API 키를 붙여넣어 주세요. (자동 저장됩니다)', true);
       keyInput?.focus();
       return;
     }
@@ -586,12 +620,14 @@ export function initAiGuide() {
       const model = loadModel();
       const sys = [
         SYSTEM_PROMPT,
+        GUIDE_SUMMARY,
         fxHint(),
         api.canEdit()
           ? `현재 여행방 ${api.tripCode()}에 ${api.nickname()}(으)로 입장되어 일정 편집 가능.`
           : '아직 여행방 미입장. 일정 제안은 가능하지만 적용하려면 입장이 필요함을 안내.',
-        '도구: get_itinerary, web_search, ask_clarification, propose_itinerary_change'
-      ].filter(Boolean).join('\n');
+        '도구: get_guide_section, get_itinerary, web_search, ask_clarification, propose_itinerary_change',
+        '맛집/마사지 일정 반영 요청 시: get_guide_section → (필요시 질문) → propose_itinerary_change 순서 권장.'
+      ].filter(Boolean).join('\n\n');
 
       const messages = [
         { role: 'system', content: sys },

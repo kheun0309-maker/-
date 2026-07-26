@@ -1039,9 +1039,9 @@
       <summary>🤖 여행 AI 물어보기</summary>
       <div class="fold-body">
         <p class="tiny" style="margin:-4px 0 10px">
-          질문뿐 아니라 <b>웹 검색</b>과 <b>일정 추가·수정 제안</b>도 할 수 있어요.
-          불확실하면 AI가 먼저 묻고, 일정은 <b>적용</b>을 눌러야 저장됩니다.
-          API 키는 <b>이 폰에만</b> 저장됩니다. (여행방 입장 후 일정 적용 가능)
+          앱 <b>가이드 요약·맛집·마사지·호핑</b> 등을 보고 답하고, 필요하면 웹 검색도 합니다.
+          「웰컴 씨푸드 Day3 저녁에 넣어줘」처럼 말하면 일정 제안을 띄우고, <b>적용</b>을 눌러야 저장됩니다.
+          API 키는 이 폰에만 저장 · 일정 적용은 여행방 입장 후.
         </p>
         <div class="ai-setup">
           <div class="trip-field">
@@ -1066,10 +1066,10 @@
         </div>
 
         <div class="ai-suggest" id="aiSuggestChips" aria-label="추천 질문">
-          <button type="button" data-ai-q="지금 일정 보고 Day3에 호핑 후 Chillax 마사지 일정을 추가해줘. 시간 모르면 물어봐.">Day3 마사지 추가</button>
-          <button type="button" data-ai-q="워리슨 스퀘어 마사지 영업시간이랑 가격 웹에서 찾아보고 일정에 넣을지 물어봐줘">검색 후 일정</button>
-          <button type="button" data-ai-q="라사 리아 시내 셔틀 탈 때 주의할 점 알려줘">셔틀 팁</button>
-          <button type="button" data-ai-q="공항 픽업 못 찾으면 어떻게 해야 해?">픽업 못 찾을 때</button>
+          <button type="button" data-ai-q="앱 맛집 가이드 보고 Day3 저녁에 웰컴 씨푸드 일정을 추가 제안해줘. 시간 모르면 물어봐.">맛집→일정</button>
+          <button type="button" data-ai-q="앱 마사지 가이드 기준으로 Day3 호핑 후 Chillax 일정을 제안해줘.">마사지→일정</button>
+          <button type="button" data-ai-q="지금 내 일정을 보고 Day3 동선이 괜찮은지 가이드 기준으로 조언해줘.">일정 점검</button>
+          <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
         </div>
         <div class="ai-chat-log" id="aiChatLog" aria-live="polite"></div>
         <form class="ai-chat-form" id="aiChatForm">
