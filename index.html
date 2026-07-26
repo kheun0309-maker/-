@@ -739,6 +739,15 @@
       font-size: 0.84rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px;
     }
     .check-list input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--teal); }
+    /* 체크박스 없는 안내 목록 — check-list 금지(22px 칸에 글이 세로로 깨짐) */
+    .fact-list { list-style: none; display: grid; gap: 8px; margin: 8px 0; padding: 0; }
+    .fact-list > li {
+      display: block; width: 100%; box-sizing: border-box;
+      font-size: 0.84rem; line-height: 1.45; color: var(--ink);
+      background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+      overflow-wrap: anywhere; word-break: keep-all;
+    }
+    .fact-list > li > b { display: block; color: var(--ocean); margin-bottom: 4px; }
     .nav {
       position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
       width: min(452px, calc(100% - 20px)); display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
@@ -1309,36 +1318,29 @@
           호텔 리무진 말고도 <strong>현지 투어사·OTA·Grab</strong>으로 공항↔숙소 이동을 예약할 수 있습니다.
           편도 약 45~55분. 아래는 <strong>차량 1대 편도</strong> 기준 참고가이며, 인원·짐·야간할증·시기에 따라 달라집니다.
         </p>
-        <ul class="check-list" style="margin:8px 0">
+        <ul class="fact-list">
           <li>
-            <span>
-              <b>현지 투어사 프라이빗</b> (예: TYH Borneo Tours)<br>
-              · 밴(라사 리아 등 외곽): <b>MYR 250</b> / 편도<br>
-              · Alphard·Vellfire: <b>MYR 350</b> / 편도<br>
-              · 도착홀 피켓 미팅 · 항공편 입력 필수 · 대기 약 1시간 안내
-            </span>
+            <b>현지 투어사 프라이빗</b>
+            (예: TYH Borneo Tours)<br>
+            · 밴(라사 리아 등 외곽): <strong>MYR 250</strong> / 편도<br>
+            · Alphard·Vellfire: <strong>MYR 350</strong> / 편도<br>
+            · 도착홀 피켓 미팅 · 항공편 입력 필수 · 대기 약 1시간 안내
           </li>
           <li>
-            <span>
-              <b>KKday · Pelago 등 OTA</b><br>
-              · 라사 리아(투아란) 프라이빗: 대략 <b>MYR 120~160</b>대 안내가 많음<br>
-              · 야간(대략 20:00~08:00) 할증·차종에 따라 더 비쌀 수 있음<br>
-              · 한국어 앱·바우처로 예약하기 편함 · 숙소명에 <strong>Shangri-La Rasa Ria / Tuaran</strong> 확인
-            </span>
+            <b>KKday · Pelago 등 OTA</b>
+            · 라사 리아(투아란) 프라이빗: 대략 <strong>MYR 120~160</strong>대 안내가 많음<br>
+            · 야간(대략 20:00~08:00) 할증·차종에 따라 더 비쌀 수 있음<br>
+            · 한국어 앱·바우처로 예약하기 편함 · 숙소명에 <strong>Shangri-La Rasa Ria / Tuaran</strong> 확인
           </li>
           <li>
-            <span>
-              <b>Grab (앱 호출)</b><br>
-              · 공항→라사 리아: 대략 <b>MYR 60~80</b> (앱 표시 요금 · 성수기·심야 할증 가능)<br>
-              · 사전 예약이 아니라 도착 후 호출 · <strong>23:35 도착 심야는 배차·대기 불확실</strong><br>
-              · 한국에서 앱·결제 수단 미리 등록 · Gate(출구) 번호 지정
-            </span>
+            <b>Grab (앱 호출)</b>
+            · 공항→라사 리아: 대략 <strong>MYR 60~80</strong> (앱 표시 요금 · 성수기·심야 할증 가능)<br>
+            · 사전 예약이 아니라 도착 후 호출 · <strong>23:35 도착 심야는 배차·대기 불확실</strong><br>
+            · 한국에서 앱·결제 수단 미리 등록 · Gate(출구) 번호 지정
           </li>
           <li>
-            <span>
-              <b>공항 쿠폰 택시</b><br>
-              · 시내·근거리용 정찰제 · <strong>라사 리아(외곽)는 사실상 비권장</strong>
-            </span>
+            <b>공항 쿠폰 택시</b>
+            · 시내·근거리용 정찰제 · <strong>라사 리아(외곽)는 사실상 비권장</strong>
           </li>
         </ul>
         <p style="font-size:0.82rem;color:var(--muted);margin:0">

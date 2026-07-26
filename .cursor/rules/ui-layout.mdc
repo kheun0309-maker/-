@@ -1,0 +1,37 @@
+---
+description: 가이드 HTML/CSS 레이아웃 — 체크리스트 오용·세로 글자 깨짐 방지
+globs: index.html,js/**/*.js
+alwaysApply: true
+---
+
+# UI 레이아웃 안전 규칙
+
+## `.check-list` 는 체크박스 전용
+
+`.check-list li` 는 `grid-template-columns: 22px 1fr` 이라 **첫 칸이 체크박스(22px)** 라고 가정한다.
+
+- ❌ 체크박스 없이 `.check-list` + `<li><span>긴 설명</span></li>` → 글이 **한 글자씩 세로로** 깨짐
+- ✅ 체크 가능한 짐/할 일만 `.check-list` + `<li><input type="checkbox"><span>…</span></li>`
+- ✅ 가격·옵션·안내 목록은 `.fact-list` (또는 `<p>` / `.info-card` 본문)
+
+```html
+<!-- BAD -->
+<ul class="check-list">
+  <li><span>현지 투어사 프라이빗 …</span></li>
+</ul>
+
+<!-- GOOD -->
+<ul class="fact-list">
+  <li><b>제목</b>본문 · MYR 250 …</li>
+</ul>
+```
+
+## 좁은 컬럼 / flex 함정
+
+- `grid-template-columns` / `flex` 첫 칸에 **본문 텍스트**를 넣지 말 것
+- 안내 카드 본문은 `display:block; width:100%`, `overflow-wrap:anywhere` 또는 `word-break:keep-all`
+- 일정 시간 칸처럼 좁은 컬럼에는 짧은 라벨만; 긴 문장은 `t-body` 등 넓은 칸
+
+## 배포 전 확인
+
+모바일 폭(~360px)에서 새 카드·목록이 **가로로 읽히는지** 확인. 글자가 세로 스택이면 레이아웃 클래스 오용이다.
