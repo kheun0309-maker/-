@@ -4,7 +4,7 @@ import { getItineraryApi } from './itinerary-editor.js';
 
 const KEY_STORAGE = 'kk-openai-api-key';
 const MODEL_STORAGE = 'kk-openai-model';
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const DEFAULT_MODEL = 'gpt-5.6-luna';
 const MAX_HISTORY = 20;
 const MAX_TOOL_ROUNDS = 6;
 
@@ -111,7 +111,17 @@ function saveKey(key) {
 }
 
 function loadModel() {
-  try { return localStorage.getItem(MODEL_STORAGE) || DEFAULT_MODEL; } catch (_) { return DEFAULT_MODEL; }
+  try {
+    const saved = localStorage.getItem(MODEL_STORAGE) || '';
+    // 예전 기본값이면 루나로 갱신
+    if (!saved || saved === 'gpt-4o-mini' || saved === 'gpt-4o' || saved === 'gpt-4.1-mini') {
+      localStorage.setItem(MODEL_STORAGE, DEFAULT_MODEL);
+      return DEFAULT_MODEL;
+    }
+    return saved;
+  } catch (_) {
+    return DEFAULT_MODEL;
+  }
 }
 
 function saveModel(model) {
@@ -155,7 +165,7 @@ async function webSearch(apiKey, query) {
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: loadModel() || DEFAULT_MODEL,
         tools: [{ type: 'web_search_preview' }],
         input: `웹에서 사실을 찾아 한국어로 짧게 요약해 주세요. 출처 URL이 있으면 함께.\n검색: ${q}`
       })

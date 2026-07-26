@@ -385,6 +385,21 @@
     }
     .ai-chat-form button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
     #aiStatus.is-error { color: var(--coral); }
+    .ai-proposal {
+      border: 1px solid #ffd2c4 !important; background: #fff7f3 !important;
+      max-width: 100%;
+    }
+    .ai-proposal-title { font-weight: 800; color: var(--coral); margin-bottom: 4px; }
+    .ai-proposal-reason { font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+    .ai-proposal-body { font-size: 0.86rem; display: grid; gap: 2px; margin-bottom: 8px; }
+    .ai-proposal-warn { color: var(--coral); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
+    .ai-proposal-actions { display: flex; gap: 8px; }
+    .ai-proposal-actions button {
+      border: 0; border-radius: 10px; padding: 9px 12px; font: inherit; font-weight: 800; cursor: pointer;
+    }
+    .ai-proposal-actions .ai-apply { background: var(--coral); color: #fff; }
+    .ai-proposal-actions .ai-reject { background: #fff; color: var(--ocean); border: 1px solid var(--line); }
+    .ai-proposal-actions button:disabled { opacity: 0.55; cursor: default; }
     .link-list { list-style: none; display: grid; gap: 8px; }
     .link-list a {
       display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
@@ -1036,9 +1051,10 @@
           <div class="trip-field">
             <label for="aiModel">모델</label>
             <select id="aiModel">
-              <option value="gpt-4o-mini">gpt-4o-mini (추천·저렴)</option>
-              <option value="gpt-4o">gpt-4o</option>
-              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+              <option value="gpt-5.6-luna" selected>gpt-5.6-luna (추천)</option>
+              <option value="gpt-5.6-terra">gpt-5.6-terra</option>
+              <option value="gpt-5.6">gpt-5.6 (Sol)</option>
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
             </select>
           </div>
           <div class="ai-setup-actions">
