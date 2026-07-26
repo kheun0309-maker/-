@@ -342,6 +342,49 @@
       border-color: #ffb39a; background: #fff7f3;
       box-shadow: inset 3px 0 0 var(--coral);
     }
+    .ai-setup {
+      display: grid; gap: 8px; margin-bottom: 10px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 14px; background: #f3fbfc;
+    }
+    .ai-setup .trip-field { margin: 0; }
+    .ai-setup-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ai-chat-log {
+      display: grid; gap: 8px; max-height: min(50vh, 420px); overflow: auto;
+      padding: 4px 2px 10px; margin-bottom: 8px;
+    }
+    .ai-bubble {
+      max-width: 92%; padding: 10px 12px; border-radius: 14px;
+      font-size: 0.88rem; line-height: 1.45; font-weight: 600; white-space: pre-wrap;
+    }
+    .ai-user {
+      justify-self: end; background: var(--ocean); color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+    .ai-assistant {
+      justify-self: start; background: #fff; border: 1px solid var(--line); color: var(--ink);
+      border-bottom-left-radius: 6px;
+    }
+    .ai-assistant a { color: var(--ocean); font-weight: 800; }
+    .ai-thinking { color: var(--muted); font-style: italic; }
+    .ai-suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .ai-suggest button {
+      border: 1px solid var(--line); background: #fff; color: var(--ocean);
+      border-radius: 999px; padding: 7px 10px; font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
+    }
+    .ai-chat-form {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end;
+    }
+    .ai-chat-form textarea {
+      width: 100%; min-height: 44px; max-height: 120px; resize: vertical;
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+      font: inherit; color: var(--ink); background: #fff;
+    }
+    .ai-chat-form button[type="submit"] {
+      border: 0; border-radius: 12px; padding: 12px 14px; background: var(--coral); color: #fff;
+      font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .ai-chat-form button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
+    #aiStatus.is-error { color: var(--coral); }
     .link-list { list-style: none; display: grid; gap: 8px; }
     .link-list a {
       display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
@@ -859,6 +902,7 @@
           <button type="button" data-q="항공">항공</button>
           <button type="button" data-q="환율">환율</button>
           <button type="button" data-q="짐">짐</button>
+          <button type="button" data-q="AI">AI</button>
         </div>
         <ul class="guide-search-results" id="guideSearchResults" hidden></ul>
       </div>
@@ -876,6 +920,7 @@
         <a href="#late-rest" data-open="late-rest">🌙 귀국휴식</a>
         <a href="#tips" data-open="tips">⚠ 주의</a>
         <a href="#pack" data-open="pack">🎒 짐</a>
+        <a href="#ai" data-open="ai">🤖 AI</a>
       </nav>
     </div>
 
@@ -974,6 +1019,47 @@
       </div>
     </details>
 
+
+    <details class="widget fold-widget" id="ai">
+      <summary>🤖 여행 AI 물어보기</summary>
+      <div class="fold-body">
+        <p class="tiny" style="margin:-4px 0 10px">
+          OpenAI로 호핑·셔틀·마사지·동선 등을 질문할 수 있어요.
+          API 키는 <b>이 폰/브라우저에만</b> 저장되며 깃허브·서버로는 올라가지 않습니다.
+        </p>
+        <div class="ai-setup">
+          <div class="trip-field">
+            <label for="aiApiKey">OpenAI API 키</label>
+            <input id="aiApiKey" type="password" autocomplete="off" placeholder="sk-...">
+          </div>
+          <div class="trip-field">
+            <label for="aiModel">모델</label>
+            <select id="aiModel">
+              <option value="gpt-4o-mini">gpt-4o-mini (추천·저렴)</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+            </select>
+          </div>
+          <div class="ai-setup-actions">
+            <button type="button" class="primary" id="aiKeySave">키 저장</button>
+            <button type="button" class="ghost" id="aiKeyClear">키 삭제</button>
+          </div>
+          <p class="tiny" id="aiStatus" role="status"></p>
+        </div>
+
+        <div class="ai-suggest" id="aiSuggestChips" aria-label="추천 질문">
+          <button type="button" data-ai-q="Day3 호핑 후 마사지랑 저녁 동선 추천해줘">호핑 후 동선</button>
+          <button type="button" data-ai-q="라사 리아 시내 셔틀 탈 때 주의할 점 알려줘">셔틀 팁</button>
+          <button type="button" data-ai-q="공항 픽업 못 찾으면 어떻게 해야 해?">픽업 못 찾을 때</button>
+          <button type="button" data-ai-q="시내 해산물 맛집 고르는 기준 알려줘">맛집 기준</button>
+        </div>
+        <div class="ai-chat-log" id="aiChatLog" aria-live="polite"></div>
+        <form class="ai-chat-form" id="aiChatForm">
+          <textarea id="aiChatInput" maxlength="800" rows="2" placeholder="예: 호핑 전에 뭘 준비해야 해?"></textarea>
+          <button type="submit" id="aiChatSend">보내기</button>
+        </form>
+      </div>
+    </details>
 
     <details class="widget fold-widget" id="live">
       <summary>⏱ 지금 시각 · 환율</summary>
@@ -1632,6 +1718,10 @@
   </nav>
 
   <script type="module" src="./js/trip-room.js"></script>
+  <script type="module">
+    import { initAiGuide } from './js/ai-guide.js';
+    initAiGuide();
+  </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     (function initHeroSlideshow() {
@@ -1951,7 +2041,8 @@
         { title: '주의사항', desc: '모기 · 햇빛 · 물 · 안전', open: 'tips', href: 'tips', keys: ['주의', '팁', '모기', '선크림', '안전', '물'] },
         { title: '짐 챙기기', desc: '개인 체크리스트', open: 'pack', href: 'pack', keys: ['짐', '캐리어', '챙기기', '패킹', '옷', '수영복'] },
         { title: '출발 전 할 일', desc: '예약 · 확인 체크', open: 'booking', href: 'booking', keys: ['출발전', '예약확인', '할일', '체크'] },
-        { title: '반딧불이 투어', desc: 'Day2 리조트 리버 크루즈', open: 'itinerary', href: 'itinerary', keys: ['반딧불이', '파이어플라이', 'firefly', '크루즈', '맹그로브'] }
+        { title: '반딧불이 투어', desc: 'Day2 리조트 리버 크루즈', open: 'itinerary', href: 'itinerary', keys: ['반딧불이', '파이어플라이', 'firefly', '크루즈', '맹그로브'] },
+        { title: '여행 AI', desc: 'OpenAI로 동선·팁 질문', open: 'ai', href: 'ai', keys: ['ai', '인공지능', '챗봇', 'openai', '질문', '물어보기'] }
       ];
 
       let activeIdx = -1;
