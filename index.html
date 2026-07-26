@@ -1756,16 +1756,40 @@
       return `${won.toLocaleString('ko-KR')}원`;
     };
 
+    const cleanupNestedMyrFigs = (root = document) => {
+      root.querySelectorAll('.myr-fig .myr-fig').forEach(inner => {
+        const outer = inner.parentElement?.closest('.myr-fig');
+        if (!outer) return;
+        // 바깥 껍데기만 남기고 안쪽 중복 래핑 제거
+        while (outer.querySelectorAll(':scope > .myr-krw').length > 1) {
+          outer.querySelector(':scope > .myr-krw:last-child')?.remove();
+        }
+        const krw = inner.querySelector('.myr-krw');
+        krw?.remove();
+        while (inner.firstChild) outer.insertBefore(inner.firstChild, inner);
+        inner.remove();
+      });
+      root.querySelectorAll('.myr-fig').forEach(fig => {
+        const tags = [...fig.querySelectorAll(':scope > .myr-krw')];
+        tags.slice(1).forEach(t => t.remove());
+      });
+    };
+
     const wrapMyrAmounts = (root = document) => {
-      const nodes = root.querySelectorAll('p, li, .t-note, .t-task, .info-card b, .tiny');
+      // b/strong는 부모 p/li에서 한 번만 처리 (중첩 래핑 방지)
+      const nodes = root.querySelectorAll('p, li, .t-note, .t-task, .tiny');
       nodes.forEach(el => {
         if (el.dataset.myrProcessed === '1') return;
         if (el.closest('.guide-search, script, style, .myr-fig')) return;
+        if (el.querySelector('.myr-fig')) {
+          el.dataset.myrProcessed = '1';
+          return;
+        }
         const html = el.innerHTML;
         if (!/MYR\s*\d/i.test(html)) return;
         const next = html.replace(/MYR\s*(\d+(?:\.\d+)?)(?:\s*[~～\-]\s*(\d+(?:\.\d+)?))?(\+|대)?/gi, (full, a, b, suf, offset, str) => {
-          const before = str.slice(Math.max(0, offset - 24), offset);
-          if (/data-myr\s*=/.test(before) || /class="myr-fig"/.test(before)) return full;
+          const before = str.slice(Math.max(0, offset - 40), offset);
+          if (/myr-fig|data-myr/.test(before)) return full;
           const maxAttr = b ? ` data-myr-max="${b}"` : '';
           const flag = suf === '+' ? ' data-myr-plus="1"' : (suf === '대' ? ' data-myr-approx="1"' : '');
           return `<span class="myr-fig" data-myr="${a}"${maxAttr}${flag}>${full}<span class="myr-krw"></span></span>`;
@@ -1779,6 +1803,7 @@
 
     const paintMyrKrw = () => {
       document.querySelectorAll('.myr-fig[data-myr]').forEach(el => {
+        if (el.querySelector('.myr-fig')) return; // 중첩된 바깥쪽은 건너뜀
         const min = Number(el.dataset.myr);
         if (!Number.isFinite(min)) return;
         const max = el.dataset.myrMax != null && el.dataset.myrMax !== '' ? Number(el.dataset.myrMax) : null;
@@ -1790,18 +1815,23 @@
         } else {
           label = `약 ${formatWon(min)}${plus || approx ? '+' : ''}`;
         }
-        let tag = el.querySelector('.myr-krw');
-        if (!tag) {
-          tag = document.createElement('span');
+        let tags = [...el.querySelectorAll(':scope > .myr-krw')];
+        if (!tags.length) {
+          const tag = document.createElement('span');
           tag.className = 'myr-krw';
           el.appendChild(tag);
+          tags = [tag];
         }
-        tag.textContent = ` (${label})`;
+        tags.slice(1).forEach(t => t.remove());
+        tags[0].textContent = ` (${label})`;
       });
     };
 
     const refreshMyrKrwLabels = (root) => {
-      wrapMyrAmounts(root || document);
+      const scope = root || document;
+      cleanupNestedMyrFigs(scope);
+      wrapMyrAmounts(scope);
+      cleanupNestedMyrFigs(scope);
       paintMyrKrw();
     };
     window.refreshMyrKrwLabels = refreshMyrKrwLabels;
