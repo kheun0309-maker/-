@@ -1040,10 +1040,13 @@
         <ul class="guide-search-results" id="guideSearchResults" hidden></ul>
       </div>
       <nav class="quick-nav" aria-label="바로가기" style="position:static;top:auto;margin:0;border:0;padding:0 2px 8px;background:transparent;backdrop-filter:none">
+        <a href="#ai" data-open="ai">✨ 코파일럿</a>
         <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
         <a href="#itinerary" data-open="itinerary">📅 일정<span class="quick-badge" data-itin-badge>0</span></a>
         <a href="#flights" data-open="flights">✈️ 항공</a>
         <a href="#resort" data-open="resort">🏨 리조트</a>
+        <a href="#third-party-pickup" data-open="resort">🚐 픽업</a>
+        <a href="#map" data-open="map">�>
         <a href="#third-party-pickup" data-open="resort">🚐 픽업</a>
         <a href="#map" data-open="map">🗺 지도</a>
         <a href="#hopping" data-open="hopping">🏝 호핑</a>
@@ -1052,12 +1055,59 @@
         <a href="#late-rest" data-open="late-rest">🌙 귀국</a>
         <a href="#tips" data-open="tips">⚠ 주의</a>
         <a href="#pack" data-open="pack">🎒 짐</a>
-        <a href="#ai" data-open="ai">✨ 코파일럿</a>
         <a href="#settings" data-open="settings">⚙️ 설정</a>
       </nav>
     </div>
 
-<details class="widget fold-widget" id="trip" open>
+<details class="widget fold-widget" id="ai" open>
+      <summary>✨ 여행 코파일럿</summary>
+      <div class="fold-body">
+        <p class="ai-intro">
+          질문만이 아니라 <strong>일정·항공·맛집·섹션·짐·사진</strong>까지 제안하고,
+          마음에 들면 <strong>적용</strong>을 눌러 가이드에 반영해요.
+        </p>
+
+        <div class="ai-chip-groups" id="aiSuggestChips" aria-label="추천 작업">
+          <div class="ai-chip-group">
+            <span class="ai-chip-group-label">일정 · 동선</span>
+            <div class="ai-suggest">
+              <button type="button" data-ai-q="앱 맛집 가이드 보고 Day3 저녁에 웰컴 씨푸드 일정을 추가 제안해줘. 영업시간 확인하고 시간 잡아서 propose해줘.">맛집→일정</button>
+              <button type="button" data-ai-q="내 Day3 일정을 보고, 호핑 하선 후 시내 식사→마사지→리조트 복귀 동선을 영업시간·이동시간 반영해서 propose_route_plan으로 제안해줘.">동선 짜기</button>
+              <button type="button" data-ai-q="get_itinerary로 Day3를 보고, 시내 카페 일정을 하나 추가 propose_itinerary_change로 제안해줘. 시간·장소·메모 포함.">일정 추가</button>
+              <button type="button" data-ai-q="get_editable_content(flights)와 get_itinerary를 보고, 귀국편(return) 시간을 바꾸려면 새 시각을 물어본 뒤 flights 수정 + 관련 일정 수정을 함께 제안해줘.">항공 변경</button>
+            </div>
+          </div>
+          <div class="ai-chip-group">
+            <span class="ai-chip-group-label">가이드 · 섹션 편집</span>
+            <div class="ai-suggest">
+              <button type="button" data-ai-q="다음에 넣을 정보를 어디에 두면 좋을지 recommend_placement로 분석해줘. 기존 섹션 추가 vs 새 섹션 vs 기존 항목 수정·통합 vs 일정 반영 옵션을 추천하고, 선택이 필요하면 물어봐.">어디에 넣을까</button>
+              <button type="button" data-ai-q="get_editable_content(custom)로 확인한 뒤, '쇼핑 팁' 커스텀 섹션을 propose_custom_section(target=section, add)로 제안하고, Imago 몰 정보를 target=item add로 이어서 제안해줘. 사진 URL은 web_search.">섹션 만들기</button>
+              <button type="button" data-ai-q="추천 맛집에 괜찮은 KK 로컬 식당 하나를 사진 URL과 함께 propose_content_change(section=food, add)로 제안해줘. web_search로 확인.">맛집 추가</button>
+              <button type="button" data-ai-q="get_editable_content로 히어로를 보고, 코타키나발루 석양 공개 이미지 URL을 검색해 메인 그림(hero) 한 장을 바꾸는 propose_content_change를 해줘. URL만, Storage 없음.">메인 그림</button>
+            </div>
+          </div>
+          <div class="ai-chip-group">
+            <span class="ai-chip-group-label">준비 · 팁</span>
+            <div class="ai-suggest">
+              <button type="button" data-ai-q="get_my_location으로 내 위치를 확인한 뒤, 여기서 가까운 현지 맛집 1~2곳을 찾아 가이드(#food)에 추가 제안하고, 오늘/해당 Day 일정에도 넣어 정리해줘. 영업시간은 web_search로 확인.">내 위치 근처 맛집</button>
+              <button type="button" data-ai-q="함께 준비 준비물 목록을 보고 호핑용으로 빠진 챙길 품목이 있으면 propose_pack_change로 추가 제안해줘.">짐 보완</button>
+              <button type="button" data-ai-q="써드파티 공항 픽업과 호텔 리무진·Grab 가격을 가이드 기준으로 비교해 주고, KE5761 야간 도착에 뭘 고를지 추천해줘.">픽업 비교</button>
+              <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
+            </div>
+          </div>
+        </div>
+        <div class="ai-chat-log" id="aiChatLog" aria-live="polite">
+          <div class="ai-chat-empty" id="aiChatEmpty">일정 추가, 가이드 수정, 섹션 만들기까지 요청할 수 있어요. 위 칩으로 바로 시작해 보세요.</div>
+        </div>
+        <form class="ai-chat-form" id="aiChatForm">
+          <textarea id="aiChatInput" maxlength="800" rows="2" placeholder="예: Day3에 카페 일정 추가해줘 / 쇼핑 섹션 만들어줘"></textarea>
+          <button type="submit" id="aiChatSend">보내기</button>
+        </form>
+        <p class="tiny" style="margin:8px 0 0">API 키·모델은 <a href="#settings" data-open="settings">설정</a>에서 바꿀 수 있어요.</p>
+      </div>
+    </details>
+
+<details class="widget fold-widget" id="trip">
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
         <p class="trip-hint">입장 후 <b>준비물 · 출발 전 할 일 · 공지</b>를 실시간으로 공유해요. 방 코드·닉네임은 <a href="#settings" data-open="settings">설정</a>에서 관리합니다.</p>
@@ -1679,54 +1729,6 @@
         </div>
       </div>
       <p class="fx-note" id="fxNote">최근 환율을 불러오는 중…</p>
-      </div>
-    </details>
-
-<details class="widget fold-widget" id="ai">
-      <summary>✨ 여행 코파일럿</summary>
-      <div class="fold-body">
-        <p class="ai-intro">
-          질문만이 아니라 <strong>일정·항공·맛집·섹션·짐·사진</strong>까지 제안하고,
-          마음에 들면 <strong>적용</strong>을 눌러 가이드에 반영해요.
-        </p>
-
-        <div class="ai-chip-groups" id="aiSuggestChips" aria-label="추천 작업">
-          <div class="ai-chip-group">
-            <span class="ai-chip-group-label">일정 · 동선</span>
-            <div class="ai-suggest">
-              <button type="button" data-ai-q="앱 맛집 가이드 보고 Day3 저녁에 웰컴 씨푸드 일정을 추가 제안해줘. 영업시간 확인하고 시간 잡아서 propose해줘.">맛집→일정</button>
-              <button type="button" data-ai-q="내 Day3 일정을 보고, 호핑 하선 후 시내 식사→마사지→리조트 복귀 동선을 영업시간·이동시간 반영해서 propose_route_plan으로 제안해줘.">동선 짜기</button>
-              <button type="button" data-ai-q="get_itinerary로 Day3를 보고, 시내 카페 일정을 하나 추가 propose_itinerary_change로 제안해줘. 시간·장소·메모 포함.">일정 추가</button>
-              <button type="button" data-ai-q="get_editable_content(flights)와 get_itinerary를 보고, 귀국편(return) 시간을 바꾸려면 새 시각을 물어본 뒤 flights 수정 + 관련 일정 수정을 함께 제안해줘.">항공 변경</button>
-            </div>
-          </div>
-          <div class="ai-chip-group">
-            <span class="ai-chip-group-label">가이드 · 섹션 편집</span>
-            <div class="ai-suggest">
-              <button type="button" data-ai-q="다음에 넣을 정보를 어디에 두면 좋을지 recommend_placement로 분석해줘. 기존 섹션 추가 vs 새 섹션 vs 기존 항목 수정·통합 vs 일정 반영 옵션을 추천하고, 선택이 필요하면 물어봐.">어디에 넣을까</button>
-              <button type="button" data-ai-q="get_editable_content(custom)로 확인한 뒤, '쇼핑 팁' 커스텀 섹션을 propose_custom_section(target=section, add)로 제안하고, Imago 몰 정보를 target=item add로 이어서 제안해줘. 사진 URL은 web_search.">섹션 만들기</button>
-              <button type="button" data-ai-q="추천 맛집에 괜찮은 KK 로컬 식당 하나를 사진 URL과 함께 propose_content_change(section=food, add)로 제안해줘. web_search로 확인.">맛집 추가</button>
-              <button type="button" data-ai-q="get_editable_content로 히어로를 보고, 코타키나발루 석양 공개 이미지 URL을 검색해 메인 그림(hero) 한 장을 바꾸는 propose_content_change를 해줘. URL만, Storage 없음.">메인 그림</button>
-            </div>
-          </div>
-          <div class="ai-chip-group">
-            <span class="ai-chip-group-label">준비 · 팁</span>
-            <div class="ai-suggest">
-              <button type="button" data-ai-q="get_my_location으로 내 위치를 확인한 뒤, 여기서 가까운 현지 맛집 1~2곳을 찾아 가이드(#food)에 추가 제안하고, 오늘/해당 Day 일정에도 넣어 정리해줘. 영업시간은 web_search로 확인.">내 위치 근처 맛집</button>
-              <button type="button" data-ai-q="함께 준비 준비물 목록을 보고 호핑용으로 빠진 챙길 품목이 있으면 propose_pack_change로 추가 제안해줘.">짐 보완</button>
-              <button type="button" data-ai-q="써드파티 공항 픽업과 호텔 리무진·Grab 가격을 가이드 기준으로 비교해 주고, KE5761 야간 도착에 뭘 고를지 추천해줘.">픽업 비교</button>
-              <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
-            </div>
-          </div>
-        </div>
-        <div class="ai-chat-log" id="aiChatLog" aria-live="polite">
-          <div class="ai-chat-empty" id="aiChatEmpty">일정 추가, 가이드 수정, 섹션 만들기까지 요청할 수 있어요. 위 칩으로 바로 시작해 보세요.</div>
-        </div>
-        <form class="ai-chat-form" id="aiChatForm">
-          <textarea id="aiChatInput" maxlength="800" rows="2" placeholder="예: Day3에 카페 일정 추가해줘 / 쇼핑 섹션 만들어줘"></textarea>
-          <button type="submit" id="aiChatSend">보내기</button>
-        </form>
-        <p class="tiny" style="margin:8px 0 0">API 키·모델은 <a href="#settings" data-open="settings">설정</a>에서 바꿀 수 있어요.</p>
       </div>
     </details>
 

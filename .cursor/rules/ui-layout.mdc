@@ -34,7 +34,7 @@ alwaysApply: true
 
 ## 섹션 순서 (여행 흐름)
 
-메인 fold 권장 순서: `trip → itinerary → flights → resort → map → hopping → food → custom → massage → late-rest → tips → pack → booking → live → ai(코파일럿) → settings`
+메인 fold 권장 순서: `ai(코파일럿) → trip → itinerary → flights → resort → map → hopping → food → custom → massage → late-rest → tips → pack → booking → live → settings`
 
 - AI 섹션 이름은 **여행 코파일럿** (질문만이 아니라 일정·가이드·섹션·짐 편집)
 - `.check-list` / `.fact-list` 규칙을 지킬 것

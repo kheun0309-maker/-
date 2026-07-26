@@ -1,6 +1,7 @@
 /** 앱 가이드 요약 · 섹션별 본문 (AI 컨텍스트용) */
 
 export const GUIDE_SECTIONS = [
+  { id: 'ai', title: '여행 코파일럿', hash: '#ai' },
   { id: 'trip', title: '함께 준비', hash: '#trip' },
   { id: 'itinerary', title: '일자별 일정', hash: '#itinerary' },
   { id: 'flights', title: '항공', hash: '#flights' },
@@ -13,7 +14,6 @@ export const GUIDE_SECTIONS = [
   { id: 'tips', title: '주의사항', hash: '#tips' },
   { id: 'pack', title: '짐', hash: '#pack' },
   { id: 'live', title: '시각·환율', hash: '#live' },
-  { id: 'ai', title: '여행 코파일럿', hash: '#ai' },
   { id: 'settings', title: '설정', hash: '#settings' }
 ];
 
