@@ -12,7 +12,8 @@ export const GUIDE_SECTIONS = [
   { id: 'map', title: '지도·동선', hash: '#map' },
   { id: 'live', title: '시각·환율', hash: '#live' },
   { id: 'itinerary', title: '일자별 일정', hash: '#itinerary' },
-  { id: 'trip', title: '함께 준비', hash: '#trip' }
+  { id: 'trip', title: '함께 준비', hash: '#trip' },
+  { id: 'settings', title: '설정', hash: '#settings' }
 ];
 
 /** 매 요청에 넣는 짧은 가이드 요약 (토큰 절약) */
@@ -33,7 +34,21 @@ Day4/귀국: 시내·휴식·공항 이동(늦은 비행 대비 Napzone 등)
 - #airport-pickup 공항픽업: 도착홀 피켓, 리무진/그랩, 심야 할증 가능
 - #flights #map #tips #pack #itinerary #trip 도 앱에 있음
 
-일정 반영: 맛집·마사지·호핑 등을 Day에 추가/수정할 때는 가이드 섹션을 확인한 뒤 propose_itinerary_change로 제안하고 사용자 적용을 받는다.
+동선·이동 시간 참고(그랩/차량, 교통·대기 포함 여유):
+- 라사 리아 ↔ KKIA 공항: 약 45~55분
+- 라사 리아 ↔ 시내(이마고/가야/제셀톤): 약 40~55분
+- 라사 리아 ↔ 호핑 제티(South Jetty): 약 45~60분 · 아침 일찍 픽업 권장
+- Asia City(해산물) ↔ Warisan Square(마사지): 약 10~20분
+- 제티/시내 중심 ↔ Asia City: 약 10~20분
+- 시내 이동 후 리조트 복귀: 밤길 포함 약 45~60분
+
+시간 잡기 팁:
+- 앞 일정이 끝나면 +이동시간 +여유 15~30분 뒤에 다음 시작
+- 영업시간은 web_search 또는 가이드로 확인 후 time에 반영 (예: 19:30~)
+- 셔틀 막차/호핑 하선 시각을 기준으로 저녁 식사·마사지 슬롯 제안
+
+일정 반영: 장소·시간·동선은 propose_itinerary_change / propose_route_plan.
+가이드 편집: 메인 그림·맛집·대안은 propose_content_change (imageUrl=URL만). 준비물은 propose_pack_change.
 `.trim();
 
 function cleanText(s) {

@@ -1,6 +1,8 @@
-/** 코타키나발루 가이드 AI — 가이드 컨텍스트·웹검색·일정 제안(확인 후 적용) */
+/** 코타키나발루 가이드 AI — 가이드 컨텍스트·웹검색·일정/콘텐츠 제안(확인 후 적용) */
 
 import { getItineraryApi } from './itinerary-editor.js';
+import { getGuideContentApi } from './guide-content.js';
+import { getTripPackApi } from './trip-room.js';
 import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
 
 const KEY_STORAGE = 'kk-openai-api-key';
@@ -9,23 +11,24 @@ const DEFAULT_MODEL = 'gpt-5.6-luna';
 const MAX_HISTORY = 20;
 const MAX_TOOL_ROUNDS = 8;
 
-const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변·일정 제안의 1순위 근거는 앱 가이드입니다.
+const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변·제안의 1순위 근거는 앱 가이드입니다.
 
 역할:
-1) 가이드 요약/섹션(get_guide_section)과 현재 일정(get_itinerary)을 활용해 답변
-2) 앱에 없는 최신 정보만 web_search
-3) 맛집·마사지·호핑·셔틀 등을 일정에 넣을 때는 propose_itinerary_change로 제안 (즉시 저장 금지)
-4) day/시간/어느 가게인지 불명확하면 ask_clarification으로 질문
+1) 가이드(get_guide_section) + 일정(get_itinerary) + 편집 스냅샷(get_editable_content)으로 답변
+2) 영업시간·사진 URL·최신 정보는 web_search로 확인 (이미지 파일 업로드 불가, URL만)
+3) 변경은 제안 도구만 사용하고 즉시 저장하지 않음
+4) 핵심이 빠지면 ask_clarification
 
-일정 반영 요령:
-- 맛집 추가 예: day3, time 저녁, place 가게명, task 식사, note에 메뉴·팁, placeMapsUrl 가능하면 포함
-- 마사지 추가 예: day3, time 19:30~, place Chillax/Warisan, task 마사지
-- 수정/삭제는 get_itinerary로 itemId 확인 후 제안
-- 사용자에게 "적용"을 누르라고 안내
+일정: propose_itinerary_change / propose_route_plan
+가이드 콘텐츠: propose_content_change (hero|food|alternatives) — imageUrl은 https:// 또는 ./images/...
+준비물: propose_pack_change (함께 준비 pack)
 
-규칙:
-- 한국어, 간결하게. 앱 섹션 링크(#food #massage #hopping #resort-shuttle #itinerary 등) 활용
-- 금액 MYR 우선. 위험·의료는 일반 안내만.`;
+이미지 규칙:
+- Storage 업로드 없음. web_search로 공개 이미지 URL을 찾거나 앱 ./images/ 경로 사용
+- 확실하지 않은 URL은 넣지 말 것. 제안 카드에 미리보기가 뜸
+- 히어로 교체: section=hero, action=update, itemId=h1~h5, imageUrl+caption
+
+규칙: 한국어·간결. #food #late-rest #itinerary #trip. 금액 MYR 우선.`;
 
 const TOOLS = [
   {
@@ -57,12 +60,31 @@ const TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'web_search',
-      description: '앱 가이드에 없는 최신·상세 정보만 인터넷 검색합니다.',
+      name: 'get_editable_content',
+      description: '히어로·맛집·대안·준비물 편집용 스냅샷(id 포함). 수정/삭제 전 호출.',
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: '검색어 (영어 또는 한국어)' }
+          section: {
+            type: 'string',
+            enum: ['all', 'hero', 'food', 'alternatives', 'pack'],
+            description: '가져올 섹션'
+          }
+        },
+        required: ['section'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: '앱 가이드에 없는 최신·상세 정보·공개 이미지 URL 검색.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: '검색어 (영어 또는 한국어). 이미지는 image/photo URL 포함 검색' }
         },
         required: ['query'],
         additionalProperties: false
@@ -92,21 +114,104 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'propose_itinerary_change',
-      description: '맛집/마사지/호핑 등 일정 추가·수정·삭제 제안. 사용자 적용 버튼 후에만 저장됩니다.',
+      description: '장소 1건 일정 추가·수정·삭제 제안. 사용자 적용 후에만 저장.',
       parameters: {
         type: 'object',
         properties: {
           action: { type: 'string', enum: ['add', 'update', 'delete'] },
           day: { type: 'string', enum: ['day1', 'day2', 'day3', 'day4'] },
           itemId: { type: 'string', description: 'update/delete 시 필수' },
-          time: { type: 'string' },
+          time: { type: 'string', description: '영업시간·앞일정·이동을 반영한 시각 (예: 19:30~)' },
           place: { type: 'string' },
           task: { type: 'string' },
-          note: { type: 'string' },
+          note: { type: 'string', description: '영업시간·이동·예약 팁' },
           placeMapsUrl: { type: 'string' },
-          reason: { type: 'string', description: '제안 이유·가이드/검색 근거 한 줄' }
+          reason: { type: 'string', description: '제안 이유·근거' }
         },
         required: ['action', 'day', 'reason'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_route_plan',
+      description: '같은 날 여러 장소를 시간·동선 순서로 묶어 제안합니다. 식사+마사지+이동 같은 코스에 사용.',
+      parameters: {
+        type: 'object',
+        properties: {
+          day: { type: 'string', enum: ['day1', 'day2', 'day3', 'day4'] },
+          title: { type: 'string', description: '코스 제목 (예: 호핑 후 시내 동선)' },
+          routeSummary: { type: 'string', description: 'A → B → C 형태 동선 한 줄' },
+          reason: { type: 'string' },
+          items: {
+            type: 'array',
+            minItems: 2,
+            maxItems: 6,
+            items: {
+              type: 'object',
+              properties: {
+                time: { type: 'string' },
+                place: { type: 'string' },
+                task: { type: 'string' },
+                note: { type: 'string' },
+                placeMapsUrl: { type: 'string' },
+                travelFromPrev: { type: 'string', description: '이전 장소에서 이동 시간/방법 (예: 그랩 15분)' }
+              },
+              required: ['time', 'place', 'task'],
+              additionalProperties: false
+            }
+          }
+        },
+        required: ['day', 'title', 'routeSummary', 'reason', 'items'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_content_change',
+      description: '히어로(메인 그림)·맛집·귀국 대안 추가/수정/삭제 제안. imageUrl은 URL만. 적용 후 저장.',
+      parameters: {
+        type: 'object',
+        properties: {
+          section: { type: 'string', enum: ['hero', 'food', 'alternatives'] },
+          action: { type: 'string', enum: ['add', 'update', 'delete'] },
+          itemId: { type: 'string', description: 'update/delete 필수. hero는 h1~h5 등' },
+          tag: { type: 'string' },
+          name: { type: 'string', description: '맛집 이름' },
+          title: { type: 'string', description: '대안 제목' },
+          desc: { type: 'string' },
+          caption: { type: 'string', description: '히어로 캡션' },
+          imageUrl: { type: 'string', description: 'https://... 또는 ./images/...' },
+          mapsUrl: { type: 'string' },
+          siteUrl: { type: 'string' },
+          reviewUrl: { type: 'string' },
+          linkUrl: { type: 'string' },
+          linkLabel: { type: 'string' },
+          reason: { type: 'string' }
+        },
+        required: ['section', 'action', 'reason'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_pack_change',
+      description: '함께 준비 준비물(챙길 품목) 추가/수정/삭제 제안.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['add', 'update', 'delete'] },
+          itemId: { type: 'string', description: 'update/delete 시 필수' },
+          text: { type: 'string', description: '준비물 문구' },
+          reason: { type: 'string' }
+        },
+        required: ['action', 'reason'],
         additionalProperties: false
       }
     }
@@ -263,6 +368,8 @@ export function initAiGuide() {
   const saveBtn = $('aiKeySave');
   const clearBtn = $('aiKeyClear');
   const statusEl = $('aiStatus');
+  const keySummary = $('aiKeySummary');
+  const keyFold = $('aiKeyFold');
   const logEl = $('aiChatLog');
   const form = $('aiChatForm');
   const input = $('aiChatInput');
@@ -274,11 +381,29 @@ export function initAiGuide() {
   let proposalSeq = 0;
   const proposals = new Map();
 
+  const hideEmptyHint = () => {
+    $('aiChatEmpty')?.remove();
+  };
+
+  const openKeyFold = () => {
+    const settings = $('settings');
+    if (settings) settings.open = true;
+    if (keyFold) keyFold.open = true;
+  };
+
   const refreshKeyUi = (msg = '') => {
     const saved = loadKey();
+    const model = loadModel();
     if (keyInput) {
       keyInput.value = saved ? `••••••••••••${keyTail(saved)}` : '';
       keyInput.placeholder = saved ? '저장됨 · 바꾸려면 새 키 붙여넣기' : 'sk-... 붙여넣고 저장';
+    }
+    if (keySummary) {
+      keySummary.textContent = saved
+        ? `준비됨 · …${keyTail(saved)} · ${model}`
+        : '키 미설정 · 펼쳐서 붙여넣기';
+      keySummary.classList.toggle('is-ready', Boolean(saved));
+      keySummary.classList.toggle('is-missing', !saved);
     }
     if (msg) setStatus(msg, false);
     else if (saved) setStatus(`API 키 저장됨 (끝자리 ${keyTail(saved)}) · 이 기기에만 보관`);
@@ -316,6 +441,7 @@ export function initAiGuide() {
 
   const appendBubble = (role, text) => {
     if (!logEl) return null;
+    hideEmptyHint();
     const div = document.createElement('div');
     div.className = `ai-bubble ai-${role}`;
     if (role === 'assistant') div.innerHTML = linkify(text).replace(/\n/g, '<br>');
@@ -327,33 +453,87 @@ export function initAiGuide() {
 
   const appendProposalCard = (proposal) => {
     if (!logEl) return;
-    const api = getItineraryApi();
+    hideEmptyHint();
+    const itinApi = getItineraryApi();
+    const contentApi = getGuideContentApi();
+    const packApi = getTripPackApi();
+    const canApply = proposal.type === 'content' || proposal.type === 'pack'
+      ? (proposal.type === 'pack' ? packApi.canEdit() : contentApi.canEdit())
+      : itinApi.canEdit();
     const card = document.createElement('div');
     card.className = 'ai-bubble ai-assistant ai-proposal';
+    const lines = [];
     const actionLabel = ({ add: '추가', update: '수정', delete: '삭제' })[proposal.action] || proposal.action;
-    const lines = [
-      `<div class="ai-proposal-title">일정 ${esc(actionLabel)} 제안 · ${esc(dayLabel(proposal.day))}</div>`,
-      proposal.reason ? `<div class="ai-proposal-reason">${esc(proposal.reason)}</div>` : '',
-      `<div class="ai-proposal-body">`
-    ];
-    if (proposal.action === 'delete') {
-      lines.push(`<div>삭제 대상 ID: ${esc(proposal.itemId || '')}</div>`);
+
+    if (proposal.type === 'route') {
+      lines.push(`<div class="ai-proposal-title">동선 제안 · ${esc(dayLabel(proposal.day))} · ${esc(proposal.title || '코스')}</div>`);
+      if (proposal.routeSummary) {
+        lines.push(`<div class="ai-proposal-route">${esc(proposal.routeSummary)}</div>`);
+      }
+      if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
+      lines.push('<div class="ai-proposal-body">');
+      (proposal.items || []).forEach((it, i) => {
+        lines.push('<div class="ai-route-step">');
+        lines.push(`<b>${i + 1}. ${esc(it.time || '')} · ${esc(it.place || '')}</b>`);
+        if (it.task) lines.push(`<div>${esc(it.task)}</div>`);
+        if (it.travelFromPrev) lines.push(`<div class="tiny">이동: ${esc(it.travelFromPrev)}</div>`);
+        if (it.note) lines.push(`<div class="tiny">${esc(it.note)}</div>`);
+        lines.push('</div>');
+      });
+      lines.push('</div>');
+    } else if (proposal.type === 'content') {
+      const secLabel = ({ hero: '메인 그림', food: '맛집', alternatives: '귀국 대안' })[proposal.section] || proposal.section;
+      lines.push(`<div class="ai-proposal-title">${esc(secLabel)} ${esc(actionLabel)} 제안</div>`);
+      if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
+      if (proposal.imageUrl) {
+        lines.push(`<img class="ai-proposal-thumb" src="${esc(proposal.imageUrl)}" alt="미리보기" referrerpolicy="no-referrer">`);
+      }
+      lines.push('<div class="ai-proposal-body">');
+      if (proposal.action === 'delete') {
+        lines.push(`<div>삭제 id: ${esc(proposal.itemId || '')}</div>`);
+      } else {
+        if (proposal.name) lines.push(`<div>이름: ${esc(proposal.name)}</div>`);
+        if (proposal.title) lines.push(`<div>제목: ${esc(proposal.title)}</div>`);
+        if (proposal.caption) lines.push(`<div>캡션: ${esc(proposal.caption)}</div>`);
+        if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
+        if (proposal.desc) lines.push(`<div>${esc(proposal.desc)}</div>`);
+        if (proposal.imageUrl) lines.push(`<div class="tiny">URL: ${esc(proposal.imageUrl)}</div>`);
+      }
+      if (proposal.itemId) lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
+      lines.push('</div>');
+    } else if (proposal.type === 'pack') {
+      lines.push(`<div class="ai-proposal-title">준비물 ${esc(actionLabel)} 제안</div>`);
+      if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
+      lines.push('<div class="ai-proposal-body">');
+      if (proposal.action === 'delete') lines.push(`<div>삭제 id: ${esc(proposal.itemId || '')}</div>`);
+      else if (proposal.text) lines.push(`<div>${esc(proposal.text)}</div>`);
+      if (proposal.itemId && proposal.action !== 'add') lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
+      lines.push('</div>');
     } else {
-      if (proposal.time) lines.push(`<div>시간: ${esc(proposal.time)}</div>`);
-      if (proposal.place) lines.push(`<div>장소: ${esc(proposal.place)}</div>`);
-      if (proposal.task) lines.push(`<div>할 일: ${esc(proposal.task)}</div>`);
-      if (proposal.note) lines.push(`<div>메모: ${esc(proposal.note)}</div>`);
+      lines.push(`<div class="ai-proposal-title">일정 ${esc(actionLabel)} 제안 · ${esc(dayLabel(proposal.day))}</div>`);
+      if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
+      lines.push('<div class="ai-proposal-body">');
+      if (proposal.action === 'delete') {
+        lines.push(`<div>삭제 대상 ID: ${esc(proposal.itemId || '')}</div>`);
+      } else {
+        if (proposal.time) lines.push(`<div>시간: ${esc(proposal.time)}</div>`);
+        if (proposal.place) lines.push(`<div>장소: ${esc(proposal.place)}</div>`);
+        if (proposal.task) lines.push(`<div>할 일: ${esc(proposal.task)}</div>`);
+        if (proposal.note) lines.push(`<div>메모: ${esc(proposal.note)}</div>`);
+      }
+      if (proposal.action !== 'add' && proposal.itemId) {
+        lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
+      }
+      lines.push('</div>');
     }
-    if (proposal.action !== 'add' && proposal.itemId) {
-      lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
+
+    if (!canApply) {
+      lines.push('<div class="ai-proposal-warn">여행방에 입장해야 적용할 수 있어요. (설정 → 여행방)</div>');
     }
-    lines.push('</div>');
-    if (!api.canEdit()) {
-      lines.push('<div class="ai-proposal-warn">여행방에 입장해야 적용할 수 있어요.</div>');
-    }
+    const applyLabel = proposal.type === 'route' ? '동선 전체 적용' : '적용';
     lines.push(`
       <div class="ai-proposal-actions">
-        <button type="button" class="ai-apply" data-pid="${proposal.id}">적용</button>
+        <button type="button" class="ai-apply" data-pid="${proposal.id}">${applyLabel}</button>
         <button type="button" class="ai-reject" data-pid="${proposal.id}">취소</button>
       </div>
     `);
@@ -381,6 +561,16 @@ export function initAiGuide() {
     if (name === 'get_itinerary') {
       return api.getSnapshot();
     }
+    if (name === 'get_editable_content') {
+      const section = args.section || 'all';
+      const content = getGuideContentApi().getSnapshot();
+      const pack = getTripPackApi().getSnapshot();
+      if (section === 'hero') return { hero: content.hero, editable: content.editable };
+      if (section === 'food') return { food: content.food, editable: content.editable };
+      if (section === 'alternatives') return { alternatives: content.alternatives, editable: content.editable };
+      if (section === 'pack') return pack;
+      return { ...content, pack };
+    }
     if (name === 'web_search') {
       setStatus('웹 검색 중…');
       return webSearch(apiKey, args.query);
@@ -398,6 +588,7 @@ export function initAiGuide() {
       const id = `p${++proposalSeq}`;
       const proposal = {
         id,
+        type: 'single',
         action: args.action,
         day: args.day,
         itemId: args.itemId || '',
@@ -422,6 +613,112 @@ export function initAiGuide() {
         proposalId: id,
         status: 'waiting_user_confirmation',
         note: '사용자에게 적용/취소 버튼을 보여줬습니다. 적용 전에는 일정이 저장되지 않습니다.'
+      };
+    }
+    if (name === 'propose_route_plan') {
+      const items = Array.isArray(args.items) ? args.items.slice(0, 6) : [];
+      if (items.length < 2) {
+        return { ok: false, error: '동선 제안은 장소 2곳 이상 필요해요.' };
+      }
+      const id = `r${++proposalSeq}`;
+      const proposal = {
+        id,
+        type: 'route',
+        day: args.day,
+        title: args.title || '동선 제안',
+        routeSummary: args.routeSummary || '',
+        reason: args.reason || '',
+        items: items.map(it => ({
+          time: it.time || '',
+          place: it.place || '',
+          task: it.task || '',
+          note: [it.travelFromPrev ? `이동 ${it.travelFromPrev}` : '', it.note || ''].filter(Boolean).join(' · '),
+          placeMapsUrl: it.placeMapsUrl || '',
+          travelFromPrev: it.travelFromPrev || ''
+        })),
+        status: 'pending'
+      };
+      if (!/^day[1-4]$/.test(String(proposal.day || ''))) {
+        return { ok: false, error: 'day는 day1~day4 중 하나여야 해요.' };
+      }
+      proposals.set(id, proposal);
+      appendProposalCard(proposal);
+      return {
+        ok: true,
+        proposalId: id,
+        status: 'waiting_user_confirmation',
+        itemCount: proposal.items.length,
+        note: '동선 전체 적용 버튼이 표시되었습니다. 적용 전 저장되지 않습니다.'
+      };
+    }
+    if (name === 'propose_content_change') {
+      const section = args.section;
+      const action = args.action;
+      if (!['hero', 'food', 'alternatives'].includes(section)) {
+        return { ok: false, error: 'section은 hero|food|alternatives 여야 해요.' };
+      }
+      if ((action === 'update' || action === 'delete') && !args.itemId) {
+        return { ok: false, error: 'update/delete에는 itemId가 필요해요. get_editable_content로 확인하세요.' };
+      }
+      if (action === 'add' && section === 'hero' && !args.imageUrl) {
+        return { ok: false, error: '히어로 추가에는 imageUrl이 필요해요.' };
+      }
+      if (action === 'add' && section === 'food' && !args.name) {
+        return { ok: false, error: '맛집 추가에는 name이 필요해요.' };
+      }
+      const id = `c${++proposalSeq}`;
+      const proposal = {
+        id,
+        type: 'content',
+        section,
+        action,
+        itemId: args.itemId || '',
+        tag: args.tag || '',
+        name: args.name || '',
+        title: args.title || '',
+        desc: args.desc || '',
+        caption: args.caption || '',
+        imageUrl: args.imageUrl || '',
+        mapsUrl: args.mapsUrl || '',
+        siteUrl: args.siteUrl || '',
+        reviewUrl: args.reviewUrl || '',
+        linkUrl: args.linkUrl || '',
+        linkLabel: args.linkLabel || '',
+        reason: args.reason || '',
+        status: 'pending'
+      };
+      proposals.set(id, proposal);
+      appendProposalCard(proposal);
+      return {
+        ok: true,
+        proposalId: id,
+        status: 'waiting_user_confirmation',
+        note: '적용 전 저장되지 않습니다. 이미지 URL 미리보기를 확인하세요.'
+      };
+    }
+    if (name === 'propose_pack_change') {
+      if ((args.action === 'update' || args.action === 'delete') && !args.itemId) {
+        return { ok: false, error: 'update/delete에는 itemId가 필요해요.' };
+      }
+      if ((args.action === 'add' || args.action === 'update') && !args.text) {
+        return { ok: false, error: '준비물 text가 필요해요.' };
+      }
+      const id = `k${++proposalSeq}`;
+      const proposal = {
+        id,
+        type: 'pack',
+        action: args.action,
+        itemId: args.itemId || '',
+        text: args.text || '',
+        reason: args.reason || '',
+        status: 'pending'
+      };
+      proposals.set(id, proposal);
+      appendProposalCard(proposal);
+      return {
+        ok: true,
+        proposalId: id,
+        status: 'waiting_user_confirmation'
       };
     }
     return { ok: false, error: `알 수 없는 도구: ${name}` };
@@ -510,11 +807,17 @@ export function initAiGuide() {
     }
     history = [];
     proposals.clear();
-    if (logEl) logEl.innerHTML = '';
-    setStatus('API 키를 이 기기에서 삭제했어요.');
+    if (logEl) {
+      logEl.innerHTML = '<div class="ai-chat-empty" id="aiChatEmpty">질문을 보내면 여기에 답변이 쌓여요. 위 칩으로도 바로 물어볼 수 있어요.</div>';
+    }
+    refreshKeyUi('API 키를 이 기기에서 삭제했어요.');
+    openKeyFold();
   });
 
-  modelSelect?.addEventListener('change', () => saveModel(modelSelect.value));
+  modelSelect?.addEventListener('change', () => {
+    saveModel(modelSelect.value);
+    refreshKeyUi();
+  });
 
   chipWrap?.addEventListener('click', e => {
     const btn = e.target.closest('[data-ai-q]');
@@ -553,32 +856,97 @@ export function initAiGuide() {
       return;
     }
 
-    const api = getItineraryApi();
-    if (!api.canEdit()) {
+    const itinApi = getItineraryApi();
+    const contentApi = getGuideContentApi();
+    const packApi = getTripPackApi();
+    const needsRoom = true;
+    const canApply = proposal.type === 'content'
+      ? contentApi.canEdit()
+      : proposal.type === 'pack'
+        ? packApi.canEdit()
+        : itinApi.canEdit();
+    if (needsRoom && !canApply) {
       setStatus('여행방에 입장한 뒤 적용할 수 있어요.', true);
-      appendBubble('assistant', '여행방에 입장해야 일정을 저장할 수 있어요. 함께 준비에서 닉네임으로 입장해 주세요.');
+      appendBubble('assistant', '여행방에 입장해야 저장할 수 있어요. 설정 → 여행방에서 입장해 주세요.');
       return;
     }
 
     applyBtn.disabled = true;
     rejectBtn?.setAttribute('disabled', 'disabled');
-    setStatus('일정에 적용 중…');
+    setStatus('적용 중…');
     try {
-      if (proposal.action === 'add') {
-        await api.addItem(proposal);
+      if (proposal.type === 'content') {
+        await contentApi.applyProposal(proposal);
+        proposal.status = 'applied';
+        const hash = proposal.section === 'hero' ? '' : (proposal.section === 'food' ? '#food' : '#late-rest');
+        appendBubble('assistant', `가이드에 반영했어요.${hash ? ` 앱에서 보기: ${hash}` : ' 메인 그림을 확인해 보세요.'}`);
+        history.push({
+          role: 'assistant',
+          content: `사용자가 콘텐츠 제안(${pid})을 적용했습니다. section=${proposal.section}, action=${proposal.action}.`
+        });
+        if (proposal.section === 'food') document.getElementById('food')?.setAttribute('open', '');
+        if (proposal.section === 'alternatives') document.getElementById('late-rest')?.setAttribute('open', '');
+      } else if (proposal.type === 'pack') {
+        if (proposal.action === 'add') await packApi.addPack(proposal.text);
+        else if (proposal.action === 'update') await packApi.updatePack(proposal.itemId, proposal.text);
+        else if (proposal.action === 'delete') await packApi.deletePack(proposal.itemId);
+        else throw new Error('알 수 없는 준비물 제안이에요.');
+        proposal.status = 'applied';
+        appendBubble('assistant', '준비물에 반영했어요. 앱에서 보기: #trip');
+        history.push({
+          role: 'assistant',
+          content: `사용자가 준비물 제안(${pid})을 적용했습니다. action=${proposal.action}.`
+        });
+        document.getElementById('trip')?.setAttribute('open', '');
+      } else if (proposal.type === 'route') {
+        for (const it of proposal.items || []) {
+          await itinApi.addItem({
+            day: proposal.day,
+            time: it.time,
+            place: it.place,
+            task: it.task,
+            note: it.note,
+            placeMapsUrl: it.placeMapsUrl
+          });
+        }
+        proposal.status = 'applied';
+        appendBubble('assistant', `동선 ${proposal.items.length}곳을 일정에 반영했어요. 앱에서 보기: #itinerary`);
+        history.push({
+          role: 'assistant',
+          content: `사용자가 동선 제안(${pid})을 적용했습니다. day=${proposal.day}, items=${proposal.items.length}.`
+        });
+        document.getElementById('itinerary')?.setAttribute('open', '');
+      } else if (proposal.action === 'add') {
+        await itinApi.addItem(proposal);
+        proposal.status = 'applied';
+        appendBubble('assistant', '일정에 반영했어요. 앱에서 보기: #itinerary');
+        history.push({
+          role: 'assistant',
+          content: `사용자가 일정 제안(${pid})을 적용했습니다. action=${proposal.action}, day=${proposal.day}.`
+        });
+        document.getElementById('itinerary')?.setAttribute('open', '');
       } else if (proposal.action === 'update') {
-        await api.updateItem(proposal.itemId, proposal);
+        await itinApi.updateItem(proposal.itemId, proposal);
+        proposal.status = 'applied';
+        appendBubble('assistant', '일정에 반영했어요. 앱에서 보기: #itinerary');
+        history.push({
+          role: 'assistant',
+          content: `사용자가 일정 제안(${pid})을 적용했습니다. action=${proposal.action}, day=${proposal.day}.`
+        });
+        document.getElementById('itinerary')?.setAttribute('open', '');
       } else if (proposal.action === 'delete') {
-        await api.deleteItem(proposal.itemId);
+        await itinApi.deleteItem(proposal.itemId);
+        proposal.status = 'applied';
+        appendBubble('assistant', '일정에 반영했어요. 앱에서 보기: #itinerary');
+        history.push({
+          role: 'assistant',
+          content: `사용자가 일정 제안(${pid})을 적용했습니다. action=${proposal.action}, day=${proposal.day}.`
+        });
+        document.getElementById('itinerary')?.setAttribute('open', '');
+      } else {
+        throw new Error('알 수 없는 제안 형식이에요.');
       }
-      proposal.status = 'applied';
-      appendBubble('assistant', `일정에 반영했어요. 앱에서 보기: #itinerary`);
-      history.push({
-        role: 'assistant',
-        content: `사용자가 일정 제안(${pid})을 적용했습니다. action=${proposal.action}, day=${proposal.day}.`
-      });
-      setStatus('일정에 반영했어요.');
-      document.getElementById('itinerary')?.setAttribute('open', '');
+      setStatus('반영했어요.');
     } catch (err) {
       proposal.status = 'pending';
       applyBtn.disabled = false;
@@ -599,6 +967,7 @@ export function initAiGuide() {
     persistKeyFromInput({ silent: true });
     const apiKey = loadKey();
     if (!apiKey) {
+      openKeyFold();
       setStatus('먼저 OpenAI API 키를 붙여넣어 주세요. (자동 저장됩니다)', true);
       keyInput?.focus();
       return;
@@ -625,8 +994,9 @@ export function initAiGuide() {
         api.canEdit()
           ? `현재 여행방 ${api.tripCode()}에 ${api.nickname()}(으)로 입장되어 일정 편집 가능.`
           : '아직 여행방 미입장. 일정 제안은 가능하지만 적용하려면 입장이 필요함을 안내.',
-        '도구: get_guide_section, get_itinerary, web_search, ask_clarification, propose_itinerary_change',
-        '맛집/마사지 일정 반영 요청 시: get_guide_section → (필요시 질문) → propose_itinerary_change 순서 권장.'
+        '도구: get_guide_section, get_itinerary, get_editable_content, web_search, ask_clarification, propose_itinerary_change, propose_route_plan, propose_content_change, propose_pack_change',
+        '메인 그림/맛집/대안/이미지URL: get_editable_content → web_search(필요시) → propose_content_change',
+        '준비물: get_editable_content(pack) → propose_pack_change'
       ].filter(Boolean).join('\n\n');
 
       const messages = [

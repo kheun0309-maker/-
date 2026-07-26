@@ -342,15 +342,64 @@
       border-color: #ffb39a; background: #fff7f3;
       box-shadow: inset 3px 0 0 var(--coral);
     }
+    .trip-need-join {
+      display: grid; gap: 10px; padding: 14px 12px; margin-bottom: 8px;
+      border: 1px dashed var(--line); border-radius: 12px; background: #fff;
+      font-size: 0.86rem; font-weight: 600; color: var(--muted);
+    }
+    .trip-need-join-btn {
+      display: inline-flex; justify-content: center; align-items: center;
+      padding: 10px 12px; border-radius: 12px; text-decoration: none;
+      background: var(--coral); color: #fff; font-weight: 800; font-size: 0.86rem;
+    }
+    .trip-session { display: grid; gap: 8px; }
+    #settings .ai-key-fold { margin-bottom: 8px; }
+    #settings .ai-key-fold:last-child { margin-bottom: 0; }
+    .ai-key-fold {
+      margin: 8px 0 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f3fbfc;
+      overflow: hidden;
+    }
+    .ai-key-fold > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-key-fold > summary::-webkit-details-marker { display: none; }
+    .ai-key-fold > summary::after {
+      content: '▾';
+      font-size: 0.7rem;
+      color: var(--muted);
+      transition: transform 0.15s ease;
+    }
+    .ai-key-fold[open] > summary::after { transform: rotate(180deg); }
+    .ai-key-fold-label { color: var(--ocean); }
+    .ai-key-fold-status { font-weight: 600; color: var(--muted); font-size: 0.76rem; }
+    .ai-key-fold-status.is-ready { color: #0a7a4a; }
+    .ai-key-fold-status.is-missing { color: var(--coral); }
     .ai-setup {
-      display: grid; gap: 8px; margin-bottom: 10px; padding: 10px 12px;
-      border: 1px solid var(--line); border-radius: 14px; background: #f3fbfc;
+      display: grid; gap: 8px;
+      padding: 0 12px 12px;
+      border: 0; background: transparent;
     }
     .ai-setup .trip-field { margin: 0; }
     .ai-setup-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .ai-chat-log {
-      display: grid; gap: 8px; max-height: min(50vh, 420px); overflow: auto;
-      padding: 4px 2px 10px; margin-bottom: 8px;
+      display: grid; gap: 8px; max-height: min(58vh, 520px); overflow: auto;
+      padding: 4px 2px 10px; margin-bottom: 8px; min-height: 120px;
+    }
+    .ai-chat-empty {
+      color: var(--muted); font-size: 0.84rem; font-weight: 600; line-height: 1.45;
+      padding: 14px 12px; border: 1px dashed var(--line); border-radius: 12px; background: #fff;
     }
     .ai-bubble {
       max-width: 92%; padding: 10px 12px; border-radius: 14px;
@@ -391,7 +440,17 @@
     }
     .ai-proposal-title { font-weight: 800; color: var(--coral); margin-bottom: 4px; }
     .ai-proposal-reason { font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+    .ai-proposal-route {
+      font-size: 0.88rem; font-weight: 700; color: var(--ocean);
+      margin-bottom: 6px; padding: 6px 8px; background: rgba(15, 118, 145, 0.08);
+      border-radius: 8px;
+    }
     .ai-proposal-body { font-size: 0.86rem; display: grid; gap: 2px; margin-bottom: 8px; }
+    .ai-route-step {
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--line);
+    }
+    .ai-route-step:last-child { border-bottom: 0; }
     .ai-proposal-warn { color: var(--coral); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
     .ai-proposal-actions { display: flex; gap: 8px; }
     .ai-proposal-actions button {
@@ -414,6 +473,14 @@
     .option-card h3 { font-size: 0.9rem; color: var(--ocean); margin-bottom: 4px; font-family: inherit; font-weight: 700; }
     .option-card p { font-size: 0.8rem; color: var(--muted); }
     .option-card .tag { margin-top: 6px; }
+    .card-photo {
+      display: block; width: 100%; height: 140px; object-fit: cover;
+      border-radius: 10px; margin-bottom: 8px; background: #e8f2f4;
+    }
+    .ai-proposal-thumb {
+      display: block; width: 100%; max-height: 140px; object-fit: cover;
+      border-radius: 10px; margin: 6px 0; background: #e8f2f4;
+    }
     .map-shell {
       position: relative; border-radius: 14px; overflow: hidden;
       border: 1px solid var(--line); background: #dceef2;
@@ -936,63 +1003,28 @@
         <a href="#tips" data-open="tips">⚠ 주의</a>
         <a href="#pack" data-open="pack">🎒 짐</a>
         <a href="#ai" data-open="ai">🤖 AI</a>
+        <a href="#settings" data-open="settings">⚙️ 설정</a>
       </nav>
     </div>
 
     <details class="widget fold-widget" id="trip" open>
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
-        <p class="trip-hint">닉네임으로 여행방에 들어가면 <b>준비물 · 출발 전 할 일 · 공지</b>를 서로 실시간으로 공유할 수 있어요. 카톡으로 보낼 때는 <b>Chrome으로 열기</b>를 안내해 주세요.</p>
+        <p class="trip-hint">입장 후 <b>준비물 · 출발 전 할 일 · 공지</b>를 실시간으로 공유해요. 방 코드·닉네임은 <a href="#settings" data-open="settings">설정</a>에서 관리합니다.</p>
         <div class="trip-unread-banner" id="tripUnreadBanner" role="status">
           <span id="tripUnreadText"></span>
           <button type="button" id="tripMarkReadBtn">확인했어요</button>
         </div>
 
-        <div class="trip-setup" id="tripSetup" hidden>
-          <strong>Firebase 연결이 필요합니다</strong>
-          <p style="margin:6px 0 0">관리자가 Firebase 프로젝트를 만들면 바로 사용할 수 있습니다.</p>
-          <ol>
-            <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a>에서 웹 앱 추가</li>
-            <li><code>js/firebase-config.js</code>에 config 값 붙여넣기</li>
-            <li>Authentication → Anonymous 사용 설정</li>
-            <li>Authorized domains에 <code>kheun0309-maker.github.io</code> 추가</li>
-            <li>Firestore 생성 후 <code>firebase/firestore.rules</code> 게시</li>
-          </ol>
-          <p class="tiny" style="margin-top:8px">자세한 순서: <code>firebase/SETUP.md</code></p>
-        </div>
-
-        <div class="trip-gate" id="tripGate" hidden>
-          <div class="trip-field">
-            <label for="tripNickname">닉네임</label>
-            <input id="tripNickname" type="text" maxlength="24" placeholder="예: 은기호" autocomplete="nickname">
-          </div>
-          <div class="trip-actions">
-            <button type="button" class="primary" id="tripCreateBtn">방 만들기</button>
-          </div>
-          <div class="trip-field">
-            <label for="tripJoinCode">여행방 코드 (6자리)</label>
-            <input id="tripJoinCode" type="text" maxlength="6" placeholder="예: AB3K7M" autocomplete="off" autocapitalize="characters">
-          </div>
-          <div class="trip-actions">
-            <button type="button" class="ghost" id="tripJoinBtn">코드로 참여</button>
-          </div>
+        <div class="trip-need-join" id="tripNeedJoin" hidden>
+          <p>여행방에 입장해야 함께 준비 목록을 볼 수 있어요.</p>
+          <a class="trip-need-join-btn" href="#settings" data-open="settings">설정에서 입장하기</a>
         </div>
 
         <div class="trip-room-panel" id="tripRoomPanel" hidden>
-          <div class="trip-toolbar">
-            <div>
-              <div class="tiny">여행방 코드</div>
-              <div class="trip-code-box" id="tripCodeLabel">------</div>
-              <span class="trip-room-unread" id="tripRoomUnreadCount" hidden></span>
-            </div>
-            <div class="trip-actions" style="margin:0">
-              <button type="button" class="ghost" id="tripCopyBtn">복사</button>
-              <button type="button" class="ghost" id="tripShareBtn">공유</button>
-              <button type="button" class="ghost" id="tripLeaveBtn">나가기</button>
-            </div>
-          </div>
           <div class="trip-members" id="tripMembers" aria-label="참가자"></div>
           <p class="trip-admin-hint" id="tripAdminHint" hidden>어드민(은섹젤): 이름 옆 × 로 참가자를 정리할 수 있어요.</p>
+          <p class="trip-room-unread" id="tripRoomUnreadCount" hidden></p>
 
           <div class="trip-tabs" role="tablist">
             <button type="button" class="active" data-trip-tab="pack">준비물<span class="tab-badge" data-tab-badge="pack">0</span></button>
@@ -1039,43 +1071,114 @@
       <summary>🤖 여행 AI 물어보기</summary>
       <div class="fold-body">
         <p class="tiny" style="margin:-4px 0 10px">
-          앱 <b>가이드 요약·맛집·마사지·호핑</b> 등을 보고 답하고, 필요하면 웹 검색도 합니다.
-          「웰컴 씨푸드 Day3 저녁에 넣어줘」처럼 말하면 일정 제안을 띄우고, <b>적용</b>을 눌러야 저장됩니다.
-          API 키는 이 폰에만 저장 · 일정 적용은 여행방 입장 후.
+          가이드·일정을 보고 답하고, 일정 제안은 <b>적용</b>을 눌러야 저장됩니다.
         </p>
-        <div class="ai-setup">
-          <div class="trip-field">
-            <label for="aiApiKey">OpenAI API 키</label>
-            <input id="aiApiKey" type="password" autocomplete="off" spellcheck="false"
-              placeholder="sk-... 붙여넣으면 자동 저장">
-          </div>
-          <div class="trip-field">
-            <label for="aiModel">모델</label>
-            <select id="aiModel">
-              <option value="gpt-5.6-luna" selected>gpt-5.6-luna (추천)</option>
-              <option value="gpt-5.6-terra">gpt-5.6-terra</option>
-              <option value="gpt-5.6">gpt-5.6 (Sol)</option>
-              <option value="gpt-4o-mini">gpt-4o-mini</option>
-            </select>
-          </div>
-          <div class="ai-setup-actions">
-            <button type="button" class="primary" id="aiKeySave">키 저장</button>
-            <button type="button" class="ghost" id="aiKeyClear">키 삭제</button>
-          </div>
-          <p class="tiny" id="aiStatus" role="status">API 키를 붙여넣으면 이 기기에 자동 저장됩니다.</p>
-        </div>
 
         <div class="ai-suggest" id="aiSuggestChips" aria-label="추천 질문">
-          <button type="button" data-ai-q="앱 맛집 가이드 보고 Day3 저녁에 웰컴 씨푸드 일정을 추가 제안해줘. 시간 모르면 물어봐.">맛집→일정</button>
-          <button type="button" data-ai-q="앱 마사지 가이드 기준으로 Day3 호핑 후 Chillax 일정을 제안해줘.">마사지→일정</button>
-          <button type="button" data-ai-q="지금 내 일정을 보고 Day3 동선이 괜찮은지 가이드 기준으로 조언해줘.">일정 점검</button>
+          <button type="button" data-ai-q="앱 맛집 가이드 보고 Day3 저녁에 웰컴 씨푸드 일정을 추가 제안해줘. 영업시간 확인하고 시간 잡아서 propose해줘.">맛집→일정</button>
+          <button type="button" data-ai-q="내 Day3 일정을 보고, 호핑 하선 후 시내 식사→마사지→리조트 복귀 동선을 영업시간·이동시간 반영해서 propose_route_plan으로 제안해줘.">동선 제안</button>
+          <button type="button" data-ai-q="get_editable_content로 히어로를 보고, 코타키나발루 석양 공개 이미지 URL을 검색해 메인 그림(hero) 한 장을 바꾸는 propose_content_change를 해줘. URL만, Storage 없음.">메인 그림</button>
+          <button type="button" data-ai-q="추천 맛집에 괜찮은 KK 로컬 식당 하나를 사진 URL과 함께 propose_content_change(section=food, add)로 제안해줘. web_search로 확인.">맛집 추가</button>
+          <button type="button" data-ai-q="함께 준비 준비물 목록을 보고 호핑용으로 빠진 챙길 품목이 있으면 propose_pack_change로 추가 제안해줘.">짐 추가</button>
           <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
         </div>
-        <div class="ai-chat-log" id="aiChatLog" aria-live="polite"></div>
+        <div class="ai-chat-log" id="aiChatLog" aria-live="polite">
+          <div class="ai-chat-empty" id="aiChatEmpty">질문을 보내면 여기에 답변이 쌓여요. 위 칩으로도 바로 물어볼 수 있어요.</div>
+        </div>
         <form class="ai-chat-form" id="aiChatForm">
           <textarea id="aiChatInput" maxlength="800" rows="2" placeholder="예: 호핑 전에 뭘 준비해야 해?"></textarea>
           <button type="submit" id="aiChatSend">보내기</button>
         </form>
+        <p class="tiny" style="margin:8px 0 0">API 키·모델은 <a href="#settings" data-open="settings">설정</a>에서 바꿀 수 있어요.</p>
+      </div>
+    </details>
+
+    <details class="widget fold-widget" id="settings">
+      <summary>⚙️ 설정</summary>
+      <div class="fold-body">
+        <p class="tiny" style="margin:-4px 0 10px">여행방 입장·AI 키처럼 자주 건드리지 않는 항목을 모아 두었어요.</p>
+
+        <details class="ai-key-fold" id="tripSettingsFold" open>
+          <summary>
+            <span class="ai-key-fold-label">여행방</span>
+            <span class="ai-key-fold-status" id="tripSettingsSummary">미입장</span>
+          </summary>
+          <div class="ai-setup">
+            <div class="trip-setup" id="tripSetup" hidden>
+              <strong>Firebase 연결이 필요합니다</strong>
+              <p style="margin:6px 0 0">관리자가 Firebase 프로젝트를 만들면 바로 사용할 수 있습니다.</p>
+              <ol>
+                <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a>에서 웹 앱 추가</li>
+                <li><code>js/firebase-config.js</code>에 config 값 붙여넣기</li>
+                <li>Authentication → Anonymous 사용 설정</li>
+                <li>Authorized domains에 <code>kheun0309-maker.github.io</code> 추가</li>
+                <li>Firestore 생성 후 <code>firebase/firestore.rules</code> 게시</li>
+              </ol>
+              <p class="tiny" style="margin-top:8px">자세한 순서: <code>firebase/SETUP.md</code></p>
+            </div>
+
+            <div class="trip-gate" id="tripGate" hidden>
+              <p class="tiny" style="margin:0 0 8px">카톡으로 보낼 때는 <b>Chrome으로 열기</b>를 안내해 주세요.</p>
+              <div class="trip-field">
+                <label for="tripNickname">닉네임</label>
+                <input id="tripNickname" type="text" maxlength="24" placeholder="예: 은기호" autocomplete="nickname">
+              </div>
+              <div class="trip-actions">
+                <button type="button" class="primary" id="tripCreateBtn">방 만들기</button>
+              </div>
+              <div class="trip-field">
+                <label for="tripJoinCode">여행방 코드 (6자리)</label>
+                <input id="tripJoinCode" type="text" maxlength="6" placeholder="예: AB3K7M" autocomplete="off" autocapitalize="characters">
+              </div>
+              <div class="trip-actions">
+                <button type="button" class="ghost" id="tripJoinBtn">코드로 참여</button>
+              </div>
+            </div>
+
+            <div class="trip-session" id="tripSessionPanel" hidden>
+              <div class="trip-toolbar">
+                <div>
+                  <div class="tiny">여행방 코드</div>
+                  <div class="trip-code-box" id="tripCodeLabel">------</div>
+                </div>
+                <div class="trip-actions" style="margin:0">
+                  <button type="button" class="ghost" id="tripCopyBtn">복사</button>
+                  <button type="button" class="ghost" id="tripShareBtn">공유</button>
+                  <button type="button" class="ghost" id="tripLeaveBtn">나가기</button>
+                </div>
+              </div>
+              <p class="tiny" style="margin:0">준비물·공지는 <a href="#trip" data-open="trip">함께 준비</a>에서 확인하세요.</p>
+            </div>
+          </div>
+        </details>
+
+        <details class="ai-key-fold" id="aiKeyFold">
+          <summary>
+            <span class="ai-key-fold-label">AI 키 · 모델</span>
+            <span class="ai-key-fold-status" id="aiKeySummary">키 미설정</span>
+          </summary>
+          <div class="ai-setup">
+            <div class="trip-field">
+              <label for="aiApiKey">OpenAI API 키</label>
+              <input id="aiApiKey" type="password" autocomplete="off" spellcheck="false"
+                placeholder="sk-... 붙여넣으면 자동 저장">
+            </div>
+            <div class="trip-field">
+              <label for="aiModel">모델</label>
+              <select id="aiModel">
+                <option value="gpt-5.6-luna" selected>gpt-5.6-luna (추천)</option>
+                <option value="gpt-5.6-terra">gpt-5.6-terra</option>
+                <option value="gpt-5.6">gpt-5.6 (Sol)</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
+              </select>
+            </div>
+            <div class="ai-setup-actions">
+              <button type="button" class="primary" id="aiKeySave">키 저장</button>
+              <button type="button" class="ghost" id="aiKeyClear">키 삭제</button>
+            </div>
+            <p class="tiny" id="aiStatus" role="status">API 키는 이 기기에만 저장됩니다.</p>
+          </div>
+        </details>
       </div>
     </details>
 
@@ -1295,7 +1398,7 @@
         <p class="tiny" id="itinEditHint">여행방에 입장하면 일정을 함께 수정·드래그·사진 URL을 넣을 수 있어요.</p>
         <div class="itin-change-feed" id="itinChangeFeed" hidden>
           <div class="itin-change-head">
-            <strong>새 일정 변경</strong>
+            <strong>새 변경 소식</strong>
             <button type="button" class="itin-btn" id="itinMarkReadBtn">확인했어요</button>
           </div>
           <ul id="itinChangeList"></ul>
@@ -1307,85 +1410,8 @@
     <details class="widget fold-widget" id="food">
       <summary>🍽 시내 추천 맛집</summary>
       <div class="fold-body">
-      <p class="tiny" style="margin:-4px 0 10px">지도·후기 링크로 바로 열어보세요. 버터새우·칠리크랩은 필수 코스!</p>
-
-      <div class="info-card">
-        <span class="tag ok">해산물 대표</span>
-        <b>웰컴 씨푸드 · Asia City</b>
-        <p>
-          KK 대표 해산물집. 수조에서 골라 조리법 지정.<br>
-          시그니처: 버터새우, 칠리크랩, 공심채, 계란볶음밥<br>
-          Asia City / 힐튼 KK 인근 · 피크타임 대기 많음
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=Welcome+Seafood+Restaurant+Asia+City+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
-          <a class="soft" href="https://wsr.com.my/en/" target="_blank" rel="noopener">공식 사이트</a>
-          <a class="review" href="https://triple.guide/restaurants/c290bf86-92f1-42bf-a80a-fd36250a383a" target="_blank" rel="noopener">트리플 후기</a>
-        </div>
-      </div>
-
-      <div class="info-card">
-        <span class="tag ok">해산물 대표</span>
-        <b>쌍천 씨푸드 (Suang Tain / 双天)</b>
-        <p>
-          오징어튀김·드라이버터새우 호평. Sedco Complex / Kampung Air.<br>
-          영업 대략 14:30~23:00 · 웰컴과 취향 따라 택1해도 OK
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=Suang+Tain+Seafood+Restaurant+Sedco+Complex+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
-          <a class="review" href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Seafood-Restaurant-Suangtain-Seafood-review.html" target="_blank" rel="noopener">블로그 후기</a>
-          <a class="soft" href="https://travel.eundol.com/entry/%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%ED%98%84%EC%A7%80-%EB%A7%9B%EC%A7%91-%EC%8C%8D%EC%B2%9C%EC%94%A8%ED%91%B8%EB%93%9C" target="_blank" rel="noopener">메뉴 참고</a>
-        </div>
-      </div>
-
-      <div class="info-card">
-        <span class="tag">가성비 씨푸드</span>
-        <b>KK 가든 씨푸드</b>
-        <p>
-          현지인·가성비로 자주 추천. 블랙페퍼크랩·드라이버터새우·계란볶음밥.
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=KK+Garden+Seafood+Restaurant+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
-          <a class="review" href="https://triple.guide/restaurants/d12628a1-44b7-4238-9134-48a381877c70" target="_blank" rel="noopener">트리플 후기</a>
-        </div>
-      </div>
-
-      <div class="info-card">
-        <span class="tag">로컬</span>
-        <b>Kedai Kopi Fatt Kee</b>
-        <p>
-          Ang’s Hotel 아래 코피티암. 굴소스 치킨윙·호키엔미 유명. 웨이팅 대비.
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=Kedai+Kopi+Fatt+Kee+Ang+Hotel+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
-          <a class="soft" href="http://www.thanislim.com/2013/06/kota-kinabalu-food-guide-for-tourists.html" target="_blank" rel="noopener">로컬 가이드</a>
-        </div>
-      </div>
-
-      <div class="info-card">
-        <span class="tag">로컬</span>
-        <b>Yee Fung Laksa · 바쿠테</b>
-        <p>
-          사바식 락사·바쿠테는 시내 골목에서 가볍게. Day4 쇼핑 동선에 끼우기 좋음.<br>
-          돼지고기 메뉴는 할랄 여부 확인.
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=Yee+Fung+Laksa+Kota+Kinabalu" target="_blank" rel="noopener">락사 지도</a>
-          <a class="soft" href="https://www.google.com/maps/search/?api=1&query=Bak+Kut+Teh+Kota+Kinabalu" target="_blank" rel="noopener">바쿠테 지도</a>
-        </div>
-      </div>
-
-      <div class="info-card">
-        <span class="tag">분위기</span>
-        <b>워터프론트 · Jesselton Quay</b>
-        <p>
-          호핑 후 저녁·야시장 분위기. Day3 마사지 전후와 잘 맞음.
-        </p>
-        <div class="food-actions">
-          <a href="https://www.google.com/maps/search/?api=1&query=Jesselton+Quay+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
-          <a class="soft" href="https://www.google.com/maps/search/?api=1&query=Filipino+Market+Kota+Kinabalu" target="_blank" rel="noopener">필리피노 마켓</a>
-        </div>
-      </div>
+      <p class="tiny" style="margin:-4px 0 10px">지도·후기 링크로 바로 열어보세요. 여행방 입장 후 AI로 맛집·사진(URL)을 추가·수정할 수 있어요.</p>
+      <div id="foodEditable"></div>
       <p class="tiny">가격·메뉴·영업시간은 변동될 수 있어요. 방문 전 지도 앱에서 한번 더 확인하세요.</p>
       </div>
     </details>
@@ -1590,45 +1616,8 @@
     <details class="widget fold-widget" id="late-rest">
       <summary>🌙 마지막 날 · 늦게 쉴 대안</summary>
       <div class="fold-body">
-      <p class="tiny" style="margin:-2px 0 10px">귀국편이 심야~새벽(예: 00:35)이면, 리조트에서 버티기보다 <strong>공항 근처에서 쉬는 편</strong>이 훨씬 편합니다.</p>
-
-      <div class="option-card">
-        <span class="tag ok">가장 추천</span>
-        <h3>A. 공항 캡슐호텔 — Napzone KKIA by Sovotel</h3>
-        <p>
-          KKIA Terminal 1 안(랜드사이드) 캡슐. 샤워·수건·락커·짧은 시간 이용(수 시간 단위) 가능.<br>
-          시내/리조트에서 저녁 보내고 <strong>21:00~22:00경 공항 이동 → 캡슐에서 2~4시간 수면 → 체크인</strong>이 현실적인 루트입니다.<br>
-          Booking/Agoda에서 “Napzone KKIA”로 검색. 남녀 구역·공용 욕실.
-        </p>
-        <a class="link-btn" href="https://www.booking.com/hotel/my/napzone-kota-kinabalu.html" target="_blank" rel="noopener">Napzone KKIA 예약 보기</a>
-      </div>
-
-      <div class="option-card">
-        <span class="tag">대안</span>
-        <h3>B. 에어로포드(Aeropod) · 공항 인근 호텔 1박</h3>
-        <p>
-          공항에서 차로 수 분 거리의 쇼핑몰·호텔이 붙어 있습니다. Day4 체크아웃 후 시내를 보고, 저녁에 에어로포드로 이동해 짧게 잔 뒤 자정 전후 공항으로 가면 됩니다.<br>
-          캐리어를 낮에 맡겨 두기 좋고, 가족·커플에게 캡슐보다 편할 수 있습니다.
-        </p>
-      </div>
-
-      <div class="option-card">
-        <span class="tag">가성비</span>
-        <h3>C. 시내 데이유즈 / 늦은 체크아웃 + 공항 직행</h3>
-        <p>
-          시내 호텔에 Day4만 데이유즈(또는 늦은 체크아웃)를 잡고 샤워·짐 정리 후, 밤늦게 공항으로 이동합니다.<br>
-          공항 대기실에서 쪽잠도 가능하지만 냉방·소음이 있어 <strong>Napzone이 훨씬 낫습니다.</strong>
-        </p>
-      </div>
-
-      <div class="option-card">
-        <span class="tag warn">비추천에 가까움</span>
-        <h3>D. 라사 리아에 끝까지 머물기</h3>
-        <p>
-          리조트 → 공항 약 45분 + 야간 도로. 00:35 비행이면 대략 <strong>21:30 전후 리조트 출발</strong>이 안전한데, 그러면 Day4 시내 일정이 애매해집니다.<br>
-          시내를 제대로 보려면 A 또는 B가 동선상 유리합니다.
-        </p>
-      </div>
+      <p class="tiny" style="margin:-2px 0 10px">귀국편이 심야~새벽(예: 00:35)이면, 리조트에서 버티기보다 <strong>공항 근처에서 쉬는 편</strong>이 훨씬 편합니다. 여행방 입장 후 AI로 대안·사진(URL)을 수정할 수 있어요.</p>
+      <div id="altEditable"></div>
 
       <div class="info-card">
         <b>추천 타임라인 (KE5762 00:35 기준)</b>
@@ -1738,63 +1727,12 @@
   <script type="module" src="./js/trip-room.js"></script>
   <script type="module">
     import { initAiGuide } from './js/ai-guide.js';
+    import { initGuideContentUi } from './js/guide-content.js';
+    initGuideContentUi();
     initAiGuide();
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    (function initHeroSlideshow() {
-      const slides = Array.from(document.querySelectorAll('#heroSlides .hero-slide'));
-      const dotsWrap = document.getElementById('heroDots');
-      const caption = document.getElementById('heroCaption');
-      if (!slides.length) return;
-
-      const lines = [
-        '노을이 질 때마다, 또 가고 싶어진다',
-        '파라솔 아래서 보는 황금빛 수평선',
-        '야자수 사이로 스며드는 보라빛 저녁',
-        '바다가 불을 켜는 순간',
-        '보트를 타고 들어가고 싶은 석양'
-      ];
-
-      slides.forEach((_, i) => {
-        const dot = document.createElement('span');
-        if (i === 0) dot.classList.add('is-on');
-        dotsWrap.appendChild(dot);
-      });
-      const dots = Array.from(dotsWrap.children);
-
-      // Preload remaining slides so fades stay smooth
-      slides.slice(1).forEach(slide => {
-        const url = (slide.style.backgroundImage || '').replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
-        if (url) { const img = new Image(); img.src = url; }
-      });
-
-      let index = 0;
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      const show = next => {
-        slides[index].classList.remove('is-active');
-        dots[index].classList.remove('is-on');
-        index = next;
-        slides[index].classList.add('is-active');
-        dots[index].classList.add('is-on');
-        if (caption) {
-          caption.style.opacity = '0';
-          caption.style.transform = 'translateY(6px)';
-          caption.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
-          setTimeout(() => {
-            caption.textContent = lines[index % lines.length];
-            caption.style.opacity = '1';
-            caption.style.transform = 'none';
-          }, 220);
-        }
-      };
-
-      if (!reduceMotion) {
-        setInterval(() => show((index + 1) % slides.length), 4200);
-      }
-    })();
-
     const FX_CACHE_KEY = 'kk-myr-krw-rate';
     const FX_FALLBACK = 300;
     let myrToKrw = FX_FALLBACK;
@@ -2053,14 +1991,15 @@
         { title: '항공편', desc: 'KE5761 · KE5762 · 인천 T2', open: 'flights', href: 'flights', keys: ['항공', '비행기', '비행', 'ke5761', 'ke5762', '인천', '출국', '귀국'] },
         { title: '일자별 일정', desc: 'Day1~4 · 함께 수정', open: 'itinerary', href: 'itinerary', keys: ['일정', '스케줄', 'day1', 'day2', 'day3', 'day4', '타임라인'] },
         { title: '동선 지도', desc: '공항 · 리조트 · 시내 · 내 위치', open: 'map', href: 'map', keys: ['지도', '맵', '동선', '길찾기', 'gps', '위치'] },
-        { title: '함께 준비', desc: '준비물 · 공지 · 여행방', open: 'trip', href: 'trip', keys: ['함께', '여행방', '공지', '준비물', '체크리스트', '공유'] },
+        { title: '함께 준비', desc: '준비물 · 공지 · 출발 전 할 일', open: 'trip', href: 'trip', keys: ['함께', '공지', '준비물', '체크리스트', '공유'] },
+        { title: '설정', desc: '여행방 코드 · AI 키 · 모델', open: 'settings', href: 'settings', keys: ['설정', '여행방', '방코드', 'api', '키', '모델', 'openai'] },
         { title: '현지 시각 · 환율', desc: '한국/코타 시간 · MYR↔원', open: 'live', href: 'live', keys: ['환율', '링깃', 'myr', '시간', '시계', '환전'] },
         { title: '귀국 · 휴식', desc: '늦은 비행 · 공항 대기 · Napzone', open: 'late-rest', href: 'late-rest', keys: ['귀국', '휴식', '낮잠', 'napzone', '에어로포드', '늦은비행'] },
         { title: '주의사항', desc: '모기 · 햇빛 · 물 · 안전', open: 'tips', href: 'tips', keys: ['주의', '팁', '모기', '선크림', '안전', '물'] },
         { title: '짐 챙기기', desc: '개인 체크리스트', open: 'pack', href: 'pack', keys: ['짐', '캐리어', '챙기기', '패킹', '옷', '수영복'] },
         { title: '출발 전 할 일', desc: '예약 · 확인 체크', open: 'booking', href: 'booking', keys: ['출발전', '예약확인', '할일', '체크'] },
         { title: '반딧불이 투어', desc: 'Day2 리조트 리버 크루즈', open: 'itinerary', href: 'itinerary', keys: ['반딧불이', '파이어플라이', 'firefly', '크루즈', '맹그로브'] },
-        { title: '여행 AI', desc: 'OpenAI로 동선·팁 질문', open: 'ai', href: 'ai', keys: ['ai', '인공지능', '챗봇', 'openai', '질문', '물어보기'] }
+        { title: '여행 AI', desc: 'OpenAI로 동선·팁 질문', open: 'ai', href: 'ai', keys: ['ai', '인공지능', '챗봇', '질문', '물어보기'] }
       ];
 
       let activeIdx = -1;

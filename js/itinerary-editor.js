@@ -56,6 +56,11 @@ async function logItinEvent({ kind, day = '', summary = '', detail = '', itemId 
   }
 }
 
+/** 일정·가이드·준비물 등 여행방 변경 알림 (다른 멤버 미읽음 배지) */
+export async function logTripActivity(opts) {
+  return logItinEvent(opts);
+}
+
 function itemSummary(itemish) {
   const time = String(itemish?.time || '').trim();
   const place = String(itemish?.place || '').trim();

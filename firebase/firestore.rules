@@ -142,6 +142,28 @@ service cloud.firestore {
         allow delete: if signedIn() && validCode(tripId);
       }
 
+      // 히어로·맛집·대안 (이미지 URL 포함, Storage 없음)
+      match /guideSections/{sectionId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && sectionId in ['hero', 'food', 'alternatives']
+          && validNick(request.resource.data.updatedBy)
+          && (
+            (sectionId == 'hero'
+              && request.resource.data.slides is list
+              && request.resource.data.slides.size() > 0
+              && request.resource.data.slides.size() <= 8)
+            || (sectionId == 'food'
+              && request.resource.data.items is list
+              && request.resource.data.items.size() <= 20)
+            || (sectionId == 'alternatives'
+              && request.resource.data.items is list
+              && request.resource.data.items.size() <= 12)
+          );
+        allow delete: if signedIn() && validCode(tripId);
+      }
+
       // 일정 변경 알림용 이벤트 (인앱 배지)
       match /itinEvents/{eventId} {
         allow read: if signedIn() && validCode(tripId);

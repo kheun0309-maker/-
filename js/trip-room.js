@@ -21,7 +21,8 @@ import {
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
-import { attachItineraryRoom, detachItineraryRoom } from './itinerary-editor.js';
+import { attachItineraryRoom, detachItineraryRoom, logTripActivity } from './itinerary-editor.js';
+import { attachGuideContentRoom, detachGuideContentRoom } from './guide-content.js';
 
 const STORAGE_KEY = 'kk-trip-room-session';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -69,6 +70,11 @@ const el = {
   setup: document.getElementById('tripSetup'),
   gate: document.getElementById('tripGate'),
   room: document.getElementById('tripRoomPanel'),
+  needJoin: document.getElementById('tripNeedJoin'),
+  session: document.getElementById('tripSessionPanel'),
+  settings: document.getElementById('settings'),
+  settingsFold: document.getElementById('tripSettingsFold'),
+  settingsSummary: document.getElementById('tripSettingsSummary'),
   nick: document.getElementById('tripNickname'),
   code: document.getElementById('tripJoinCode'),
   createBtn: document.getElementById('tripCreateBtn'),
@@ -164,7 +170,11 @@ function itinKindLabel(kind) {
     delete: '삭제',
     reorder: '순서 변경',
     cover: '대표 사진',
-    dayMeta: '하루 정보'
+    dayMeta: '하루 정보',
+    hero: '메인 그림',
+    food: '맛집',
+    alt: '귀국 대안',
+    pack: '준비물'
   })[kind] || '변경';
 }
 
@@ -358,7 +368,7 @@ function renderUnreadBadges() {
   if (unreadBanner && unreadText) {
     if (n > 0) {
       const parts = [];
-      if (counts.itin) parts.push(`일정 ${counts.itin}`);
+      if (counts.itin) parts.push(`변경 ${counts.itin}`);
       if (counts.pack) parts.push(`준비물 ${counts.pack}`);
       if (counts.tasks) parts.push(`출발 전 ${counts.tasks}`);
       if (counts.notes) parts.push(`공지 ${counts.notes}`);
@@ -366,7 +376,7 @@ function renderUnreadBadges() {
       if (counts.itin) {
         const latest = unreadItinEvents()[0]?.data() || {};
         const who = latest.updatedBy || '누군가';
-        const bit = latest.detail || latest.summary || '';
+        const bit = latest.summary || latest.detail || '';
         if (bit) text += ` · ${who}: ${bit}`;
       }
       unreadText.textContent = text;
@@ -483,15 +493,42 @@ function makeCode() {
   return out;
 }
 
+function refreshTripSettingsSummary() {
+  if (!el.settingsSummary) return;
+  if (tripCode && nickname) {
+    el.settingsSummary.textContent = `입장 중 · ${tripCode} · ${nickname}`;
+    el.settingsSummary.classList.add('is-ready');
+    el.settingsSummary.classList.remove('is-missing');
+  } else {
+    el.settingsSummary.textContent = '미입장 · 펼쳐서 방 만들기/참여';
+    el.settingsSummary.classList.add('is-missing');
+    el.settingsSummary.classList.remove('is-ready');
+  }
+}
+
+function openTripSettings() {
+  if (el.settings) el.settings.open = true;
+  if (el.settingsFold) el.settingsFold.open = true;
+}
+
 function showGate() {
-  el.gate.hidden = false;
-  el.room.hidden = true;
+  if (el.gate) el.gate.hidden = false;
+  if (el.session) el.session.hidden = true;
+  if (el.room) el.room.hidden = true;
+  if (el.needJoin) el.needJoin.hidden = false;
+  if (el.codeLabel) el.codeLabel.textContent = '------';
+  refreshTripSettingsSummary();
 }
 
 function showRoom() {
-  el.gate.hidden = true;
-  el.room.hidden = false;
-  el.codeLabel.textContent = tripCode;
+  if (el.gate) el.gate.hidden = true;
+  if (el.session) el.session.hidden = false;
+  if (el.room) el.room.hidden = false;
+  if (el.needJoin) el.needJoin.hidden = true;
+  if (el.codeLabel) el.codeLabel.textContent = tripCode;
+  refreshTripSettingsSummary();
+  // 입장 후에는 함께 준비 본문을 보고, 설정 접기는 코드 관리용으로만 남김
+  if (el.settingsFold) el.settingsFold.open = false;
 }
 
 function clearUnsubs() {
@@ -792,6 +829,8 @@ function renderNotes(docs) {
 
 async function enterRoom() {
   showRoom();
+  const tripSection = document.getElementById('trip');
+  if (tripSection) tripSection.open = true;
   clearUnsubs();
   loadSeen(tripCode);
   dataCache = { pack: [], tasks: [], notes: [], itin: [] };
@@ -865,6 +904,9 @@ async function enterRoom() {
   attachItineraryRoom({ db, tripCode, nickname }).catch(err => {
     console.error(err);
   });
+  attachGuideContentRoom({ db, tripCode, nickname }).catch(err => {
+    console.error(err);
+  });
 }
 
 async function toggleItem(colName, id, checked) {
@@ -894,6 +936,64 @@ async function addItem(colName, text) {
   });
 }
 
+async function updateItemText(colName, id, text) {
+  const clean = String(text || '').trim().slice(0, 200);
+  if (!clean) throw new Error('내용이 비어 있어요.');
+  await updateDoc(doc(db, 'trips', tripCode, colName, id), {
+    text: clean,
+    updatedBy: nickname,
+    updatedAt: serverTimestamp()
+  });
+}
+
+async function logPackActivity(action, text, itemId = '') {
+  const act = ({ add: '추가', update: '수정', delete: '삭제' })[action] || action;
+  const label = String(text || itemId || '준비물').slice(0, 80);
+  await logTripActivity({
+    kind: 'pack',
+    day: 'pack',
+    summary: `준비물 ${act}: ${label}`,
+    detail: `${nickname} · 함께 준비`,
+    itemId: String(itemId || '').slice(0, 80)
+  });
+}
+
+export function getTripPackApi() {
+  return {
+    canEdit: () => Boolean(tripCode && nickname),
+    tripCode: () => tripCode || '',
+    nickname: () => nickname || '',
+    getSnapshot() {
+      return {
+        editable: Boolean(tripCode && nickname),
+        items: (dataCache.pack || []).map(d => ({
+          id: d.id,
+          text: d.data()?.text || '',
+          done: Boolean(d.data()?.done)
+        })),
+        hint: '함께 준비 → 준비물. 수정/삭제는 itemId 사용.'
+      };
+    },
+    async addPack(text) {
+      if (!tripCode || !nickname) throw new Error('여행방에 입장해야 준비물을 수정할 수 있어요.');
+      await addItem('packItems', text);
+      await logPackActivity('add', text);
+    },
+    async updatePack(itemId, text) {
+      if (!tripCode || !nickname) throw new Error('여행방에 입장해야 준비물을 수정할 수 있어요.');
+      await updateItemText('packItems', itemId, text);
+      await logPackActivity('update', text, itemId);
+    },
+    async deletePack(itemId) {
+      if (!tripCode || !nickname) throw new Error('여행방에 입장해야 준비물을 수정할 수 있어요.');
+      const prev = (dataCache.pack || []).find(d => d.id === itemId);
+      const prevText = prev?.data()?.text || '';
+      await deleteItem('packItems', itemId);
+      await logPackActivity('delete', prevText, itemId);
+    }
+  };
+}
+
 async function addNote(text) {
   const clean = text.trim().slice(0, 500);
   if (!clean) return;
@@ -915,9 +1015,11 @@ async function leaveRoom() {
   dataCache = { pack: [], tasks: [], notes: [] };
   clearSession();
   showGate();
+  openTripSettings();
   renderUnreadBadges();
   detachItineraryRoom();
-  setStatus('방에서 나왔습니다.');
+  detachGuideContentRoom();
+  setStatus('방에서 나왔습니다. 설정에서 다시 입장할 수 있어요.');
 }
 
 async function copyCode() {
@@ -967,7 +1069,9 @@ function bindUi() {
 
   el.packAdd?.addEventListener('click', async () => {
     try {
-      await addItem('packItems', el.packInput.value);
+      const text = el.packInput.value;
+      await addItem('packItems', text);
+      if (String(text || '').trim()) await logPackActivity('add', text);
       el.packInput.value = '';
     } catch (e) { setStatus(e.message, true); }
   });
@@ -1074,14 +1178,18 @@ async function boot() {
   if (!el.root) return;
 
   if (!isFirebaseConfigured()) {
-    el.setup.hidden = false;
-    el.gate.hidden = true;
-    el.room.hidden = true;
+    if (el.setup) el.setup.hidden = false;
+    if (el.gate) el.gate.hidden = true;
+    if (el.session) el.session.hidden = true;
+    if (el.room) el.room.hidden = true;
+    if (el.needJoin) el.needJoin.hidden = false;
+    openTripSettings();
+    refreshTripSettingsSummary();
     setStatus('Firebase 설정 후 여행방을 사용할 수 있습니다.', true);
     return;
   }
 
-  el.setup.hidden = true;
+  if (el.setup) el.setup.hidden = true;
   showGate();
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
@@ -1090,7 +1198,10 @@ async function boot() {
 
   const params = new URLSearchParams(location.search);
   const roomFromUrl = normalizeCode(params.get('room'));
-  if (roomFromUrl) el.code.value = roomFromUrl;
+  if (roomFromUrl) {
+    if (el.code) el.code.value = roomFromUrl;
+    openTripSettings();
+  }
 
   const session = loadSession();
   if (session?.nickname) el.nick.value = session.nickname;
@@ -1115,6 +1226,7 @@ async function boot() {
       if (!snap.exists()) {
         clearSession();
         showGate();
+        openTripSettings();
         setStatus('이전 방을 찾지 못했어요. 다시 참여해 주세요.', true);
         return;
       }
@@ -1128,6 +1240,7 @@ async function boot() {
     } catch (err) {
       console.error(err);
       showGate();
+      openTripSettings();
       setStatus(err.message || '재입장 실패', true);
     }
   }
