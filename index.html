@@ -306,6 +306,10 @@
     }
     .day-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .photo-credit { font-size: 0.68rem; color: var(--soft); margin-top: 8px; line-height: 1.4; }
+    .myr-krw {
+      color: var(--coral); font-weight: 700; font-size: 0.92em;
+      white-space: nowrap;
+    }
     .link-list { list-style: none; display: grid; gap: 8px; }
     .link-list a {
       display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
@@ -1252,8 +1256,8 @@
         <span class="tag ok">시세 한눈에</span>
         <b>대략 요금대 (1인)</b>
         <p>
-          · 발 마사지 60분: 약 <b>MYR 45~70</b> (약 1.6~2.5만 원)<br>
-          · 전신/오일 마사지 60분: 약 <b>MYR 60~120</b> (약 2.1~4.3만 원)<br>
+          · 발 마사지 60분: 약 <b>MYR 45~70</b><br>
+          · 전신/오일 마사지 60분: 약 <b>MYR 60~120</b><br>
           · 90분~패키지: 약 <b>MYR 90~160</b><br>
           · 호텔/프리미엄 스파: <b>MYR 150~300+</b><br>
           팁은 필수는 아니지만 MYR 5~10 정도 주는 경우 많음
@@ -1329,7 +1333,7 @@
           · 리조트 스파는 편하지만 시내보다 비싸고, 늦은 시간 복귀도 고려
         </p>
       </div>
-      <p class="tiny">MYR→원 환산은 상단 환율 기준으로 대략 계산하세요. 현장 프로모션이 더 쌀 때도 있어요.</p>
+      <p class="tiny">MYR 옆 원화는 상단 최근 환율로 자동 환산됩니다. 현장 프로모션이 더 쌀 때도 있어요.</p>
       </div>
     </details>
 
@@ -1703,6 +1707,67 @@
       fxNote.textContent = fxNoteText();
     };
 
+    const formatWon = amount => {
+      const won = Math.round(Number(amount) * myrToKrw);
+      if (!Number.isFinite(won)) return '';
+      if (won >= 10000) {
+        const man = Math.round((won / 10000) * 10) / 10;
+        return `${man.toLocaleString('ko-KR')}만 원`;
+      }
+      return `${won.toLocaleString('ko-KR')}원`;
+    };
+
+    const wrapMyrAmounts = (root = document) => {
+      const nodes = root.querySelectorAll('p, li, .t-note, .t-task, .info-card b, .tiny');
+      nodes.forEach(el => {
+        if (el.dataset.myrProcessed === '1') return;
+        if (el.closest('.guide-search, script, style, .myr-fig')) return;
+        const html = el.innerHTML;
+        if (!/MYR\s*\d/i.test(html)) return;
+        const next = html.replace(/MYR\s*(\d+(?:\.\d+)?)(?:\s*[~～\-]\s*(\d+(?:\.\d+)?))?(\+|대)?/gi, (full, a, b, suf, offset, str) => {
+          const before = str.slice(Math.max(0, offset - 24), offset);
+          if (/data-myr\s*=/.test(before) || /class="myr-fig"/.test(before)) return full;
+          const maxAttr = b ? ` data-myr-max="${b}"` : '';
+          const flag = suf === '+' ? ' data-myr-plus="1"' : (suf === '대' ? ' data-myr-approx="1"' : '');
+          return `<span class="myr-fig" data-myr="${a}"${maxAttr}${flag}>${full}<span class="myr-krw"></span></span>`;
+        });
+        if (next !== html) {
+          el.innerHTML = next;
+          el.dataset.myrProcessed = '1';
+        }
+      });
+    };
+
+    const paintMyrKrw = () => {
+      document.querySelectorAll('.myr-fig[data-myr]').forEach(el => {
+        const min = Number(el.dataset.myr);
+        if (!Number.isFinite(min)) return;
+        const max = el.dataset.myrMax != null && el.dataset.myrMax !== '' ? Number(el.dataset.myrMax) : null;
+        const plus = el.dataset.myrPlus === '1';
+        const approx = el.dataset.myrApprox === '1';
+        let label = '';
+        if (max != null && Number.isFinite(max)) {
+          label = `약 ${formatWon(min)}~${formatWon(max)}`;
+        } else {
+          label = `약 ${formatWon(min)}${plus || approx ? '+' : ''}`;
+        }
+        let tag = el.querySelector('.myr-krw');
+        if (!tag) {
+          tag = document.createElement('span');
+          tag.className = 'myr-krw';
+          el.appendChild(tag);
+        }
+        tag.textContent = ` (${label})`;
+      });
+    };
+
+    const refreshMyrKrwLabels = (root) => {
+      wrapMyrAmounts(root || document);
+      paintMyrKrw();
+    };
+    window.refreshMyrKrwLabels = refreshMyrKrwLabels;
+    window.kkMyrToKrw = () => myrToKrw;
+
     const applyFxRate = (rate, source, at) => {
       if (!Number.isFinite(rate) || rate < 50 || rate > 1000) return false;
       myrToKrw = rate;
@@ -1711,6 +1776,7 @@
         localStorage.setItem(FX_CACHE_KEY, JSON.stringify({ rate: myrToKrw, at: fxMeta.at }));
       } catch (_) {}
       syncFx(fxDirection === 'myr-to-krw' ? 'myr' : 'krw');
+      refreshMyrKrwLabels();
       return true;
     };
 
@@ -1912,8 +1978,8 @@
         results.innerHTML = hits.map((hit, i) => `
           <li>
             <button type="button" data-idx="${i}" class="${i === activeIdx ? 'is-active' : ''}">
-              <strong>${hit.title}</strong>
-              <span>${hit.desc || ''}</span>
+              <strong>${esc(hit.title)}</strong>
+              <span>${esc(hit.desc || '')}</span>
             </button>
           </li>
         `).join('');
@@ -1999,6 +2065,7 @@
     setInterval(tickClocks, 1000);
     loadCachedFx();
     syncFx('myr');
+    refreshMyrKrwLabels();
     fetchLiveFx();
     // Refresh FX about every 6 hours while the page stays open
     setInterval(fetchLiveFx, 6 * 60 * 60 * 1000);

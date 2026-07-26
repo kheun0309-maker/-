@@ -293,6 +293,7 @@ function renderReadonlyDefaults() {
     items: d.items.map((it, i) => ({ id: `${d.id}-${i}`, ...it, order: i }))
   })));
   bindTabs();
+  afterPaint();
 }
 
 function currentDaysView() {
@@ -375,6 +376,14 @@ function renderItem(item, dayId) {
   `;
 }
 
+function afterPaint() {
+  try {
+    if (typeof window.refreshMyrKrwLabels === 'function') {
+      window.refreshMyrKrwLabels(root);
+    }
+  } catch (_) {}
+}
+
 function render() {
   if (!root) return;
   editable = canEdit();
@@ -393,6 +402,7 @@ function render() {
   bindTabs();
   bindEditorEvents();
   bindDrag();
+  afterPaint();
 }
 
 function bindTabs() {
