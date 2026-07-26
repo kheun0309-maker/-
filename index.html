@@ -564,7 +564,7 @@
     <details class="widget fold-widget" id="trip" open>
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
-        <p class="trip-hint">닉네임으로 여행방에 들어가면 준비물·할 일·메모를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
+        <p class="trip-hint">닉네임으로 여행방에 들어가면 <b>준비물 · 출발 전 할 일 · 메모</b>를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
         <div class="trip-unread-banner" id="tripUnreadBanner" role="status"></div>
 
         <div class="trip-setup" id="tripSetup" hidden>
@@ -613,7 +613,7 @@
 
           <div class="trip-tabs" role="tablist">
             <button type="button" class="active" data-trip-tab="pack">준비물</button>
-            <button type="button" data-trip-tab="tasks">할 일</button>
+            <button type="button" data-trip-tab="tasks">출발 전</button>
             <button type="button" data-trip-tab="notes">메모</button>
           </div>
 
@@ -626,9 +626,13 @@
           </div>
 
           <div data-trip-pane="tasks" hidden>
+            <p class="trip-hint">항공·픽업·호핑·반딧불이 등 출발 전 예약/확인 항목을 같이 체크하세요.</p>
+            <div class="trip-actions">
+              <button type="button" class="ghost" id="tripSeedTasksBtn">기본 출발 전 할 일 넣기</button>
+            </div>
             <ul class="trip-list" id="tripTaskList"></ul>
             <div class="trip-add-row">
-              <input id="tripTaskInput" type="text" maxlength="200" placeholder="할 일 추가">
+              <input id="tripTaskInput" type="text" maxlength="200" placeholder="출발 전 할 일 추가">
               <button type="button" id="tripTaskAdd">추가</button>
             </div>
           </div>

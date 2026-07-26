@@ -13,6 +13,7 @@ import {
   deleteDoc,
   collection,
   addDoc,
+  getDocs,
   onSnapshot,
   query,
   orderBy,
@@ -238,6 +239,7 @@ async function ensureAuth() {
 }
 
 async function seedList(colName, texts, creator) {
+  if (!texts.length) return;
   const batch = writeBatch(db);
   const colRef = collection(db, 'trips', tripCode, colName);
   texts.forEach(text => {
@@ -251,6 +253,19 @@ async function seedList(colName, texts, creator) {
     });
   });
   await batch.commit();
+}
+
+async function seedMissingTasks() {
+  if (!tripCode) return;
+  const snap = await getDocs(collection(db, 'trips', tripCode, 'taskItems'));
+  const existing = new Set(snap.docs.map(d => (d.data().text || '').trim()));
+  const missing = DEFAULT_TASKS.filter(text => !existing.has(text));
+  if (!missing.length) {
+    setStatus('출발 전 할 일 기본 목록이 이미 있어요.');
+    return;
+  }
+  await seedList('taskItems', missing, nickname);
+  setStatus(`출발 전 할 일 ${missing.length}개를 함께 준비에 넣었어요.`);
 }
 
 async function createRoom() {
@@ -548,6 +563,18 @@ function bindUi() {
       await addNote(el.noteInput.value);
       el.noteInput.value = '';
     } catch (e) { setStatus(e.message, true); }
+  });
+
+  document.getElementById('tripSeedTasksBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('tripSeedTasksBtn');
+    if (btn) btn.disabled = true;
+    try {
+      await seedMissingTasks();
+    } catch (e) {
+      setStatus(e.message || '기본 목록 추가에 실패했습니다.', true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 
   [el.packInput, el.taskInput, el.noteInput].forEach((input, idx) => {

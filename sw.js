@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v16';
+const CACHE_NAME = 'kota-kinabalu-guide-v17';
 const APP_SHELL = [
   './',
   './index.html',
@@ -56,8 +56,8 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // Always network for Firebase / live app scripts
-  if (isFirebaseRequest(url)) {
+  // Always network for Firebase / FX APIs / live app scripts
+  if (isNetworkOnlyRequest(url)) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );
