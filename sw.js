@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'kota-kinabalu-guide-v32';
+﻿const CACHE_NAME = 'kota-kinabalu-guide-v33';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,7 +28,8 @@ const APP_SHELL = [
   './images/manukan-jetty.jpg',
   './images/manukan-view.jpg',
   './images/mamutik-sulug.jpg',
-  './images/kk-jetski.jpg'
+  './images/kk-jetski.jpg',
+  './images/rasa-ria-shuttle.jpg'
 ];
 
 function isNetworkFirst(url) {
