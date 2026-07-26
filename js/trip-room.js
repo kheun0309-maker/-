@@ -24,6 +24,11 @@ import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
 const STORAGE_KEY = 'kk-trip-room-session';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_NOTES = 40;
+const TITLE_BASE = '코타키나발루 · 라사 리아 4일';
+
+function readKey(code) {
+  return `kk-trip-read-${code}`;
+}
 
 const DEFAULT_PACK = [
   '여권 · 항공 e-티켓 · 숙소 예약 확인서(픽업·입국 대비)',
@@ -87,11 +92,91 @@ let uid = null;
 let nickname = '';
 let tripCode = '';
 let unsubs = [];
+let lastReadAt = 0;
+let dataCache = { pack: [], tasks: [], notes: [] };
+const unreadBanner = document.getElementById('tripUnreadBanner');
 
 function setStatus(msg, isError = false) {
   if (!el.status) return;
   el.status.textContent = msg || '';
   el.status.classList.toggle('is-error', Boolean(isError && msg));
+}
+
+function toMs(value) {
+  if (!value) return 0;
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  if (typeof value.seconds === 'number') return value.seconds * 1000;
+  if (typeof value === 'number') return value;
+  return 0;
+}
+
+function isTripSectionOpen() {
+  const trip = document.getElementById('trip');
+  return Boolean(trip?.open) && document.visibilityState === 'visible';
+}
+
+function loadLastRead(code) {
+  lastReadAt = Number(localStorage.getItem(readKey(code)) || 0);
+}
+
+function markRead() {
+  lastReadAt = Date.now();
+  if (tripCode) localStorage.setItem(readKey(tripCode), String(lastReadAt));
+  renderUnreadBadge(0);
+}
+
+function countUnread() {
+  if (!tripCode || !nickname) return 0;
+  let count = 0;
+
+  dataCache.notes.forEach(docSnap => {
+    const data = docSnap.data();
+    if (!data || data.author === nickname) return;
+    if (toMs(data.createdAt) > lastReadAt) count += 1;
+  });
+
+  [...dataCache.pack, ...dataCache.tasks].forEach(docSnap => {
+    const data = docSnap.data();
+    if (!data) return;
+    const when = toMs(data.updatedAt);
+    if (when <= lastReadAt) return;
+    const actor = data.doneBy || data.createdBy;
+    if (actor && actor !== nickname) count += 1;
+  });
+
+  return count;
+}
+
+function renderUnreadBadge(count) {
+  const n = Math.max(0, Number(count) || 0);
+  const label = n > 99 ? '99+' : String(n);
+  document.querySelectorAll('[data-trip-badge]').forEach(badge => {
+    badge.textContent = label;
+    badge.classList.toggle('is-on', n > 0);
+    badge.setAttribute('aria-label', n > 0 ? `안 읽은 소식 ${label}개` : '');
+  });
+  if (unreadBanner) {
+    if (n > 0 && !isTripSectionOpen()) {
+      unreadBanner.textContent = `안 읽은 소식 ${label}개 · 여기를 열어 확인하세요`;
+      unreadBanner.classList.add('is-on');
+    } else {
+      unreadBanner.textContent = '';
+      unreadBanner.classList.remove('is-on');
+    }
+  }
+  document.title = n > 0 ? `(${label}) ${TITLE_BASE}` : TITLE_BASE;
+}
+
+function refreshUnread() {
+  if (!tripCode) {
+    renderUnreadBadge(0);
+    return;
+  }
+  if (isTripSectionOpen()) {
+    markRead();
+    return;
+  }
+  renderUnreadBadge(countUnread());
 }
 
 function saveSession() {
@@ -317,6 +402,9 @@ function renderNotes(docs) {
 async function enterRoom() {
   showRoom();
   clearUnsubs();
+  loadLastRead(tripCode);
+  if (!lastReadAt) markRead();
+  dataCache = { pack: [], tasks: [], notes: [] };
 
   unsubs.push(onSnapshot(collection(db, 'trips', tripCode, 'members'), snap => {
     renderMembers(snap.docs);
@@ -324,18 +412,28 @@ async function enterRoom() {
 
   unsubs.push(onSnapshot(
     query(collection(db, 'trips', tripCode, 'packItems'), orderBy('text')),
-    snap => renderChecklist(el.packList, snap.docs, 'packItems')
+    snap => {
+      dataCache.pack = snap.docs;
+      renderChecklist(el.packList, snap.docs, 'packItems');
+      refreshUnread();
+    }
   ));
 
   unsubs.push(onSnapshot(
     query(collection(db, 'trips', tripCode, 'taskItems'), orderBy('text')),
-    snap => renderChecklist(el.taskList, snap.docs, 'taskItems')
+    snap => {
+      dataCache.tasks = snap.docs;
+      renderChecklist(el.taskList, snap.docs, 'taskItems');
+      refreshUnread();
+    }
   ));
 
   unsubs.push(onSnapshot(
     query(collection(db, 'trips', tripCode, 'notes'), orderBy('createdAt', 'desc')),
     snap => {
+      dataCache.notes = snap.docs;
       renderNotes(snap.docs);
+      refreshUnread();
       // trim old notes beyond MAX_NOTES (best-effort by newest clients)
       if (snap.docs.length > MAX_NOTES) {
         snap.docs.slice(MAX_NOTES).forEach(extra => {
@@ -389,8 +487,10 @@ async function leaveRoom() {
     } catch (_) {}
   }
   tripCode = '';
+  dataCache = { pack: [], tasks: [], notes: [] };
   clearSession();
   showGate();
+  renderUnreadBadge(0);
   setStatus('방에서 나왔습니다.');
 }
 
@@ -487,7 +587,30 @@ function bindUi() {
       el.panes.forEach(p => {
         p.hidden = p.dataset.tripPane !== name;
       });
+      markRead();
     });
+  });
+
+  document.getElementById('trip')?.addEventListener('toggle', () => {
+    if (isTripSectionOpen()) markRead();
+    else refreshUnread();
+  });
+
+  document.querySelectorAll('[data-open="trip"]').forEach(link => {
+    link.addEventListener('click', () => {
+      setTimeout(() => markRead(), 120);
+    });
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshUnread();
+  });
+
+  unreadBanner?.addEventListener('click', () => {
+    const trip = document.getElementById('trip');
+    if (trip) trip.open = true;
+    markRead();
+    trip?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
 

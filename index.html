@@ -368,11 +368,28 @@
       border-radius: 20px; padding: 6px; box-shadow: 0 14px 34px rgba(6, 90, 100, 0.18); z-index: 30;
     }
     .nav a {
+      position: relative;
       text-decoration: none; color: var(--muted); text-align: center; font-size: 0.62rem; font-weight: 700;
       padding: 8px 2px; border-radius: 14px;
     }
     .nav a span { display: block; font-size: 1rem; margin-bottom: 1px; }
     .nav a:hover, .nav a:focus { background: linear-gradient(180deg, #e8fffb, #dff7f4); color: var(--ocean); }
+    .nav-badge, .quick-badge {
+      display: none; position: absolute; min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: 999px; background: var(--coral); color: #fff;
+      font-size: 0.68rem; font-weight: 800; line-height: 18px; text-align: center;
+      box-shadow: 0 2px 8px rgba(255, 107, 74, 0.45);
+    }
+    .nav-badge { top: 2px; right: 10px; }
+    .quick-nav a { position: relative; }
+    .quick-badge { top: -4px; right: -2px; }
+    .nav-badge.is-on, .quick-badge.is-on { display: inline-block; }
+    .trip-unread-banner {
+      display: none; margin: 0 0 10px; padding: 9px 11px; border-radius: 12px;
+      background: #fff1ec; border: 1px solid #ffd2c4; color: var(--coral);
+      font-size: 0.84rem; font-weight: 700;
+    }
+    .trip-unread-banner.is-on { display: block; }
     .footer-note { text-align: center; font-size: 0.7rem; color: var(--soft); margin-top: 8px; }
     .install-banner {
       display: none; position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
@@ -531,7 +548,7 @@
     </aside>
 
     <nav class="quick-nav" aria-label="바로가기">
-      <a href="#trip" data-open="trip">👥 함께준비</a>
+      <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
       <a href="#itinerary" data-open="itinerary">📅 일정</a>
       <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
       <a href="#food" data-open="food">🍽 맛집</a>
@@ -548,6 +565,7 @@
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
         <p class="trip-hint">닉네임으로 여행방에 들어가면 준비물·할 일·메모를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
+        <div class="trip-unread-banner" id="tripUnreadBanner" role="status"></div>
 
         <div class="trip-setup" id="tripSetup" hidden>
           <strong>Firebase 연결이 필요합니다</strong>
@@ -1358,7 +1376,7 @@
   </main>
 
   <nav class="nav" aria-label="빠른 이동">
-    <a href="#trip" data-open="trip"><span>👥</span>함께</a>
+    <a href="#trip" data-open="trip"><span>👥</span>함께<span class="nav-badge" data-trip-badge>0</span></a>
     <a href="#itinerary" data-open="itinerary"><span>📅</span>일정</a>
     <a href="#hopping" data-open="hopping"><span>🏝</span>호핑</a>
     <a href="#food" data-open="food"><span>🍽</span>맛집</a>
