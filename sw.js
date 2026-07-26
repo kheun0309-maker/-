@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v23';
+const CACHE_NAME = 'kota-kinabalu-guide-v24';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,10 +29,16 @@ const APP_SHELL = [
   './images/kk-jetski.jpg'
 ];
 
+function isNetworkFirst(url) {
+  return url.pathname.endsWith('/index.html')
+    || url.pathname.endsWith('/')
+    || url.pathname.includes('/js/')
+    || url.pathname.endsWith('/sw.js')
+    || url.pathname.endsWith('/manifest.webmanifest');
+}
+
 function isNetworkOnlyRequest(url) {
-  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google|open\.er-api\.com|jsdelivr\.net|currency-api\.pages\.dev/.test(url.hostname)
-    || url.pathname.includes('/js/trip-room.js')
-    || url.pathname.includes('/js/firebase-config.js');
+  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google|open\.er-api\.com|jsdelivr\.net|currency-api\.pages\.dev/.test(url.hostname);
 }
 
 self.addEventListener('install', event => {
@@ -72,10 +78,17 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // Always network for Firebase / FX APIs / live app scripts
-  if (isNetworkOnlyRequest(url)) {
+  if (isNetworkOnlyRequest(url) || isNetworkFirst(url)) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
@@ -83,7 +96,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
-
       return fetch(event.request)
         .then(response => {
           if (!response || response.status !== 200 || response.type === 'opaque') {

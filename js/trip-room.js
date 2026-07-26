@@ -32,6 +32,10 @@ function readKey(code) {
   return `kk-trip-read-${code}`;
 }
 
+function seenKey(code) {
+  return `kk-trip-seen-${code}`;
+}
+
 const DEFAULT_PACK = [
   '여권 · 항공 e-티켓 · 숙소 예약 확인서(픽업·입국 대비)',
   '국제운전면허(렌트 시) / 여행자보험 증권',
@@ -95,10 +99,12 @@ let nickname = '';
 let tripCode = '';
 let unsubs = [];
 let lastReadAt = 0;
+let seenSet = new Set();
 let dataCache = { pack: [], tasks: [], notes: [] };
 const unreadBanner = document.getElementById('tripUnreadBanner');
 const unreadText = document.getElementById('tripUnreadText');
 const markReadBtn = document.getElementById('tripMarkReadBtn');
+const roomUnreadCount = document.getElementById('tripRoomUnreadCount');
 
 function setStatus(msg, isError = false) {
   if (!el.status) return;
@@ -114,35 +120,71 @@ function toMs(value) {
   return 0;
 }
 
-function loadLastRead(code) {
+function myNick() {
+  return String(nickname || '').trim();
+}
+
+function loadSeen(code) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(seenKey(code)) || '[]');
+    seenSet = new Set(Array.isArray(arr) ? arr : []);
+  } catch (_) {
+    seenSet = new Set();
+  }
   lastReadAt = Number(localStorage.getItem(readKey(code)) || 0);
 }
 
-function isNoteUnread(data) {
-  if (!data || data.author === nickname) return false;
-  return toMs(data.createdAt) > lastReadAt;
+function saveSeen() {
+  if (!tripCode) return;
+  localStorage.setItem(seenKey(tripCode), JSON.stringify([...seenSet]));
+  localStorage.setItem(readKey(tripCode), String(Date.now()));
+  lastReadAt = Date.now();
 }
 
-function isItemUnread(data) {
-  if (!data) return false;
-  const when = toMs(data.updatedAt);
-  if (when <= lastReadAt) return false;
-  const actor = data.updatedBy || data.doneBy || data.createdBy;
-  return Boolean(actor && actor !== nickname);
+function noteFingerprint(docSnap) {
+  const data = docSnap.data() || {};
+  return `notes:${docSnap.id}:${toMs(data.createdAt)}:${data.text || ''}`;
+}
+
+function itemFingerprint(kind, docSnap) {
+  const data = docSnap.data() || {};
+  return `${kind}:${docSnap.id}:${toMs(data.updatedAt)}:${data.done ? 1 : 0}:${data.doneBy || ''}:${data.updatedBy || ''}:${data.text || ''}`;
+}
+
+function isOtherNote(data) {
+  const author = String(data?.author || '').trim();
+  return Boolean(author && author !== myNick());
+}
+
+function isOtherItem(data) {
+  const actor = String(data?.updatedBy || data?.doneBy || data?.createdBy || '').trim();
+  return Boolean(actor && actor !== myNick());
+}
+
+function isNoteUnread(docSnap) {
+  const data = docSnap.data() || {};
+  if (!isOtherNote(data)) return false;
+  return !seenSet.has(noteFingerprint(docSnap));
+}
+
+function isItemUnread(kind, docSnap) {
+  const data = docSnap.data() || {};
+  if (!isOtherItem(data)) return false;
+  return !seenSet.has(itemFingerprint(kind, docSnap));
 }
 
 function countUnreadByType() {
   const counts = { pack: 0, tasks: 0, notes: 0, total: 0 };
-  if (!tripCode || !nickname) return counts;
+  if (!tripCode || !myNick()) return counts;
 
   dataCache.pack.forEach(docSnap => {
-    if (isItemUnread(docSnap.data())) counts.pack += 1;
+    if (isItemUnread('pack', docSnap)) counts.pack += 1;
   });
   dataCache.tasks.forEach(docSnap => {
-    if (isItemUnread(docSnap.data())) counts.tasks += 1;
+    if (isItemUnread('tasks', docSnap)) counts.tasks += 1;
   });
   dataCache.notes.forEach(docSnap => {
-    if (isNoteUnread(docSnap.data())) counts.notes += 1;
+    if (isNoteUnread(docSnap)) counts.notes += 1;
   });
   counts.total = counts.pack + counts.tasks + counts.notes;
   return counts;
@@ -175,6 +217,10 @@ async function setHomeAppBadge(count) {
 
 function clearUnreadUiNow() {
   document.querySelectorAll('[data-trip-badge], [data-tab-badge]').forEach(badge => setBadgeEl(badge, 0));
+  if (roomUnreadCount) {
+    roomUnreadCount.textContent = '';
+    roomUnreadCount.hidden = true;
+  }
   if (unreadBanner && unreadText) {
     unreadText.textContent = '';
     unreadBanner.classList.remove('is-on');
@@ -196,6 +242,16 @@ function renderUnreadBadges() {
   setBadgeEl(document.querySelector('[data-tab-badge="pack"]'), counts.pack);
   setBadgeEl(document.querySelector('[data-tab-badge="tasks"]'), counts.tasks);
   setBadgeEl(document.querySelector('[data-tab-badge="notes"]'), counts.notes);
+
+  if (roomUnreadCount) {
+    if (n > 0) {
+      roomUnreadCount.hidden = false;
+      roomUnreadCount.textContent = `안 본 ${label}`;
+    } else {
+      roomUnreadCount.hidden = true;
+      roomUnreadCount.textContent = '';
+    }
+  }
 
   if (unreadBanner && unreadText) {
     if (n > 0) {
@@ -228,25 +284,11 @@ function refreshUnread({ rerender = false } = {}) {
   }
 }
 
-function latestKnownUpdateMs() {
-  let maxTs = Date.now();
-  const bump = value => {
-    const ms = toMs(value);
-    if (ms > maxTs) maxTs = ms;
-  };
-  dataCache.pack.forEach(docSnap => {
-    const data = docSnap.data() || {};
-    bump(data.updatedAt);
-  });
-  dataCache.tasks.forEach(docSnap => {
-    const data = docSnap.data() || {};
-    bump(data.updatedAt);
-  });
-  dataCache.notes.forEach(docSnap => {
-    const data = docSnap.data() || {};
-    bump(data.createdAt);
-  });
-  return maxTs;
+function captureAllAsSeen() {
+  dataCache.pack.forEach(docSnap => seenSet.add(itemFingerprint('pack', docSnap)));
+  dataCache.tasks.forEach(docSnap => seenSet.add(itemFingerprint('tasks', docSnap)));
+  dataCache.notes.forEach(docSnap => seenSet.add(noteFingerprint(docSnap)));
+  saveSeen();
 }
 
 function markRead({ silent = false } = {}) {
@@ -257,9 +299,7 @@ function markRead({ silent = false } = {}) {
     markReadBtn.disabled = true;
   }
 
-  // Use latest item time so server/client clock skew cannot keep items unread
-  lastReadAt = latestKnownUpdateMs() + 1000;
-  if (tripCode) localStorage.setItem(readKey(tripCode), String(lastReadAt));
+  captureAllAsSeen();
   refreshUnread({ rerender: true });
 
   if (!silent) setStatus('새 소식을 확인 처리했어요.');
@@ -513,9 +553,10 @@ function renderChecklist(target, docs, colName) {
     target.innerHTML = '<li class="trip-empty">항목이 없습니다. 아래에서 추가해 보세요.</li>';
     return;
   }
+  const kind = colName === 'taskItems' ? 'tasks' : 'pack';
   docs.forEach(d => {
     const data = d.data();
-    const unread = isItemUnread(data);
+    const unread = isItemUnread(kind, d);
     const li = document.createElement('li');
     li.className = 'trip-item' + (data.done ? ' is-done' : '') + (unread ? ' is-new' : '');
     li.innerHTML = `
