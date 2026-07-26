@@ -8,6 +8,9 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { logTripActivity } from './itinerary-editor.js';
+import { normalizeImageUrl, photoBlockHtml, listLocalImages } from './image-url.js';
+
+export { normalizeImageUrl } from './image-url.js';
 
 const SECTIONS = ['hero', 'food', 'alternatives', 'flights'];
 
@@ -211,15 +214,6 @@ function nl2br(s) {
   return formatRichText(s);
 }
 
-export function normalizeImageUrl(raw) {
-  const u = String(raw || '').trim();
-  if (!u) return '';
-  if (u.startsWith('./') || u.startsWith('../') || u.startsWith('/')) return u.slice(0, 500);
-  if (/^https:\/\//i.test(u)) return u.slice(0, 500);
-  if (/^http:\/\//i.test(u)) return u.slice(0, 500);
-  return '';
-}
-
 function cloneDefaults() {
   return {
     hero: deepClone(DEFAULT_HERO),
@@ -307,9 +301,7 @@ function renderFood() {
     if (it.mapsUrl) links.push(`<a href="${esc(it.mapsUrl)}" target="_blank" rel="noopener">구글지도</a>`);
     if (it.siteUrl) links.push(`<a class="soft" href="${esc(it.siteUrl)}" target="_blank" rel="noopener">사이트</a>`);
     if (it.reviewUrl) links.push(`<a class="review" href="${esc(it.reviewUrl)}" target="_blank" rel="noopener">후기</a>`);
-    const photo = it.imageUrl
-      ? `<img class="card-photo" src="${esc(it.imageUrl)}" alt="${esc(it.name)}" loading="lazy" referrerpolicy="no-referrer">`
-      : '';
+    const photo = photoBlockHtml(it.imageUrl, it.name || '');
     return `
       <div class="info-card" data-food-id="${esc(it.id)}">
         ${photo}
@@ -327,9 +319,7 @@ function renderAlternatives() {
   if (!root) return;
   const items = state.alternatives?.items || [];
   root.innerHTML = items.map(it => {
-    const photo = it.imageUrl
-      ? `<img class="card-photo" src="${esc(it.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
-      : '';
+    const photo = photoBlockHtml(it.imageUrl, it.title || '');
     const link = it.linkUrl
       ? `<a class="link-btn" href="${esc(it.linkUrl)}" target="_blank" rel="noopener">${esc(it.linkLabel || '링크 열기')}</a>`
       : '';
@@ -662,7 +652,8 @@ export function getGuideContentApi() {
         food: state.food,
         alternatives: state.alternatives,
         flights: state.flights,
-        hint: '항공은 flights.outbound / flights.return. 일정 항목은 propose_itinerary_change로 같이 수정 권장.'
+        localImages: listLocalImages(),
+        hint: '항공은 flights.outbound / flights.return. 사진 imageUrl은 localImages의 ./images/... 를 우선 사용. 지도·부킹·후기 페이지 URL은 사진으로 쓰지 말 것.'
       };
     },
     async applyProposal(proposal) {

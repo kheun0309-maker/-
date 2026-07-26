@@ -9,7 +9,8 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { logTripActivity } from './itinerary-editor.js';
-import { normalizeImageUrl, formatRichText } from './guide-content.js';
+import { formatRichText } from './guide-content.js';
+import { normalizeImageUrl, photoBlockHtml } from './image-url.js';
 
 const MAX_SECTIONS = 12;
 const MAX_ITEMS = 20;
@@ -104,9 +105,7 @@ function renderSections() {
       if (it.linkUrl) {
         links.push(`<a class="soft" href="${esc(it.linkUrl)}" target="_blank" rel="noopener">${esc(it.linkLabel || '링크')}</a>`);
       }
-      const photo = it.imageUrl
-        ? `<img class="card-photo" src="${esc(it.imageUrl)}" alt="${esc(it.title)}" loading="lazy" referrerpolicy="no-referrer">`
-        : '';
+      const photo = photoBlockHtml(it.imageUrl, it.title || '');
       return `
         <div class="info-card" data-custom-item="${esc(it.id)}">
           ${photo}

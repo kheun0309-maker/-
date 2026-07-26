@@ -31,7 +31,8 @@ Day4/귀국: 시내·휴식·공항 이동(늦은 비행 대비 Napzone 등)
 - #massage 마사지: Sunset Kinabalu·Chillax(Warisan), Kama'A(Asia City), Ulu Ulu / 발 MYR45~70·전신 MYR60~120대
 - #hopping 호핑: 현지 흥정 MYR150~230대 참고, 섬 입장료 별도 가능, 리조트→제티 픽업 확인
 - #resort-shuttle 셔틀: 라사리아↔제셀톤·이마고, 프론트 예약·정원 약40, 하루 수회
-- #airport-pickup 공항픽업: 도착홀 피켓, 리무진/그랩, 심야 할증 가능
+- #airport-pickup 공항픽업: 도착홀 피켓, 호텔 리무진/그랩/써드파티
+- #third-party-pickup 써드파티: TYH 밴 MYR250·Alphard MYR350, OTA(KKday등) MYR120~160대, Grab MYR60~80(심야 불확실). 호텔 Innova MYR230(+심야50%)
 - #flights #map #tips #pack #itinerary #trip 도 앱에 있음
 
 동선·이동 시간 참고(그랩/차량, 교통·대기 포함 여유):

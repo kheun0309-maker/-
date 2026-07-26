@@ -13,6 +13,7 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { DEFAULT_DAYS } from './itinerary-data.js';
+import { LOCAL_IMAGES, normalizeImageUrl, isWebpageNotImage } from './image-url.js';
 
 const root = document.getElementById('itineraryApp');
 const hint = document.getElementById('itinEditHint');
@@ -135,65 +136,13 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-const LOCAL_IMAGES = [
-  { label: '공항', url: './images/kkia-airport.jpg' },
-  { label: '노을1', url: './images/kk-sunset.jpg' },
-  { label: '노을2', url: './images/kk-sunset-2.jpg' },
-  { label: '노을3', url: './images/kk-sunset-3.jpg' },
-  { label: '노을4', url: './images/kk-sunset-4.jpg' },
-  { label: '노을5', url: './images/kk-sunset-5.jpg' },
-  { label: '탄중아루', url: './images/tanjung-aru-islands.jpg' },
-  { label: '마누칸', url: './images/manukan-beach.jpg' },
-  { label: '섬전경', url: './images/kk-islands.jpg' },
-  { label: '맹그로브', url: './images/mangrove-boat.jpg' },
-  { label: '가야마켓', url: './images/gaya-market.jpg' },
-  { label: '키나발루산', url: './images/mount-kinabalu.jpg' },
-  { label: '보트', url: './images/kk-tanjung-boat.jpg' },
-  { label: '해양액티비티', url: './images/kk-sea-activity.jpg' },
-  { label: '마누칸선착장', url: './images/manukan-jetty.jpg' },
-  { label: '마누칸뷰', url: './images/manukan-view.jpg' },
-  { label: '마무틱·술룩', url: './images/mamutik-sulug.jpg' },
-  { label: '제트스키', url: './images/kk-jetski.jpg' }
-];
-
-/** 공유 페이지 링크를 img에서 쓸 수 있는 직접 주소로 변환 */
-function normalizeImageUrl(raw) {
-  const input = String(raw || '').trim();
-  if (!input) return '';
-  let url = input.replace(/^<|>$/g, '').trim();
-
-  // Google Drive: /file/d/ID/view 또는 open?id=ID
-  const driveFile = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
-  if (driveFile) {
-    return `https://drive.google.com/uc?export=view&id=${driveFile[1]}`;
-  }
-  const driveOpen = url.match(/drive\.google\.com\/open\?[^#]*id=([^&]+)/i);
-  if (driveOpen) {
-    return `https://drive.google.com/uc?export=view&id=${decodeURIComponent(driveOpen[1])}`;
-  }
-  const driveUc = url.match(/drive\.google\.com\/uc\?[^#]*id=([^&]+)/i);
-  if (driveUc && !/export=/i.test(url)) {
-    return `https://drive.google.com/uc?export=view&id=${decodeURIComponent(driveUc[1])}`;
-  }
-
-  // Dropbox 공유 링크 → 직접 파일
-  if (/dropbox\.com\//i.test(url)) {
-    url = url.replace(/([?&])dl=0/, '$1dl=1');
-    if (!/[?&]dl=/.test(url)) {
-      url += (url.includes('?') ? '&' : '?') + 'raw=1';
-    }
-  }
-
-  // i.imgur.com 은 그대로, imgur 페이지면 .jpg 시도는 하지 않음(불확실)
-  return url;
-}
-
 function looksLikeDirectImageUrl(url) {
   if (!url) return false;
   if (url.startsWith('./') || url.startsWith('/')) return true;
+  if (isWebpageNotImage(url)) return false;
   if (/\.(jpe?g|png|gif|webp|avif)(\?|#|$)/i.test(url)) return true;
   if (/drive\.google\.com\/uc\?/i.test(url)) return true;
-  if (/googleusercontent\.com|ggpht\.com|imgur\.com|cloudinary\.com|unsplash\.com|images\.unsplash\.com/i.test(url)) return true;
+  if (/googleusercontent\.com|ggpht\.com|imgur\.com|cloudinary\.com|unsplash\.com|images\.unsplash\.com|upload\.wikimedia\.org/i.test(url)) return true;
   return /^https?:\/\//i.test(url);
 }
 

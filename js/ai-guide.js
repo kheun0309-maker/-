@@ -5,6 +5,7 @@ import { getGuideContentApi, formatRichText } from './guide-content.js';
 import { getCustomSectionsApi } from './custom-sections.js';
 import { getTripPackApi } from './trip-room.js';
 import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
+import { normalizeImageUrl, resolveAiImageUrl, listLocalImages } from './image-url.js';
 
 const KEY_STORAGE = 'kk-openai-api-key';
 const MODEL_STORAGE = 'kk-openai-model';
@@ -32,7 +33,12 @@ const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변
 커스텀: propose_custom_section (section / item)
 준비물: propose_pack_change
 
-이미지: URL만 (https:// 또는 ./images/...). 불확실하면 넣지 말 것.
+이미지(중요):
+- 파일 업로드 불가. imageUrl만 가능
+- 1순위: 앱 내장 사진 ./images/... (get_editable_content의 localImages)
+- 2순위: 직접 이미지 주소(.jpg/.png/.webp) 또는 Wikimedia upload.wikimedia.org
+- 금지: 구글지도·Booking·트립어드바이저·후기/블로그 페이지·검색 결과 URL을 imageUrl에 넣기 (깨짐)
+- 외부 URL이 불확실하면 imageUrl을 비우거나 localImages에서 주제 맞는 ./images를 고를 것
 
 규칙: 한국어·간결. #food #late-rest #itinerary #flights #trip. 금액 MYR 우선.`;
 
@@ -209,7 +215,7 @@ const TOOLS = [
           desc: { type: 'string' },
           body: { type: 'string', description: '항공 부가 설명' },
           caption: { type: 'string', description: '히어로 캡션' },
-          imageUrl: { type: 'string', description: 'https://... 또는 ./images/...' },
+          imageUrl: { type: 'string', description: '직접 이미지(.jpg/.png) 또는 ./images/... (localImages). 지도/부킹/후기 페이지 URL 금지' },
           mapsUrl: { type: 'string' },
           siteUrl: { type: 'string' },
           reviewUrl: { type: 'string' },
@@ -263,7 +269,7 @@ const TOOLS = [
           itemTitle: { type: 'string', description: '항목 제목' },
           tag: { type: 'string' },
           body: { type: 'string', description: '항목 본문' },
-          imageUrl: { type: 'string' },
+          imageUrl: { type: 'string', description: '직접 이미지 또는 ./images/... (페이지 URL 금지)' },
           mapsUrl: { type: 'string' },
           linkUrl: { type: 'string' },
           linkLabel: { type: 'string' },
@@ -275,6 +281,10 @@ const TOOLS = [
     }
   }
 ];
+
+function sanitizeImageField(raw, hint = '') {
+  return resolveAiImageUrl(raw, hint);
+}
 
 function $(id) {
   return document.getElementById(id);
@@ -731,7 +741,10 @@ export function initAiGuide() {
       lines.push(`<div class="ai-proposal-title">${esc(secLabel)} ${esc(actionLabel)} 제안</div>`);
       if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
       if (proposal.imageUrl) {
-        lines.push(`<img class="ai-proposal-thumb" src="${esc(proposal.imageUrl)}" alt="미리보기" referrerpolicy="no-referrer">`);
+        const thumb = normalizeImageUrl(proposal.imageUrl);
+        if (thumb) {
+          lines.push(`<img class="ai-proposal-thumb" src="${esc(thumb)}" alt="미리보기" referrerpolicy="no-referrer" onerror="this.style.display='none'">`);
+        }
       }
       lines.push('<div class="ai-proposal-body">');
       if (proposal.action === 'delete') {
@@ -747,7 +760,8 @@ export function initAiGuide() {
         if (proposal.caption) lines.push(`<div>캡션: ${esc(proposal.caption)}</div>`);
         if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
         if (proposal.body || proposal.desc) lines.push(`<div>${formatRichText(proposal.body || proposal.desc)}</div>`);
-        if (proposal.imageUrl) lines.push(`<div class="tiny">URL: ${formatRichText(proposal.imageUrl)}</div>`);
+        if (proposal.imageUrl) lines.push(`<div class="tiny">사진: ${esc(proposal.imageUrl)}</div>`);
+        if (proposal.imageNote) lines.push(`<div class="tiny">${esc(proposal.imageNote)}</div>`);
       }
       if (proposal.itemId) lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
@@ -764,7 +778,10 @@ export function initAiGuide() {
       lines.push(`<div class="ai-proposal-title">${esc(scope)} ${esc(actionLabel)} 제안</div>`);
       if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
       if (proposal.imageUrl) {
-        lines.push(`<img class="ai-proposal-thumb" src="${esc(proposal.imageUrl)}" alt="미리보기" referrerpolicy="no-referrer">`);
+        const thumb = normalizeImageUrl(proposal.imageUrl);
+        if (thumb) {
+          lines.push(`<img class="ai-proposal-thumb" src="${esc(thumb)}" alt="미리보기" referrerpolicy="no-referrer" onerror="this.style.display='none'">`);
+        }
       }
       lines.push('<div class="ai-proposal-body">');
       if (proposal.sectionId) lines.push(`<div>sectionId: ${esc(proposal.sectionId)}</div>`);
@@ -773,6 +790,8 @@ export function initAiGuide() {
       if (proposal.itemTitle) lines.push(`<div>항목: ${esc(proposal.itemTitle)}</div>`);
       if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
       if (proposal.body) lines.push(`<div>${formatRichText(proposal.body)}</div>`);
+      if (proposal.imageUrl) lines.push(`<div class="tiny">사진: ${esc(proposal.imageUrl)}</div>`);
+      if (proposal.imageNote) lines.push(`<div class="tiny">${esc(proposal.imageNote)}</div>`);
       if (proposal.itemId) lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
     } else {
@@ -934,7 +953,7 @@ export function initAiGuide() {
         return { ok: false, error: 'update/delete에는 itemId가 필요해요. get_editable_content로 확인하세요.' };
       }
       if (action === 'add' && section === 'hero' && !args.imageUrl) {
-        return { ok: false, error: '히어로 추가에는 imageUrl이 필요해요.' };
+        return { ok: false, error: '히어로 추가에는 imageUrl이 필요해요. localImages의 ./images/... 를 쓰세요.' };
       }
       if (action === 'add' && section === 'food' && !args.name) {
         return { ok: false, error: '맛집 추가에는 name이 필요해요.' };
@@ -942,6 +961,7 @@ export function initAiGuide() {
       if (action === 'add' && section === 'flights' && !(args.title || args.flightNo)) {
         return { ok: false, error: '항공 추가에는 title 또는 flightNo가 필요해요.' };
       }
+      const imgHint = [args.name, args.title, args.caption, args.desc, args.tag, args.reason].filter(Boolean).join(' ');
       const id = `c${++proposalSeq}`;
       const proposal = {
         id,
@@ -956,7 +976,6 @@ export function initAiGuide() {
         desc: args.desc || '',
         body: args.body || '',
         caption: args.caption || '',
-        imageUrl: args.imageUrl || '',
         mapsUrl: args.mapsUrl || '',
         siteUrl: args.siteUrl || '',
         reviewUrl: args.reviewUrl || '',
@@ -971,13 +990,27 @@ export function initAiGuide() {
         reason: args.reason || '',
         status: 'pending'
       };
+      if (args.imageUrl != null) {
+        const img = sanitizeImageField(args.imageUrl, imgHint);
+        proposal.imageUrl = img.url;
+        if (img.warning) proposal.imageNote = img.warning;
+        if (action === 'add' && section === 'hero' && !img.url) {
+          return {
+            ok: false,
+            error: '히어로 imageUrl이 유효하지 않아요. get_editable_content → localImages에서 ./images/... 를 고르세요.',
+            localImages: listLocalImages().slice(0, 8)
+          };
+        }
+      }
       proposals.set(id, proposal);
       appendProposalCard(proposal);
       return {
         ok: true,
         proposalId: id,
         status: 'waiting_user_confirmation',
-        note: '적용 전 저장되지 않습니다. 이미지 URL 미리보기를 확인하세요.'
+        imageUrl: proposal.imageUrl || '',
+        imageNote: proposal.imageNote || '',
+        note: '적용 전 저장되지 않습니다. 사진 미리보기를 확인하세요.'
       };
     }
     if (name === 'propose_pack_change') {
@@ -1043,19 +1076,26 @@ export function initAiGuide() {
         itemTitle: args.itemTitle || args.title || args.name || '',
         tag: args.tag || '',
         body: args.body || args.desc || '',
-        imageUrl: args.imageUrl || '',
         mapsUrl: args.mapsUrl || '',
         linkUrl: args.linkUrl || '',
         linkLabel: args.linkLabel || '',
         reason: args.reason || '',
         status: 'pending'
       };
+      if (args.imageUrl != null) {
+        const imgHint = [args.itemTitle, args.title, args.name, args.tag, args.body, args.reason].filter(Boolean).join(' ');
+        const img = sanitizeImageField(args.imageUrl, imgHint);
+        proposal.imageUrl = img.url;
+        if (img.warning) proposal.imageNote = img.warning;
+      }
       proposals.set(id, proposal);
       appendProposalCard(proposal);
       return {
         ok: true,
         proposalId: id,
         status: 'waiting_user_confirmation',
+        imageUrl: proposal.imageUrl || '',
+        imageNote: proposal.imageNote || '',
         note: '적용 전 저장되지 않습니다.'
       };
     }

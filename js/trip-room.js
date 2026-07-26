@@ -57,7 +57,7 @@ const DEFAULT_PACK = [
 const DEFAULT_TASKS = [
   'KE5761 좌석·수하물 확인 · 인천 T2 체크인 시간 메모',
   '귀국편 예약 (추천: KE5762 8/17 00:35경)',
-  '라사 리아 공항 픽업 예약 (항공편·인원·캐리어 수 전달)',
+  '공항→라사 리아 픽업 예약 (호텔 리무진 또는 써드파티·항공편·인원·짐 전달)',
   '리조트 Activity Desk에 8/14 반딧불이(Sunset+Fireflies) 예약',
   '8/15 호핑투어 예약 + 리조트→제티 픽업 시간 확정',
   '시내 마사지 대략 시간대 예약(호핑 후 19:30~)',
@@ -759,6 +759,55 @@ function renderChecklist(target, docs, colName) {
   });
 }
 
+function normalizePackKey(text) {
+  return String(text || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[·•‧・]/g, ' ')
+    .replace(/[()/[\]]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function packTextsMatch(localText, sharedText) {
+  const a = normalizePackKey(localText);
+  const b = normalizePackKey(sharedText);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // 한쪽이 다른 쪽을 충분히 포함하면 같은 품목으로 본다
+  if (a.length >= 10 && b.length >= 10 && (a.includes(b) || b.includes(a))) return true;
+  return false;
+}
+
+/** 함께 준비 준비물과 겹치는 '챙길 품목(이 기기만)' 항목을 숨김 */
+function syncLocalPackDuplicates(packDocs) {
+  const list = document.getElementById('packList');
+  const hint = document.getElementById('localPackDupHint');
+  if (!list) return;
+
+  const sharedTexts = (packDocs || [])
+    .map(d => (typeof d?.data === 'function' ? d.data()?.text : d?.text) || '')
+    .filter(Boolean);
+
+  let hidden = 0;
+  list.querySelectorAll(':scope > li').forEach(li => {
+    const text = li.querySelector('span')?.textContent || li.textContent || '';
+    const dup = sharedTexts.some(shared => packTextsMatch(text, shared));
+    li.hidden = dup;
+    if (dup) hidden += 1;
+  });
+
+  if (hint) {
+    if (hidden > 0) {
+      hint.hidden = false;
+      hint.textContent = `함께 준비에 있는 항목 ${hidden}개는 여기서 숨겼어요.`;
+    } else {
+      hint.hidden = true;
+      hint.textContent = '';
+    }
+  }
+}
+
 function appendLinkedText(container, text) {
   const source = String(text || '');
   const urlRe = /(https?:\/\/[^\s<>"']+)/gi;
@@ -858,6 +907,7 @@ async function enterRoom() {
     snap => {
       dataCache.pack = snap.docs;
       renderChecklist(el.packList, snap.docs, 'packItems');
+      syncLocalPackDuplicates(snap.docs);
       afterDataSnap('pack');
     }
   ));
@@ -1026,6 +1076,7 @@ async function leaveRoom() {
   detachItineraryRoom();
   detachGuideContentRoom();
   detachCustomSectionsRoom();
+  syncLocalPackDuplicates([]);
   setStatus('방에서 나왔습니다. 설정에서 다시 입장할 수 있어요.');
 }
 
