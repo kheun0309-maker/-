@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'kota-kinabalu-guide-v38';
+﻿const CACHE_NAME = 'kota-kinabalu-guide-v39';
 const APP_SHELL = [
   './',
   './index.html',
@@ -42,7 +42,7 @@ function isNetworkFirst(url) {
 }
 
 function isNetworkOnlyRequest(url) {
-  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google|open\.er-api\.com|jsdelivr\.net|currency-api\.pages\.dev/.test(url.hostname);
+  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google|open\.er-api\.com|jsdelivr\.net|currency-api\.pages\.dev|openai\.com|api\.openai\.com/.test(url.hostname);
 }
 
 self.addEventListener('install', event => {

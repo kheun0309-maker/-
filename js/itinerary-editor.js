@@ -974,5 +974,118 @@ export function detachItineraryRoom() {
   renderReadonlyDefaults();
 }
 
+/** AI 채팅용 일정 읽기/쓰기 API */
+export function getItineraryApi() {
+  return {
+    canEdit: () => canEdit(),
+    nickname: () => ctx?.nickname || '',
+    tripCode: () => ctx?.tripCode || '',
+    getSnapshot() {
+      const days = ['day1', 'day2', 'day3', 'day4'].map(id => {
+        const fallback = DEFAULT_DAYS.find(d => d.id === id);
+        const meta = dayMeta[id] || fallback || {};
+        const items = (itemsByDay[id] || []).map(it => ({
+          id: it.id,
+          time: it.time || '',
+          place: it.place || '',
+          task: it.task || '',
+          note: it.note || '',
+          imageUrl: it.imageUrl || '',
+          placeMapsUrl: it.placeMapsUrl || '',
+          order: it.order || 0
+        }));
+        return {
+          id,
+          label: DAY_LABEL[id] || id,
+          badge: meta.badge || fallback?.badge || '',
+          title: meta.title || fallback?.title || '',
+          subtitle: meta.subtitle || fallback?.subtitle || '',
+          items
+        };
+      });
+      return {
+        editable: canEdit(),
+        tripCode: ctx?.tripCode || '',
+        nickname: ctx?.nickname || '',
+        days
+      };
+    },
+    async addItem({ day, time = '', place = '', task = '', note = '', imageUrl = '', placeMapsUrl = '' }) {
+      if (!canEdit()) throw new Error('여행방에 입장해야 일정을 수정할 수 있어요.');
+      const dayId = String(day || '');
+      if (!/^day[1-4]$/.test(dayId)) throw new Error('day는 day1~day4 중 하나여야 해요.');
+      const payload = {
+        day: dayId,
+        order: (itemsByDay[dayId] || []).length,
+        time: String(time || '').slice(0, 40),
+        place: String(place || '').slice(0, 120),
+        task: String(task || '').slice(0, 160),
+        note: String(note || '').slice(0, 800),
+        imageUrl: normalizeImageUrl(imageUrl || ''),
+        placeMapsUrl: String(placeMapsUrl || '').trim() || mapsUrlFor(place, ''),
+        updatedBy: ctx.nickname,
+        updatedAt: serverTimestamp()
+      };
+      if (!payload.task && !payload.place) throw new Error('장소 또는 할 일이 필요해요.');
+      const ref = await addDoc(collection(ctx.db, 'trips', ctx.tripCode, 'items'), payload);
+      await logItinEvent({
+        kind: 'add',
+        day: dayId,
+        itemId: ref.id,
+        summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('add')}: ${itemSummary(payload)}`,
+        detail: `AI 추가 · ${itemSummary(payload)}`
+      });
+      return { id: ref.id, ...payload, updatedAt: null };
+    },
+    async updateItem(itemId, patch = {}) {
+      if (!canEdit()) throw new Error('여행방에 입장해야 일정을 수정할 수 있어요.');
+      const prev = findItem(itemId);
+      if (!prev) throw new Error('해당 일정을 찾지 못했어요.');
+      const next = {
+        time: patch.time != null ? String(patch.time).slice(0, 40) : (prev.time || ''),
+        place: patch.place != null ? String(patch.place).slice(0, 120) : (prev.place || ''),
+        task: patch.task != null ? String(patch.task).slice(0, 160) : (prev.task || ''),
+        note: patch.note != null ? String(patch.note).slice(0, 800) : (prev.note || ''),
+        imageUrl: patch.imageUrl != null ? normalizeImageUrl(patch.imageUrl) : (prev.imageUrl || ''),
+        placeMapsUrl: patch.placeMapsUrl != null
+          ? String(patch.placeMapsUrl).trim()
+          : (prev.placeMapsUrl || '')
+      };
+      if (!next.placeMapsUrl) next.placeMapsUrl = mapsUrlFor(next.place, '');
+      if (!next.task && !next.place) throw new Error('장소 또는 할 일이 필요해요.');
+      const detail = diffItemFields(prev, next) || 'AI 수정';
+      await updateDoc(doc(ctx.db, 'trips', ctx.tripCode, 'items', itemId), {
+        ...next,
+        day: prev.day,
+        order: prev.order || 0,
+        updatedBy: ctx.nickname,
+        updatedAt: serverTimestamp()
+      });
+      await logItinEvent({
+        kind: 'edit',
+        day: prev.day,
+        itemId,
+        summary: `${DAY_LABEL[prev.day] || prev.day} ${kindLabel('edit')}: ${itemSummary(next)}`,
+        detail: `AI 수정 · ${detail}`
+      });
+      return { id: itemId, day: prev.day, ...next };
+    },
+    async deleteItem(itemId) {
+      if (!canEdit()) throw new Error('여행방에 입장해야 일정을 수정할 수 있어요.');
+      const prev = findItem(itemId);
+      if (!prev) throw new Error('해당 일정을 찾지 못했어요.');
+      await deleteDoc(doc(ctx.db, 'trips', ctx.tripCode, 'items', itemId));
+      await logItinEvent({
+        kind: 'delete',
+        day: prev.day,
+        itemId,
+        summary: `${DAY_LABEL[prev.day] || prev.day} ${kindLabel('delete')}: ${itemSummary(prev)}`,
+        detail: `AI 삭제 · ${itemSummary(prev)}`
+      });
+      return { id: itemId, deleted: true };
+    }
+  };
+}
+
 // initial paint
 renderReadonlyDefaults();

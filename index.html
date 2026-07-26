@@ -1024,8 +1024,9 @@
       <summary>🤖 여행 AI 물어보기</summary>
       <div class="fold-body">
         <p class="tiny" style="margin:-4px 0 10px">
-          OpenAI로 호핑·셔틀·마사지·동선 등을 질문할 수 있어요.
-          API 키는 <b>이 폰/브라우저에만</b> 저장되며 깃허브·서버로는 올라가지 않습니다.
+          질문뿐 아니라 <b>웹 검색</b>과 <b>일정 추가·수정 제안</b>도 할 수 있어요.
+          불확실하면 AI가 먼저 묻고, 일정은 <b>적용</b>을 눌러야 저장됩니다.
+          API 키는 <b>이 폰에만</b> 저장됩니다. (여행방 입장 후 일정 적용 가능)
         </p>
         <div class="ai-setup">
           <div class="trip-field">
@@ -1048,10 +1049,10 @@
         </div>
 
         <div class="ai-suggest" id="aiSuggestChips" aria-label="추천 질문">
-          <button type="button" data-ai-q="Day3 호핑 후 마사지랑 저녁 동선 추천해줘">호핑 후 동선</button>
+          <button type="button" data-ai-q="지금 일정 보고 Day3에 호핑 후 Chillax 마사지 일정을 추가해줘. 시간 모르면 물어봐.">Day3 마사지 추가</button>
+          <button type="button" data-ai-q="워리슨 스퀘어 마사지 영업시간이랑 가격 웹에서 찾아보고 일정에 넣을지 물어봐줘">검색 후 일정</button>
           <button type="button" data-ai-q="라사 리아 시내 셔틀 탈 때 주의할 점 알려줘">셔틀 팁</button>
           <button type="button" data-ai-q="공항 픽업 못 찾으면 어떻게 해야 해?">픽업 못 찾을 때</button>
-          <button type="button" data-ai-q="시내 해산물 맛집 고르는 기준 알려줘">맛집 기준</button>
         </div>
         <div class="ai-chat-log" id="aiChatLog" aria-live="polite"></div>
         <form class="ai-chat-form" id="aiChatForm">
