@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v20';
+const CACHE_NAME = 'kota-kinabalu-guide-v21';
 const APP_SHELL = [
   './',
   './index.html',

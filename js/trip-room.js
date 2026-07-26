@@ -479,10 +479,48 @@ function renderChecklist(target, docs, colName) {
   });
 }
 
+function appendLinkedText(container, text) {
+  const source = String(text || '');
+  const urlRe = /(https?:\/\/[^\s<>"']+)/gi;
+  let last = 0;
+  let match;
+  while ((match = urlRe.exec(source)) !== null) {
+    if (match.index > last) {
+      container.appendChild(document.createTextNode(source.slice(last, match.index)));
+    }
+    let href = match[1];
+    // Trim common trailing punctuation from pasted links
+    href = href.replace(/[),.;!?]+$/g, '');
+    try {
+      const parsed = new URL(href);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        const a = document.createElement('a');
+        a.href = parsed.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'trip-note-link';
+        a.textContent = href;
+        container.appendChild(a);
+        // If we trimmed punctuation, put it back as plain text
+        const trimmed = match[1].slice(href.length);
+        if (trimmed) container.appendChild(document.createTextNode(trimmed));
+      } else {
+        container.appendChild(document.createTextNode(match[1]));
+      }
+    } catch (_) {
+      container.appendChild(document.createTextNode(match[1]));
+    }
+    last = match.index + match[1].length;
+  }
+  if (last < source.length) {
+    container.appendChild(document.createTextNode(source.slice(last)));
+  }
+}
+
 function renderNotes(docs) {
   el.noteList.innerHTML = '';
   if (!docs.length) {
-    el.noteList.innerHTML = '<li class="trip-empty">아직 메모가 없습니다. 공지를 남겨 보세요.</li>';
+    el.noteList.innerHTML = '<li class="trip-empty">아직 메모가 없습니다. 링크(https://…)도 같이 남겨 보세요.</li>';
     return;
   }
   docs.forEach(d => {
@@ -505,7 +543,9 @@ function renderNotes(docs) {
     `;
     li.querySelector('strong').textContent = data.author || '익명';
     li.querySelector('span:not(.trip-new-tag)').textContent = time;
-    li.querySelector('p').textContent = data.text || '';
+    const body = li.querySelector('p');
+    body.textContent = '';
+    appendLinkedText(body, data.text || '');
     el.noteList.appendChild(li);
   });
 }

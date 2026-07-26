@@ -518,6 +518,10 @@
     .trip-note-head strong { color: var(--ocean); }
     .trip-note-head span { color: var(--muted); margin-right: auto; }
     .trip-note p { margin: 0; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; }
+    .trip-note-link {
+      color: var(--ocean); font-weight: 700; text-decoration: underline;
+      text-underline-offset: 2px; word-break: break-all;
+    }
     .trip-hint { font-size: 0.78rem; color: var(--muted); margin: 0 0 8px; }
 
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
@@ -665,9 +669,10 @@
           </div>
 
           <div data-trip-pane="notes" hidden>
+            <p class="trip-hint">예약 링크, 지도, 카톡 공유 링크 등을 그대로 붙여넣으면 눌러서 열 수 있어요.</p>
             <ul class="trip-list" id="tripNoteList"></ul>
             <div class="trip-add-row">
-              <textarea id="tripNoteInput" maxlength="500" placeholder="공지·메모를 남겨 보세요"></textarea>
+              <textarea id="tripNoteInput" maxlength="500" placeholder="예: 호핑 예약 https://..."></textarea>
               <button type="button" id="tripNoteAdd">등록</button>
             </div>
           </div>
