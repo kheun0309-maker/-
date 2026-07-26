@@ -20,7 +20,6 @@ import {
   serverTimestamp,
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import { getStorage } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js';
 import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
 import { attachItineraryRoom, detachItineraryRoom } from './itinerary-editor.js';
 
@@ -96,7 +95,6 @@ const el = {
 let app = null;
 let auth = null;
 let db = null;
-let storage = null;
 let uid = null;
 let nickname = '';
 let tripCode = '';
@@ -707,7 +705,7 @@ async function enterRoom() {
     }
   ));
 
-  attachItineraryRoom({ db, storage, tripCode, nickname }).catch(err => {
+  attachItineraryRoom({ db, tripCode, nickname }).catch(err => {
     console.error(err);
   });
 }
@@ -921,7 +919,6 @@ async function boot() {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
   bindUi();
 
   const params = new URLSearchParams(location.search);

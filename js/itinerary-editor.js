@@ -12,12 +12,6 @@ import {
   writeBatch,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL
-} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js';
 import { DEFAULT_DAYS } from './itinerary-data.js';
 
 const root = document.getElementById('itineraryApp');
@@ -26,7 +20,7 @@ if (!root) {
   // section not present
 }
 
-let ctx = null; // { db, storage, tripCode, nickname }
+let ctx = null; // { db, tripCode, nickname }
 let unsubs = [];
 let activeDay = 'day1';
 let dayMeta = {};
@@ -125,7 +119,7 @@ function renderReadonlyDefaults() {
   editable = false;
   if (hint) {
     hint.hidden = false;
-    hint.textContent = '여행방에 입장하면 일정을 함께 수정·드래그·사진 업로드할 수 있어요.';
+    hint.textContent = '여행방에 입장하면 일정을 함께 수정·드래그·사진 URL을 넣을 수 있어요.';
   }
   root.innerHTML = buildShellHtml(DEFAULT_DAYS.map(d => ({
     meta: d,
@@ -223,7 +217,7 @@ function render() {
     hint.hidden = false;
     hint.textContent = editable
       ? `여행방 ${ctx.tripCode} · ${ctx.nickname}님, 일정을 함께 수정할 수 있어요.`
-      : '여행방에 입장하면 일정을 함께 수정·드래그·사진 업로드할 수 있어요.';
+      : '여행방에 입장하면 일정을 함께 수정·드래그·사진 URL을 넣을 수 있어요.';
   }
   if (!editable) {
     // keep defaults unless we somehow have data
@@ -343,28 +337,6 @@ function modal(html) {
   return { wrap, close, el: wrap.querySelector('.itin-modal-card') };
 }
 
-async function compressImage(file, maxW = 1400) {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxW / bitmap.width);
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const g = canvas.getContext('2d');
-  g.drawImage(bitmap, 0, 0, w, h);
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
-  return blob || file;
-}
-
-async function uploadImage(file, path) {
-  if (!ctx.storage) throw new Error('Storage가 준비되지 않았습니다.');
-  const blob = await compressImage(file);
-  const ref = storageRef(ctx.storage, path);
-  await uploadBytes(ref, blob, { contentType: 'image/jpeg' });
-  return getDownloadURL(ref);
-}
-
 function openDayEditor(dayId) {
   const meta = dayMeta[dayId] || DEFAULT_DAYS.find(d => d.id === dayId);
   const { wrap, close, el } = modal(`
@@ -399,8 +371,8 @@ function openCoverEditor(dayId) {
   const meta = dayMeta[dayId] || DEFAULT_DAYS.find(d => d.id === dayId);
   const { wrap, close, el } = modal(`
     <h3>대표 사진</h3>
+    <p class="tiny" style="margin:0 0 8px">사진 링크(URL)만 저장합니다. 카카오톡·구글 드라이브 공개 링크, 이미지 직접 주소 등을 붙여넣으세요.</p>
     <label>이미지 URL<input id="mUrl" type="url" value="${esc(meta.coverUrl || '')}" placeholder="https://..."></label>
-    <label>또는 업로드<input id="mFile" type="file" accept="image/*"></label>
     <div class="itin-modal-actions">
       <button type="button" class="itin-btn" data-cancel>취소</button>
       <button type="button" class="itin-btn primary" data-save>저장</button>
@@ -409,12 +381,8 @@ function openCoverEditor(dayId) {
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
-      let url = el.querySelector('#mUrl').value.trim();
-      const file = el.querySelector('#mFile').files?.[0];
-      if (file) {
-        url = await uploadImage(file, `trips/${ctx.tripCode}/covers/${dayId}-${Date.now()}.jpg`);
-      }
-      if (!url) throw new Error('URL 또는 파일을 넣어 주세요.');
+      const url = el.querySelector('#mUrl').value.trim();
+      if (!url) throw new Error('이미지 URL을 넣어 주세요.');
       await setDoc(doc(ctx.db, 'trips', ctx.tripCode, 'dayMeta', dayId), {
         badge: meta.badge || '',
         title: meta.title || '',
@@ -451,8 +419,7 @@ function openItemEditor(dayId, item) {
     <label>지도 링크<input id="mMaps" type="url" value="${esc(data.placeMapsUrl || '')}" placeholder="https://maps.google.com/..."></label>
     <label>할 일 / 제목<input id="mTask" type="text" maxlength="160" value="${esc(data.task || '')}"></label>
     <label>메모<textarea id="mNote" rows="4" maxlength="800">${esc(data.note || '')}</textarea></label>
-    <label>사진 URL<input id="mImgUrl" type="url" value="${esc(data.imageUrl || '')}" placeholder="https://..."></label>
-    <label>또는 사진 업로드<input id="mImgFile" type="file" accept="image/*"></label>
+    <label>사진 URL<input id="mImgUrl" type="url" value="${esc(data.imageUrl || '')}" placeholder="https://... (선택)"></label>
     <div class="itin-modal-actions">
       <button type="button" class="itin-btn" data-cancel>취소</button>
       <button type="button" class="itin-btn primary" data-save>저장</button>
@@ -479,11 +446,7 @@ function openItemEditor(dayId, item) {
   el.querySelector('[data-cancel]').onclick = close;
   el.querySelector('[data-save]').onclick = async () => {
     try {
-      let imageUrl = el.querySelector('#mImgUrl').value.trim();
-      const file = el.querySelector('#mImgFile').files?.[0];
-      if (file) {
-        imageUrl = await uploadImage(file, `trips/${ctx.tripCode}/items/${Date.now()}.jpg`);
-      }
+      const imageUrl = el.querySelector('#mImgUrl').value.trim();
       const place = el.querySelector('#mPlace').value.trim().slice(0, 120);
       const placeMapsUrl = el.querySelector('#mMaps').value.trim() || mapsUrlFor(place, '');
       const payload = {
