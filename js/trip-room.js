@@ -155,6 +155,19 @@ function setBadgeEl(elBadge, count) {
   elBadge.classList.toggle('is-on', n > 0);
 }
 
+function clearUnreadUiNow() {
+  document.querySelectorAll('[data-trip-badge], [data-tab-badge]').forEach(badge => setBadgeEl(badge, 0));
+  if (unreadBanner && unreadText) {
+    unreadText.textContent = '';
+    unreadBanner.classList.remove('is-on');
+  }
+  document.title = TITLE_BASE;
+  document.querySelectorAll('.trip-item.is-new, .trip-note.is-new').forEach(node => {
+    node.classList.remove('is-new');
+    node.querySelectorAll('.trip-new-tag').forEach(tag => tag.remove());
+  });
+}
+
 function renderUnreadBadges() {
   const counts = countUnreadByType();
   const n = counts.total;
@@ -195,11 +208,47 @@ function refreshUnread({ rerender = false } = {}) {
   }
 }
 
+function latestKnownUpdateMs() {
+  let maxTs = Date.now();
+  const bump = value => {
+    const ms = toMs(value);
+    if (ms > maxTs) maxTs = ms;
+  };
+  dataCache.pack.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    bump(data.updatedAt);
+  });
+  dataCache.tasks.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    bump(data.updatedAt);
+  });
+  dataCache.notes.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    bump(data.createdAt);
+  });
+  return maxTs;
+}
+
 function markRead({ silent = false } = {}) {
-  lastReadAt = Date.now();
+  // Instant feedback first (button should feel immediate)
+  clearUnreadUiNow();
+  if (markReadBtn) {
+    markReadBtn.textContent = '확인됨';
+    markReadBtn.disabled = true;
+  }
+
+  // Use latest item time so server/client clock skew cannot keep items unread
+  lastReadAt = latestKnownUpdateMs() + 1000;
   if (tripCode) localStorage.setItem(readKey(tripCode), String(lastReadAt));
   refreshUnread({ rerender: true });
+
   if (!silent) setStatus('새 소식을 확인 처리했어요.');
+  if (markReadBtn) {
+    window.setTimeout(() => {
+      markReadBtn.textContent = '확인했어요';
+      markReadBtn.disabled = false;
+    }, 700);
+  }
 }
 
 function saveSession() {
@@ -647,7 +696,20 @@ function bindUi() {
     });
   });
 
-  markReadBtn?.addEventListener('click', () => markRead());
+  const onMarkRead = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    markRead();
+  };
+  // pointerdown feels instant on mobile; click as fallback
+  markReadBtn?.addEventListener('pointerdown', onMarkRead);
+  markReadBtn?.addEventListener('click', onMarkRead);
+
+  unreadBanner?.addEventListener('click', event => {
+    if (event.target.closest('#tripMarkReadBtn')) return;
+    const trip = document.getElementById('trip');
+    if (trip) trip.open = true;
+  });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshUnread();
