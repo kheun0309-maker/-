@@ -125,6 +125,64 @@
     .hero-cta .primary { background: var(--coral); color: #fff; }
     .hero-cta .ghost { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .guide-search-wrap {
+      position: sticky; top: 0; z-index: 36; margin: 0 0 8px;
+      padding: 8px 0 0; background: rgba(223, 245, 244, 0.94);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .guide-search {
+      position: relative; display: grid; gap: 6px; padding: 0 2px 8px;
+    }
+    .guide-search-field {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 10px 12px; box-shadow: 0 4px 14px rgba(15, 76, 92, 0.06);
+    }
+    .guide-search-field span {
+      flex: 0 0 auto; font-size: 0.95rem; color: var(--teal); line-height: 1;
+    }
+    .guide-search-field input {
+      flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+      font: inherit; font-size: 0.92rem; font-weight: 600; color: var(--ink);
+    }
+    .guide-search-field input::placeholder { color: var(--soft); font-weight: 500; }
+    .guide-search-clear {
+      flex: 0 0 auto; border: 0; background: #e8f3f6; color: var(--ocean);
+      border-radius: 999px; width: 28px; height: 28px; font: inherit; font-size: 0.85rem;
+      font-weight: 800; cursor: pointer; display: none; line-height: 1;
+    }
+    .guide-search-clear.is-on { display: inline-flex; align-items: center; justify-content: center; }
+    .guide-search-chips {
+      display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 2px 2px;
+    }
+    .guide-search-chips::-webkit-scrollbar { display: none; }
+    .guide-search-chips button {
+      flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: var(--ocean);
+      border-radius: 999px; padding: 6px 10px; font: inherit; font-size: 0.72rem; font-weight: 800;
+      cursor: pointer; white-space: nowrap;
+    }
+    .guide-search-chips button:active { background: var(--ocean); color: #fff; }
+    .guide-search-results {
+      list-style: none; margin: 0; padding: 4px; max-height: min(52vh, 360px); overflow: auto;
+      background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(15, 76, 92, 0.12);
+    }
+    .guide-search-results[hidden] { display: none !important; }
+    .guide-search-results li button {
+      width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer;
+      border-radius: 10px; padding: 10px 11px; font: inherit; color: inherit;
+    }
+    .guide-search-results li button:active,
+    .guide-search-results li button.is-active { background: #e8fffb; }
+    .guide-search-results strong {
+      display: block; color: var(--ocean); font-size: 0.9rem; font-weight: 800; margin-bottom: 2px;
+    }
+    .guide-search-results span {
+      display: block; color: var(--muted); font-size: 0.76rem; font-weight: 600; line-height: 1.35;
+    }
+    .guide-search-empty {
+      padding: 14px 12px; color: var(--muted); font-size: 0.82rem; font-weight: 600; text-align: center;
+    }
     .quick-nav {
       position: sticky; top: 0; z-index: 35; display: flex; gap: 6px; overflow-x: auto;
       padding: 8px 2px; margin: 0 0 10px; background: rgba(223, 245, 244, 0.92);
@@ -747,21 +805,43 @@
       </div>
     </aside>
 
-    <nav class="quick-nav" aria-label="바로가기">
-      <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
-      <a href="#itinerary" data-open="itinerary">📅 일정<span class="quick-badge" data-itin-badge>0</span></a>
-      <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
-      <a href="#food" data-open="food">🍽 맛집</a>
-      <a href="#massage" data-open="massage">💆 마사지</a>
-      <a href="#map" data-open="map">🗺 지도</a>
-      <a href="#flights" data-open="flights">✈️ 항공</a>
-      <a href="#airport-pickup" data-open="resort">🚐 공항픽업</a>
-      <a href="#resort-shuttle" data-open="resort">🚌 셔틀</a>
-      <a href="#resort" data-open="resort">🏨 리조트</a>
-      <a href="#late-rest" data-open="late-rest">🌙 귀국휴식</a>
-      <a href="#tips" data-open="tips">⚠ 주의</a>
-      <a href="#pack" data-open="pack">🎒 짐</a>
-    </nav>
+    <div class="guide-search-wrap">
+      <div class="guide-search" role="search">
+        <div class="guide-search-field">
+          <span aria-hidden="true">⌕</span>
+          <input id="guideSearch" type="search" enterkeyhint="search" autocomplete="off"
+            placeholder="호핑, 셔틀, 마사지, 픽업…" aria-label="여행 가이드 검색" aria-controls="guideSearchResults">
+          <button type="button" class="guide-search-clear" id="guideSearchClear" aria-label="검색어 지우기">×</button>
+        </div>
+        <div class="guide-search-chips" id="guideSearchChips" aria-label="인기 검색어">
+          <button type="button" data-q="호핑">호핑</button>
+          <button type="button" data-q="셔틀">셔틀</button>
+          <button type="button" data-q="마사지">마사지</button>
+          <button type="button" data-q="픽업">픽업</button>
+          <button type="button" data-q="맛집">맛집</button>
+          <button type="button" data-q="반딧불이">반딧불이</button>
+          <button type="button" data-q="항공">항공</button>
+          <button type="button" data-q="환율">환율</button>
+          <button type="button" data-q="짐">짐</button>
+        </div>
+        <ul class="guide-search-results" id="guideSearchResults" hidden></ul>
+      </div>
+      <nav class="quick-nav" aria-label="바로가기" style="position:static;top:auto;margin:0;border:0;padding:0 2px 8px;background:transparent;backdrop-filter:none">
+        <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
+        <a href="#itinerary" data-open="itinerary">📅 일정<span class="quick-badge" data-itin-badge>0</span></a>
+        <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
+        <a href="#food" data-open="food">🍽 맛집</a>
+        <a href="#massage" data-open="massage">💆 마사지</a>
+        <a href="#map" data-open="map">🗺 지도</a>
+        <a href="#flights" data-open="flights">✈️ 항공</a>
+        <a href="#airport-pickup" data-open="resort">🚐 공항픽업</a>
+        <a href="#resort-shuttle" data-open="resort">🚌 셔틀</a>
+        <a href="#resort" data-open="resort">🏨 리조트</a>
+        <a href="#late-rest" data-open="late-rest">🌙 귀국휴식</a>
+        <a href="#tips" data-open="tips">⚠ 주의</a>
+        <a href="#pack" data-open="pack">🎒 짐</a>
+      </nav>
+    </div>
 
     <details class="widget fold-widget" id="trip" open>
       <summary>👥 함께 준비</summary>
@@ -1688,7 +1768,7 @@
 
     /* day tabs are handled by js/itinerary-editor.js */
 
-    const openSection = (id, { closeOthers = true } = {}) => {
+    const openSection = (id, { closeOthers = true, anchorId = '' } = {}) => {
       const target = document.getElementById(id);
       if (!target) return;
       if (closeOthers) {
@@ -1698,7 +1778,8 @@
       }
       target.open = true;
       if (id === 'map' && tripMap) setTimeout(() => tripMap.invalidateSize(), 180);
-      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+      const scrollTarget = (anchorId && document.getElementById(anchorId)) || target;
+      setTimeout(() => scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
     };
 
     document.querySelectorAll('[data-open]').forEach(link => {
@@ -1706,14 +1787,197 @@
         event.preventDefault();
         const openId = link.dataset.open;
         const hrefId = (link.getAttribute('href') || '').replace('#', '');
-        openSection(openId);
+        openSection(openId, { anchorId: hrefId && hrefId !== openId ? hrefId : '' });
         history.replaceState(null, '', `#${hrefId || openId}`);
-        if (hrefId && hrefId !== openId) {
-          const anchor = document.getElementById(hrefId);
-          if (anchor) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-        }
       });
     });
+
+    /* 가이드 검색 */
+    (function initGuideSearch() {
+      const input = document.getElementById('guideSearch');
+      const results = document.getElementById('guideSearchResults');
+      const clearBtn = document.getElementById('guideSearchClear');
+      const chips = document.getElementById('guideSearchChips');
+      if (!input || !results) return;
+
+      const INDEX = [
+        { title: '호핑투어', desc: '예약 · 섬 · 사진 · 제티 픽업', open: 'hopping', href: 'hopping', keys: ['호핑', 'hopping', '섬투어', '스노클', '제티', '마누칸', '마무틱', '술룩', '섬'] },
+        { title: '리조트 셔틀버스', desc: '시내 · 제셀톤 · 이마고 시간표', open: 'resort', href: 'resort-shuttle', keys: ['셔틀', '버스', 'shuttle', '이마고', '제셀톤', 'imago', 'jesselton'] },
+        { title: '마사지 · 스파', desc: '요금 · Warisan · Asia City 추천', open: 'massage', href: 'massage', keys: ['마사지', '스파', '마사지샵', '발마사지', 'warisan', 'chillax', '카마'] },
+        { title: '공항 픽업', desc: '도착홀 · 피켓 · 리무진 · 그랩', open: 'resort', href: 'airport-pickup', keys: ['픽업', '공항픽업', '리무진', '도착홀', '미팅', 'pickup'] },
+        { title: '리조트 · 라사 리아', desc: '숙소 정보 · 연락처 · 오시는 길', open: 'resort', href: 'resort', keys: ['리조트', '숙소', '라사리아', '라사 리아', '샹그릴라', 'rasa', 'shangri'] },
+        { title: '시내 맛집', desc: '해산물 · 버터새우 · 칠리크랩', open: 'food', href: 'food', keys: ['맛집', '식당', '해산물', '씨푸드', '버터새우', '칠리크랩', '웰컴', '쌍천'] },
+        { title: '항공편', desc: 'KE5761 · KE5762 · 인천 T2', open: 'flights', href: 'flights', keys: ['항공', '비행기', '비행', 'ke5761', 'ke5762', '인천', '출국', '귀국'] },
+        { title: '일자별 일정', desc: 'Day1~4 · 함께 수정', open: 'itinerary', href: 'itinerary', keys: ['일정', '스케줄', 'day1', 'day2', 'day3', 'day4', '타임라인'] },
+        { title: '동선 지도', desc: '공항 · 리조트 · 시내 · 내 위치', open: 'map', href: 'map', keys: ['지도', '맵', '동선', '길찾기', 'gps', '위치'] },
+        { title: '함께 준비', desc: '준비물 · 공지 · 여행방', open: 'trip', href: 'trip', keys: ['함께', '여행방', '공지', '준비물', '체크리스트', '공유'] },
+        { title: '현지 시각 · 환율', desc: '한국/코타 시간 · MYR↔원', open: 'live', href: 'live', keys: ['환율', '링깃', 'myr', '시간', '시계', '환전'] },
+        { title: '귀국 · 휴식', desc: '늦은 비행 · 공항 대기 · Napzone', open: 'late-rest', href: 'late-rest', keys: ['귀국', '휴식', '낮잠', 'napzone', '에어로포드', '늦은비행'] },
+        { title: '주의사항', desc: '모기 · 햇빛 · 물 · 안전', open: 'tips', href: 'tips', keys: ['주의', '팁', '모기', '선크림', '안전', '물'] },
+        { title: '짐 챙기기', desc: '개인 체크리스트', open: 'pack', href: 'pack', keys: ['짐', '캐리어', '챙기기', '패킹', '옷', '수영복'] },
+        { title: '출발 전 할 일', desc: '예약 · 확인 체크', open: 'booking', href: 'booking', keys: ['출발전', '예약확인', '할일', '체크'] },
+        { title: '반딧불이 투어', desc: 'Day2 리조트 리버 크루즈', open: 'itinerary', href: 'itinerary', keys: ['반딧불이', '파이어플라이', 'firefly', '크루즈', '맹그로브'] }
+      ];
+
+      let activeIdx = -1;
+      let currentHits = [];
+
+      const esc = s => String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      const norm = s => String(s || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[·.,/()\-]/g, '');
+
+      const scoreItem = (item, q) => {
+        const nq = norm(q);
+        if (!nq) return 0;
+        let score = 0;
+        const titleN = norm(item.title);
+        const descN = norm(item.desc);
+        if (titleN.includes(nq)) score += 40;
+        if (descN.includes(nq)) score += 18;
+        (item.keys || []).forEach(k => {
+          const nk = norm(k);
+          if (nk === nq) score += 55;
+          else if (nk.startsWith(nq) || nq.startsWith(nk)) score += 30;
+          else if (nk.includes(nq) || nq.includes(nk)) score += 16;
+        });
+        return score;
+      };
+
+      const scanSections = q => {
+        const nq = norm(q);
+        if (!nq || nq.length < 2) return [];
+        const hits = [];
+        document.querySelectorAll('details.fold-widget').forEach(section => {
+          const id = section.id;
+          if (!id || INDEX.some(i => i.open === id && scoreItem(i, q) >= 30)) return;
+          const summary = section.querySelector('summary')?.textContent || '';
+          const body = section.querySelector('.fold-body')?.innerText || '';
+          const blob = norm(summary + ' ' + body.slice(0, 1200));
+          if (!blob.includes(nq)) return;
+          hits.push({
+            title: summary.replace(/펼치기|접기/g, '').trim() || id,
+            desc: '본문에서 찾음',
+            open: id,
+            href: id,
+            _score: 12
+          });
+        });
+        return hits;
+      };
+
+      const search = q => {
+        const trimmed = String(q || '').trim();
+        if (!trimmed) return [];
+        const scored = INDEX.map(item => ({ ...item, _score: scoreItem(item, trimmed) }))
+          .filter(item => item._score > 0)
+          .sort((a, b) => b._score - a._score);
+        const extras = scanSections(trimmed).filter(ex => !scored.some(s => s.open === ex.open && s.href === ex.href));
+        return [...scored, ...extras].slice(0, 8);
+      };
+
+      const hideResults = () => {
+        results.hidden = true;
+        results.innerHTML = '';
+        activeIdx = -1;
+        currentHits = [];
+      };
+
+      const goTo = hit => {
+        if (!hit) return;
+        openSection(hit.open, { anchorId: hit.href && hit.href !== hit.open ? hit.href : '' });
+        history.replaceState(null, '', `#${hit.href || hit.open}`);
+        input.blur();
+        hideResults();
+      };
+
+      const render = hits => {
+        currentHits = hits;
+        activeIdx = hits.length ? 0 : -1;
+        if (!input.value.trim()) {
+          hideResults();
+          return;
+        }
+        results.hidden = false;
+        if (!hits.length) {
+          results.innerHTML = '<li class="guide-search-empty">결과가 없어요. 호핑 · 셔틀 · 마사지처럼 짧게 검색해 보세요.</li>';
+          return;
+        }
+        results.innerHTML = hits.map((hit, i) => `
+          <li>
+            <button type="button" data-idx="${i}" class="${i === activeIdx ? 'is-active' : ''}">
+              <strong>${hit.title}</strong>
+              <span>${hit.desc || ''}</span>
+            </button>
+          </li>
+        `).join('');
+      };
+
+      const refresh = () => {
+        const q = input.value;
+        clearBtn?.classList.toggle('is-on', Boolean(q.trim()));
+        render(search(q));
+      };
+
+      input.addEventListener('input', refresh);
+      input.addEventListener('focus', () => {
+        if (input.value.trim()) refresh();
+      });
+      clearBtn?.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.classList.remove('is-on');
+        hideResults();
+        input.focus();
+      });
+      chips?.addEventListener('click', e => {
+        const btn = e.target.closest('[data-q]');
+        if (!btn) return;
+        input.value = btn.dataset.q || '';
+        refresh();
+        const hits = search(input.value);
+        if (hits[0]) goTo(hits[0]);
+      });
+      results.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-idx]');
+        if (!btn) return;
+        goTo(currentHits[Number(btn.dataset.idx)]);
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          hideResults();
+          input.blur();
+          return;
+        }
+        if (!currentHits.length) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            refresh();
+          }
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIdx = (activeIdx + 1) % currentHits.length;
+          render(currentHits);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIdx = (activeIdx - 1 + currentHits.length) % currentHits.length;
+          render(currentHits);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          goTo(currentHits[Math.max(0, activeIdx)]);
+        }
+      });
+      document.addEventListener('click', e => {
+        if (!e.target.closest('.guide-search')) hideResults();
+      });
+    })();
 
     document.querySelectorAll('details.fold-widget').forEach(el => {
       el.addEventListener('toggle', () => {
