@@ -1046,7 +1046,8 @@
         <div class="ai-setup">
           <div class="trip-field">
             <label for="aiApiKey">OpenAI API 키</label>
-            <input id="aiApiKey" type="password" autocomplete="off" placeholder="sk-...">
+            <input id="aiApiKey" type="password" autocomplete="off" spellcheck="false"
+              placeholder="sk-... 붙여넣으면 자동 저장">
           </div>
           <div class="trip-field">
             <label for="aiModel">모델</label>
@@ -1061,7 +1062,7 @@
             <button type="button" class="primary" id="aiKeySave">키 저장</button>
             <button type="button" class="ghost" id="aiKeyClear">키 삭제</button>
           </div>
-          <p class="tiny" id="aiStatus" role="status"></p>
+          <p class="tiny" id="aiStatus" role="status">API 키를 붙여넣으면 이 기기에 자동 저장됩니다.</p>
         </div>
 
         <div class="ai-suggest" id="aiSuggestChips" aria-label="추천 질문">

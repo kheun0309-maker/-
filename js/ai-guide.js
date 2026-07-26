@@ -103,11 +103,37 @@ function loadKey() {
   try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (_) { return ''; }
 }
 
+function isLikelyOpenAiKey(key) {
+  const k = String(key || '').trim();
+  // sk-... / sk-proj-... / sk-svcacct-... 등
+  return /^sk-[A-Za-z0-9_\-]{10,}$/.test(k);
+}
+
+function keyTail(key) {
+  const k = String(key || '').trim();
+  if (k.length < 8) return '';
+  return k.slice(-4);
+}
+
+/** @returns {{ ok: boolean, error?: string }} */
 function saveKey(key) {
   try {
-    if (key) localStorage.setItem(KEY_STORAGE, key);
-    else localStorage.removeItem(KEY_STORAGE);
-  } catch (_) {}
+    if (key) {
+      localStorage.setItem(KEY_STORAGE, key);
+      // 바로 다시 읽어 저장 성공 여부 확인 (사파리 비공개 등 실패 감지)
+      if (localStorage.getItem(KEY_STORAGE) !== key) {
+        return { ok: false, error: '저장 후 확인에 실패했어요. 브라우저 저장소가 막혀 있을 수 있어요.' };
+      }
+    } else {
+      localStorage.removeItem(KEY_STORAGE);
+    }
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: '이 브라우저에서 로컬 저장이 막혀 있어요. Chrome으로 열거나 시크릿 모드를 꺼 주세요.'
+    };
+  }
 }
 
 function loadModel() {
@@ -230,14 +256,45 @@ export function initAiGuide() {
   let proposalSeq = 0;
   const proposals = new Map();
 
-  if (keyInput) keyInput.value = loadKey() ? '••••••••••••' : '';
-  if (modelSelect) modelSelect.value = loadModel();
+  const refreshKeyUi = (msg = '') => {
+    const saved = loadKey();
+    if (keyInput) {
+      keyInput.value = saved ? `••••••••••••${keyTail(saved)}` : '';
+      keyInput.placeholder = saved ? '저장됨 · 바꾸려면 새 키 붙여넣기' : 'sk-... 붙여넣고 저장';
+    }
+    if (msg) setStatus(msg, false);
+    else if (saved) setStatus(`API 키 저장됨 (끝자리 ${keyTail(saved)}) · 이 기기에만 보관`);
+    else setStatus('API 키를 붙여넣으면 자동 저장됩니다.');
+  };
 
   const setStatus = (msg, isError = false) => {
     if (!statusEl) return;
     statusEl.textContent = msg || '';
     statusEl.classList.toggle('is-error', Boolean(isError && msg));
   };
+
+  const persistKeyFromInput = ({ silent = false } = {}) => {
+    const raw = (keyInput?.value || '').trim();
+    if (!raw || raw.startsWith('••')) {
+      if (!silent) setStatus(loadKey() ? `이미 저장됨 (끝자리 ${keyTail(loadKey())})` : '키를 붙여넣은 뒤 저장해 주세요.', !loadKey());
+      return Boolean(loadKey());
+    }
+    if (!isLikelyOpenAiKey(raw)) {
+      if (!silent) setStatus('OpenAI API 키 형식이 아니에요. sk- 로 시작하는 키를 붙여넣어 주세요.', true);
+      return false;
+    }
+    const result = saveKey(raw);
+    if (!result.ok) {
+      setStatus(result.error || '저장 실패', true);
+      return false;
+    }
+    saveModel(modelSelect?.value || DEFAULT_MODEL);
+    refreshKeyUi('API 키를 이 기기에 저장했어요.');
+    return true;
+  };
+
+  if (modelSelect) modelSelect.value = loadModel();
+  refreshKeyUi();
 
   const appendBubble = (role, text) => {
     if (!logEl) return null;
