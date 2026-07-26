@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v9';
+const CACHE_NAME = 'kota-kinabalu-guide-v10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
+  './images/kk-sunset.jpg',
   './images/tanjung-aru-islands.jpg',
   './images/manukan-beach.jpg',
   './images/kk-islands.jpg',
