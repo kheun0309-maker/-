@@ -625,7 +625,7 @@ function renderNotes(docs) {
   }
   docs.forEach(d => {
     const data = d.data();
-    const unread = isNoteUnread(data);
+    const unread = isNoteUnread(d);
     const li = document.createElement('li');
     li.className = 'trip-note' + (unread ? ' is-new' : '');
     const when = data.createdAt?.toDate ? data.createdAt.toDate() : null;
@@ -653,9 +653,19 @@ function renderNotes(docs) {
 async function enterRoom() {
   showRoom();
   clearUnsubs();
-  loadLastRead(tripCode);
-  if (!lastReadAt) markRead({ silent: true });
+  loadSeen(tripCode);
   dataCache = { pack: [], tasks: [], notes: [] };
+  let pendingInitialSeen = seenSet.size === 0;
+  const gotSnap = { pack: false, tasks: false, notes: false };
+
+  const afterDataSnap = kind => {
+    gotSnap[kind] = true;
+    if (pendingInitialSeen && gotSnap.pack && gotSnap.tasks && gotSnap.notes) {
+      captureAllAsSeen();
+      pendingInitialSeen = false;
+    }
+    refreshUnread();
+  };
 
   unsubs.push(onSnapshot(collection(db, 'trips', tripCode, 'members'), snap => {
     renderMembers(snap.docs);
@@ -666,7 +676,7 @@ async function enterRoom() {
     snap => {
       dataCache.pack = snap.docs;
       renderChecklist(el.packList, snap.docs, 'packItems');
-      refreshUnread();
+      afterDataSnap('pack');
     }
   ));
 
@@ -675,7 +685,7 @@ async function enterRoom() {
     snap => {
       dataCache.tasks = snap.docs;
       renderChecklist(el.taskList, snap.docs, 'taskItems');
-      refreshUnread();
+      afterDataSnap('tasks');
     }
   ));
 
@@ -684,7 +694,7 @@ async function enterRoom() {
     snap => {
       dataCache.notes = snap.docs;
       renderNotes(snap.docs);
-      refreshUnread();
+      afterDataSnap('notes');
       // trim old notes beyond MAX_NOTES (best-effort by newest clients)
       if (snap.docs.length > MAX_NOTES) {
         snap.docs.slice(MAX_NOTES).forEach(extra => {
