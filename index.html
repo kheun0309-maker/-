@@ -45,7 +45,7 @@
         linear-gradient(180deg, #f3fffd 0%, var(--bg) 42%, var(--bg-deep) 100%);
     }
     header {
-      position: relative; min-height: 72vh; padding: 0; text-align: center; color: #fff; overflow: hidden;
+      position: relative; min-height: 48vh; padding: 0; text-align: center; color: #fff; overflow: hidden;
       display: flex; flex-direction: column; justify-content: flex-end;
     }
     .hero-bg {
@@ -100,18 +100,57 @@
     .hero-cta .primary { background: var(--coral); color: #fff; }
     .hero-cta .ghost { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-    .spark-strip {
-      display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; margin: -4px 0 10px;
-      scrollbar-width: none; animation: fadeUp 0.7s ease 0.3s both;
+    .quick-nav {
+      position: sticky; top: 0; z-index: 35; display: flex; gap: 6px; overflow-x: auto;
+      padding: 8px 2px; margin: 0 0 10px; background: rgba(223, 245, 244, 0.92);
+      backdrop-filter: blur(10px); scrollbar-width: none; border-bottom: 1px solid var(--line);
     }
-    .spark-strip::-webkit-scrollbar { display: none; }
-    .spark {
-      flex: 0 0 auto; background: linear-gradient(135deg, #fff 0%, #e8fffb 100%);
-      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; min-width: 118px;
-      box-shadow: var(--shadow);
+    .quick-nav::-webkit-scrollbar { display: none; }
+    .quick-nav a {
+      flex: 0 0 auto; text-decoration: none; font-size: 0.74rem; font-weight: 800;
+      color: var(--ocean); background: #fff; border: 1px solid var(--line);
+      border-radius: 999px; padding: 8px 12px; white-space: nowrap;
     }
-    .spark b { display: block; font-size: 0.78rem; color: var(--ocean); margin-bottom: 2px; }
-    .spark span { font-size: 0.7rem; color: var(--muted); }
+    .quick-nav a:active { background: var(--ocean); color: #fff; }
+    .fold-widget > summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; font-size: 1rem; font-weight: 800; color: var(--ocean);
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif; letter-spacing: -0.02em;
+      margin: -4px 0 0; padding: 2px 0; user-select: none;
+    }
+    .fold-widget > summary::-webkit-details-marker { display: none; }
+    .fold-widget > summary::after {
+      content: '펼치기 ▾'; flex: 0 0 auto; font-size: 0.68rem; font-weight: 700;
+      color: var(--teal); background: #e8fffb; border-radius: 999px; padding: 4px 8px;
+    }
+    .fold-widget[open] > summary { margin-bottom: 12px; }
+    .fold-widget[open] > summary::after { content: '접기 ▴'; }
+    .fold-body { animation: riseIn 0.35s ease both; }
+    .hop-photos {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 12px;
+    }
+    .hop-photos figure {
+      margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+      aspect-ratio: 4/3; position: relative; background: #dceef2;
+    }
+    .hop-photos figure.wide { grid-column: 1 / -1; aspect-ratio: 16/9; }
+    .hop-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hop-photos figcaption {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 7px 6px;
+      background: linear-gradient(transparent, rgba(10,40,55,.8));
+      color: #fff; font-size: 0.66rem; font-weight: 700;
+    }
+    .step-list { list-style: none; display: grid; gap: 8px; margin: 8px 0; counter-reset: step; }
+    .step-list li {
+      position: relative; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 11px 12px 11px 44px; font-size: 0.82rem; color: var(--muted);
+    }
+    .step-list li::before {
+      counter-increment: step; content: counter(step); position: absolute; left: 12px; top: 12px;
+      width: 22px; height: 22px; border-radius: 50%; background: var(--coral); color: #fff;
+      font-size: 0.72rem; font-weight: 800; display: grid; place-items: center;
+    }
+    .step-list b { color: var(--ink); }
     main { padding: 8px 12px 92px; }
     .widget {
       background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -378,15 +417,21 @@
       </div>
     </aside>
 
-    <div class="spark-strip" aria-label="여행 하이라이트">
-      <div class="spark"><b>Day 2 휴식</b><span>풀 · 반딧불이</span></div>
-      <div class="spark"><b>Day 3 호핑</b><span>사피 · 마누칸</span></div>
-      <div class="spark"><b>시내 씨푸드</b><span>버터새우 필수</span></div>
-      <div class="spark"><b>라사 리아</b><span>시내에서 멀어 호캉스</span></div>
-    </div>
+    <nav class="quick-nav" aria-label="바로가기">
+      <a href="#itinerary" data-open="itinerary">📅 일정</a>
+      <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
+      <a href="#food" data-open="food">🍽 맛집</a>
+      <a href="#map" data-open="map">🗺 지도</a>
+      <a href="#flights" data-open="flights">✈️ 항공</a>
+      <a href="#resort" data-open="resort">🏨 리조트</a>
+      <a href="#late-rest" data-open="late-rest">🌙 귀국휴식</a>
+      <a href="#tips" data-open="tips">⚠ 주의</a>
+      <a href="#pack" data-open="pack">🎒 짐</a>
+    </nav>
 
-    <section class="widget" id="live">
-      <div class="widget-title">⏱ 지금 시각</div>
+    <details class="widget fold-widget" id="live">
+      <summary>⏱ 지금 시각 · 환율</summary>
+      <div class="fold-body">
       <div class="time-grid">
         <div class="time-card">
           <div class="time-label">한국 (서울)</div>
@@ -399,10 +444,24 @@
           <div class="time-sub" id="kkDate">불러오는 중</div>
         </div>
       </div>
-    </section>
+      <div class="fx-row" style="margin-top:12px">
+        <div class="fx-field">
+          <label for="myrInput">링깃 (MYR)</label>
+          <input id="myrInput" type="number" value="100" min="0" inputmode="decimal">
+        </div>
+        <button class="fx-swap" type="button" id="fxSwap" aria-label="통화 방향 전환">⇄</button>
+        <div class="fx-field">
+          <label for="krwInput">원 (KRW)</label>
+          <input id="krwInput" type="number" value="30000" min="0" inputmode="decimal">
+        </div>
+      </div>
+      <p class="fx-note" id="fxNote">참고 환율 1 MYR ≈ 300원 · 실제 환율은 변동됩니다.</p>
+      </div>
+    </details>
 
-    <section class="widget" id="flights">
-      <div class="widget-title">✈️ 항공 일정</div>
+    <details class="widget fold-widget" id="flights">
+      <summary>✈️ 항공 일정</summary>
+      <div class="fold-body">
       <div class="flight-item">
         <span class="tag ok">확정</span>
         <b>가는 편 · KE5761 · 8/13(목)</b>
@@ -422,10 +481,12 @@
           ※ 대안: KE5788 (BKI 23:55 → ICN 06:05) — 16일 밤 출발을 원하면 이쪽도 검토
         </span>
       </div>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="resort">
-      <div class="widget-title">🏨 숙소 · 샹그릴라 라사 리아</div>
+    <details class="widget fold-widget" id="resort">
+      <summary>🏨 숙소 · 샹그릴라 라사 리아</summary>
+      <div class="fold-body">
       <div class="info-card">
         <b>Shangri-La Rasa Ria, Kota Kinabalu</b>
         <p>
@@ -460,26 +521,12 @@
           리조트 → 공항도 약 45분 + 여유 포함해 <strong>출발 3시간 전</strong> 공항 도착을 목표로 리무진/그랩을 잡아 두세요.
         </p>
       </div>
-    </section>
-
-    <section class="widget" id="fx">
-      <div class="widget-title">💱 환율 계산 (MYR ↔ KRW)</div>
-      <div class="fx-row">
-        <div class="fx-field">
-          <label for="myrInput">링깃 (MYR)</label>
-          <input id="myrInput" type="number" value="100" min="0" inputmode="decimal">
-        </div>
-        <button class="fx-swap" type="button" id="fxSwap" aria-label="통화 방향 전환">⇄</button>
-        <div class="fx-field">
-          <label for="krwInput">원 (KRW)</label>
-          <input id="krwInput" type="number" value="30000" min="0" inputmode="decimal">
-        </div>
       </div>
-      <p class="fx-note" id="fxNote">참고 환율 1 MYR ≈ 300원 · 실제 환율은 변동됩니다.</p>
-    </section>
+    </details>
 
-    <section class="widget" id="map">
-      <div class="widget-title">🗺 동선 지도 · 내 위치</div>
+    <details class="widget fold-widget" id="map">
+      <summary>🗺 동선 지도 · 내 위치</summary>
+      <div class="fold-body">
       <div class="route-chips" id="routeChips">
         <button class="route-chip active" type="button" data-route="all">전체</button>
         <button class="route-chip" type="button" data-route="arrive">공항→리조트</button>
@@ -508,53 +555,12 @@
         <span>열기 →</span>
       </a>
       <p class="tiny">※ 호핑 선착장(옛 Jesselton Point)은 2026.3.1부터 <strong>Jesselton Quay 뒤 South Jetty</strong>로 이전되었습니다. 그랩 목적지를 “South Jetty / Jesselton Quay”로 잡으세요.</p>
-    </section>
-
-    <section class="widget" id="photos">
-      <div class="widget-title">📸 현지 분위기 사진</div>
-      <div class="photo-grid">
-        <figure class="photo-card wide">
-          <img src="./images/tanjung-aru-islands.jpg" alt="탄중아루 해변과 툰쿠 압둘 라만 제도" loading="lazy">
-          <figcaption class="photo-caption">탄중아루에서 바라본 호핑 섬들 · 코타키나발루</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/manukan-beach.jpg" alt="마누칸 섬 해변" loading="lazy">
-          <figcaption class="photo-caption">마누칸 섬 해변 (호핑)</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/kk-islands.jpg" alt="마누칸·마무틱·수룩 섬" loading="lazy">
-          <figcaption class="photo-caption">마누칸·마무틱·수룩 섬</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/mangrove-boat.jpg" alt="클리아스 강 맹그로브" loading="lazy">
-          <figcaption class="photo-caption">사바 맹그로브 리버 (반딧불이 분위기)</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/gaya-market.jpg" alt="가야 스트리트 선데이 마켓" loading="lazy">
-          <figcaption class="photo-caption">가야 스트리트 선데이 마켓</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/kkia-airport.jpg" alt="코타키나발루 국제공항" loading="lazy">
-          <figcaption class="photo-caption">KKIA 공항</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/mount-kinabalu.jpg" alt="키나발루 산" loading="lazy">
-          <figcaption class="photo-caption">키나발루 산 (원경)</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/kk-tanjung-boat.jpg" alt="탄중아루 해변의 배" loading="lazy">
-          <figcaption class="photo-caption">탄중아루 해변</figcaption>
-        </figure>
-        <figure class="photo-card">
-          <img src="./images/kk-sea-activity.jpg" alt="코타키나발루 해상 액티비티" loading="lazy">
-          <figcaption class="photo-caption">해상 액티비티 분위기</figcaption>
-        </figure>
       </div>
-      <p class="photo-credit">출처: Wikimedia Commons · Unsplash (CC/무료 라이선스). 라사 리아 공식 외관 사진은 저작권상 공개 이미지를 쓰기 어려워, 같은 지역의 실제 해변·섬·시내·맹그로브 사진으로 구성했습니다.</p>
-    </section>
+    </details>
 
-    <section class="widget" id="itinerary">
-      <div class="widget-title">📅 일자별 일정</div>
+    <details class="widget fold-widget" id="itinerary" open>
+      <summary>📅 일자별 일정</summary>
+      <div class="fold-body">
       <div class="day-tabs" role="tablist">
         <button class="day-tab active" data-day="day1" type="button">Day1 · 13</button>
         <button class="day-tab" data-day="day2" type="button">Day2 · 14</button>
@@ -752,10 +758,12 @@
           </li>
         </ul>
       </article>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="food">
-      <div class="widget-title">🍽 시내 추천 맛집</div>
+    <details class="widget fold-widget" id="food">
+      <summary>🍽 시내 추천 맛집</summary>
+      <div class="fold-body">
       <p class="tiny" style="margin:-4px 0 10px">지도·후기 링크로 바로 열어보세요. 버터새우·칠리크랩은 필수 코스!</p>
 
       <div class="info-card">
@@ -836,79 +844,119 @@
         </div>
       </div>
       <p class="tiny">가격·메뉴·영업시간은 변동될 수 있어요. 방문 전 지도 앱에서 한번 더 확인하세요.</p>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="hopping">
-      <div class="widget-title">🏝 호핑투어 참고 · 블로그</div>
+    <details class="widget fold-widget" id="hopping">
+      <summary>🏝 호핑투어 · 예약방법 · 사진</summary>
+      <div class="fold-body">
+      <div class="hop-photos">
+        <figure class="wide">
+          <img src="./images/tanjung-aru-islands.jpg" alt="호핑 섬 전경" loading="lazy">
+          <figcaption>탄중아루에서 본 툰쿠 압둘 라만 제도</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/manukan-beach.jpg" alt="마누칸 해변" loading="lazy">
+          <figcaption>마누칸 해변</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/manukan-view.jpg" alt="마누칸 전망" loading="lazy">
+          <figcaption>마누칸 전망</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/manukan-jetty.jpg" alt="마누칸 선착장" loading="lazy">
+          <figcaption>마누칸 선착장</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/kk-islands.jpg" alt="섬 전경" loading="lazy">
+          <figcaption>마누칸·마무틱·수룩</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/mamutik-sulug.jpg" alt="섬 호핑 전경" loading="lazy">
+          <figcaption>섬 호핑 전경</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/kk-sea-activity.jpg" alt="해상 액티비티" loading="lazy">
+          <figcaption>해상 액티비티</figcaption>
+        </figure>
+        <figure>
+          <img src="./images/kk-jetski.jpg" alt="해양 액티비티" loading="lazy">
+          <figcaption>해양 액티비티</figcaption>
+        </figure>
+      </div>
+
       <div class="info-card">
-        <b>한눈에 보는 섬 특징</b>
+        <b>섬 한눈에 보기</b>
         <p>
-          · <strong>사피(Sapi)</strong> — 스노클링·물놀이 중심, 붐빔<br>
-          · <strong>마누칸(Manukan)</strong> — 해변 넓고 여유·사진·산책, 액티비티(패러/씨워킹) 많음<br>
-          · <strong>마무틱(Mamutik)</strong> — 작고 스노클링 포인트, 성게·바위 주의 → 아쿠아슈즈<br>
+          · <strong>사피</strong> — 스노클링·물놀이, 사람 많음<br>
+          · <strong>마누칸</strong> — 해변·사진·산책, 패러/씨워킹<br>
+          · <strong>마무틱</strong> — 작은 섬·스노클링, 성게·아쿠아슈즈<br>
           · 집결: <strong>Jesselton Quay 뒤 South Jetty</strong> (옛 Jesselton Point, 2026.3 이전)<br>
-          · 입장료·보트비 포함 여부 상품마다 다름<br>
-          · 라사 리아에서 제티까지 45~60분 → <strong>아침 일찍 픽업</strong> 필수
+          · 라사 리아 → 제티 45~60분 · <strong>아침 일찍 픽업</strong>
         </p>
       </div>
-      <div class="info-card">
-        <b>예약·준비 팁</b>
-        <p>
-          · 섬 2곳 + 액티비티 여러 개는 시간이 빠듯 → 액티비티 많으면 섬 1~2곳만<br>
-          · 점심 포함/미포함 확인. 미포함이면 컵라면·간식 챙기기<br>
-          · 선크림·래시가드·방수팩·여분 옷·현금(섬 내 카드 약함)<br>
-          · 우천·파고 시 일정 변경될 수 있음
-        </p>
-      </div>
-      <p class="tiny" style="margin-bottom:8px">후기·팁 참고 링크 (새 탭)</p>
-      <ul class="link-list">
-        <li>
-          <a href="https://www.sabahparks.org.my/tunku-abdul-rahman-park/" target="_blank" rel="noopener">
-            <strong>툰쿠 압둘 라만 파크 공식 (Sabah Parks)</strong>
-            <span>섬 구성·공원 안내 · 공식 참고</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Island-Tour-Review.html" target="_blank" rel="noopener">
-            <strong>마무틱 &amp; 마누칸 섬 투어 후기</strong>
-            <span>rose1538 · 동선·대기·섬별 분위기 정리</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://nowonetip.com/150" target="_blank" rel="noopener">
-            <strong>사피·마누칸 호핑투어 후기 (8월)</strong>
-            <span>nowonetip · 제셀톤 포인트·섬별 팁·우기/건기 메모</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://dalmoo.co.kr/%ec%bd%94%ed%83%80%ed%82%a4%eb%82%98%eb%b0%9c%eb%a3%a8-%ec%82%ac%ed%94%bc%ec%84%ac-%eb%a7%88%eb%88%84%ec%b9%b8%ec%84%ac-%ed%98%b8%ed%95%91%ed%88%ac%ec%96%b4-%ea%b0%80%ea%b2%a9-%ed%8c%81/" target="_blank" rel="noopener">
-            <strong>사피·마누칸 가격·팁 총정리</strong>
-            <span>dalmoo · 스노클링·액티비티·성게 주의</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://donotworry.co.kr/23" target="_blank" rel="noopener">
-            <strong>호핑 + 마사지까지 하루 동선</strong>
-            <span>donotworry · Day3 패턴과 비슷한 일정 참고</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://nadragon.tistory.com/178" target="_blank" rel="noopener">
-            <strong>마누칸·마무틱 + 패러·씨워킹 후기</strong>
-            <span>nadragon · 액티비티·컵라면·성게 경험담</span>
-          </a>
-        </li>
-        <li>
-          <a href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Seafood-Restaurant-Suangtain-Seafood-review.html" target="_blank" rel="noopener">
-            <strong>쌍천 씨푸드 후기 (맛집 참고)</strong>
-            <span>rose1538 · 메뉴·가격대 감 잡기</span>
-          </a>
-        </li>
-      </ul>
-    </section>
 
-    <section class="widget" id="late-rest">
-      <div class="widget-title">🌙 마지막 날 · 늦게 쉴 대안</div>
+      <div class="info-card">
+        <span class="tag ok">추천</span>
+        <b>예약 방법 A · 현지 흥정 (가성비 최고)</b>
+        <p>한국 앱보다 보통 훨씬 저렴. 호핑 <strong>하루 전</strong> 선착장 부스를 비교하며 예약하세요.</p>
+        <ol class="step-list">
+          <li><b>목적 정하기</b> — 섬 개수 / 스노클 장비 / 씨워킹·패러 개수</li>
+          <li><b>시세 숙지</b> — 구성에 따라 대략 1인 MYR 150~230대. 첫 부르는 값은 정가</li>
+          <li><b>부스 2~3곳 비교</b> — 8~11번대 부스가 자주 언급됨</li>
+          <li><b>포함 확인</b> — Terminal fee, 구명조끼, 스노클 장비, 섬 입장료(약 MYR 25/인 별도인 경우 많음), 액티비티</li>
+          <li><b>영수증 더블체크</b> — 섬 이름·포함 항목·담당자 연락처. 당일 지참</li>
+        </ol>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Jesselton+Quay+South+Jetty+Kota+Kinabalu" target="_blank" rel="noopener">선착장 지도</a>
+          <a class="review" href="https://travel.rose1538.com/2025/04/Kota-Kinabalu-Jesselton-Point-Firefly--Island-Tour--Booking-Review.html" target="_blank" rel="noopener">현장예약 후기</a>
+          <a class="soft" href="https://whitecow1029.com/3930" target="_blank" rel="noopener">흥정 팁</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag">편함</span>
+        <b>예약 방법 B · 한국/온라인 사전예약</b>
+        <p>
+          흥정이 부담되면 KKday · 클룩 · 트립닷컴에서 “코타키나발루 호핑” 검색.<br>
+          가격은 현지보다 비싼 편이지만 한국어·픽업 포함 상품이 있습니다.<br>
+          <strong>주의:</strong> 라사 리아 같은 외곽 리조트는 pickup zone 외/추가요금인 경우가 많으니 상품 설명을 꼭 확인하세요.
+        </p>
+        <div class="food-actions">
+          <a href="https://www.kkday.com/ko/category/kota-kinabalu" target="_blank" rel="noopener">KKday</a>
+          <a class="soft" href="https://www.klook.com/ko/city/79-kota-kinabalu-things-to-do/" target="_blank" rel="noopener">클룩</a>
+          <a class="soft" href="https://kr.trip.com/travel-guide/attraction/kota-kinabalu-583/" target="_blank" rel="noopener">트립닷컴</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <b>당일 동선 팁 (라사 리아 기준)</b>
+        <p>
+          전날 예약 → 아침 일찍 차량으로 South Jetty → 영수증 제시 후 보트 → 섬 1~2곳 + 액티비티 → 오후 시내 저녁·마사지.<br>
+          액티비티가 많으면 섬은 1~2곳이 여유롭습니다. 점심 미포함이면 컵라면·간식 추천.
+        </p>
+      </div>
+
+      <p class="tiny" style="margin:10px 0 8px"><b>블로거·후기 연계</b></p>
+      <ul class="link-list">
+        <li><a href="https://www.sabahparks.org.my/tunku-abdul-rahman-park/" target="_blank" rel="noopener"><strong>Sabah Parks 공식</strong><span>섬 구성·공원 안내</span></a></li>
+        <li><a href="https://travel.rose1538.com/2025/04/Kota-Kinabalu-Jesselton-Point-Firefly--Island-Tour--Booking-Review.html" target="_blank" rel="noopener"><strong>제셀톤 현장 예약 상세</strong><span>rose1538 · 흥정·영수증 체크</span></a></li>
+        <li><a href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Island-Tour-Review.html" target="_blank" rel="noopener"><strong>마무틱 &amp; 마누칸 당일 후기</strong><span>rose1538 · 대기·섬 분위기</span></a></li>
+        <li><a href="https://whitecow1029.com/3930" target="_blank" rel="noopener"><strong>섬2 + 스노클 흥정 실전</strong><span>whitecow · 포함 항목 팁</span></a></li>
+        <li><a href="https://stedi.tistory.com/554632" target="_blank" rel="noopener"><strong>부스별 흥정 과정</strong><span>stedi · 8~11번 부스</span></a></li>
+        <li><a href="https://nowonetip.com/150" target="_blank" rel="noopener"><strong>사피·마누칸 8월 후기</strong><span>nowonetip · 우기/건기</span></a></li>
+        <li><a href="https://dalmoo.co.kr/%ec%bd%94%ed%83%80%ed%82%a4%eb%82%98%eb%b0%9c%eb%a3%a8-%ec%82%ac%ed%94%bc%ec%84%ac-%eb%a7%88%eb%88%84%ec%b9%b8%ec%84%ac-%ed%98%b8%ed%95%91%ed%88%ac%ec%96%b4-%ea%b0%80%ea%b2%a9-%ed%8c%81/" target="_blank" rel="noopener"><strong>가격·팁 총정리</strong><span>dalmoo · 성게·액티비티</span></a></li>
+        <li><a href="https://donotworry.co.kr/23" target="_blank" rel="noopener"><strong>호핑 + 마사지 하루 코스</strong><span>donotworry · Day3 패턴</span></a></li>
+        <li><a href="https://nadragon.tistory.com/178" target="_blank" rel="noopener"><strong>패러·씨워킹 포함 후기</strong><span>nadragon · 액티비티 실전</span></a></li>
+        <li><a href="https://www.amazingborneo.com/travel/jesselton-point-ferry-terminal-has-moved-what-travellers-to-kota-kinabalu-need-to-know" target="_blank" rel="noopener"><strong>선착장 이전 안내</strong><span>Amazing Borneo · South Jetty</span></a></li>
+      </ul>
+      <p class="photo-credit">호핑 사진: Wikimedia Commons · Unsplash. 가격은 시기·흥정·구성에 따라 달라집니다.</p>
+      </div>
+    </details>
+
+    <details class="widget fold-widget" id="late-rest">
+      <summary>🌙 마지막 날 · 늦게 쉴 대안</summary>
+      <div class="fold-body">
       <p class="tiny" style="margin:-2px 0 10px">귀국편이 심야~새벽(예: 00:35)이면, 리조트에서 버티기보다 <strong>공항 근처에서 쉬는 편</strong>이 훨씬 편합니다.</p>
 
       <div class="option-card">
@@ -959,10 +1007,12 @@
           23:00~ 체크인·출국 → 00:35 이륙
         </p>
       </div>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="tips">
-      <div class="widget-title">⚠ 주의사항 <span style="font-weight:500;color:var(--soft);font-size:0.78rem;">· 눌러서 펼치기</span></div>
+    <details class="widget fold-widget" id="tips">
+      <summary>⚠ 주의사항</summary>
+      <div class="fold-body">
       <details class="warn-item">
         <summary>1. 리조트가 멀다</summary>
         <div class="warn-body">
@@ -999,10 +1049,12 @@
           <p>가이드에 넣은 KE5762는 추천안입니다. 확정되면 시간·편명을 알려 주시면 일정표를 수정해 드립니다.</p>
         </div>
       </details>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="pack">
-      <div class="widget-title">🎒 챙길 품목</div>
+    <details class="widget fold-widget" id="pack">
+      <summary>🎒 챙길 품목</summary>
+      <div class="fold-body">
       <ul class="check-list" id="packList">
         <li><input type="checkbox"><span>여권 · 항공 e-티켓 · 숙소 예약 확인서(픽업·입국 대비)</span></li>
         <li><input type="checkbox"><span>국제운전면허(렌트 시) / 여행자보험 증권</span></li>
@@ -1018,10 +1070,12 @@
         <li><input type="checkbox"><span>드라이백 / 휴대폰 방수 케이스(호핑)</span></li>
       </ul>
       <p class="tiny">체크는 이 기기 브라우저에만 저장됩니다.</p>
-    </section>
+      </div>
+    </details>
 
-    <section class="widget" id="booking">
-      <div class="widget-title">✅ 출발 전 할 일</div>
+    <details class="widget fold-widget" id="booking">
+      <summary>✅ 출발 전 할 일</summary>
+      <div class="fold-body">
       <ul class="check-list">
         <li><input type="checkbox"><span>KE5761 좌석·수하물 확인 · 인천 T2 체크인 시간 메모</span></li>
         <li><input type="checkbox"><span>귀국편 예약 (추천: KE5762 8/17 00:35경)</span></li>
@@ -1034,15 +1088,16 @@
         <li><input type="checkbox"><span>호핑투어(South Jetty / Jesselton Quay) + 리조트→시내 픽업 시간 확정</span></li>
       </ul>
       <p class="footer-note">요금·스케줄은 공식 사이트/예약 시점에 따라 달라질 수 있습니다.</p>
-    </section>
+      </div>
+    </details>
   </main>
 
   <nav class="nav" aria-label="빠른 이동">
-    <a href="#map"><span>🗺</span>지도</a>
-    <a href="#itinerary"><span>📅</span>일정</a>
-    <a href="#food"><span>🍽</span>맛집</a>
-    <a href="#hopping"><span>🏝</span>호핑</a>
-    <a href="#late-rest"><span>🌙</span>휴식</a>
+    <a href="#itinerary" data-open="itinerary"><span>📅</span>일정</a>
+    <a href="#hopping" data-open="hopping"><span>🏝</span>호핑</a>
+    <a href="#food" data-open="food"><span>🍽</span>맛집</a>
+    <a href="#map" data-open="map"><span>🗺</span>지도</a>
+    <a href="#late-rest" data-open="late-rest"><span>🌙</span>더보기</a>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1099,6 +1154,33 @@
         document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById(tab.dataset.day).classList.add('active');
+      });
+    });
+
+    const openSection = (id, { closeOthers = true } = {}) => {
+      const target = document.getElementById(id);
+      if (!target) return;
+      if (closeOthers) {
+        document.querySelectorAll('details.fold-widget').forEach(el => {
+          if (el !== target) el.open = false;
+        });
+      }
+      target.open = true;
+      if (id === 'map' && tripMap) setTimeout(() => tripMap.invalidateSize(), 180);
+      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+    };
+
+    document.querySelectorAll('[data-open]').forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        openSection(link.dataset.open);
+        history.replaceState(null, '', `#${link.dataset.open}`);
+      });
+    });
+
+    document.querySelectorAll('details.fold-widget').forEach(el => {
+      el.addEventListener('toggle', () => {
+        if (el.open && el.id === 'map' && tripMap) setTimeout(() => tripMap.invalidateSize(), 180);
       });
     });
 
@@ -1328,6 +1410,8 @@
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
+      const hash = (location.hash || '').replace('#', '');
+      if (hash) openSection(hash, { closeOthers: true });
       // iOS는 beforeinstallprompt가 없어 안내 배너를 바로 노출
       if (isIos) showInstallBanner();
       else setTimeout(showInstallBanner, 1200);

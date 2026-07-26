@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v7';
+const CACHE_NAME = 'kota-kinabalu-guide-v8';
 const APP_SHELL = [
   './',
   './index.html',
@@ -15,7 +15,11 @@ const APP_SHELL = [
   './images/kkia-airport.jpg',
   './images/mount-kinabalu.jpg',
   './images/kk-tanjung-boat.jpg',
-  './images/kk-sea-activity.jpg'
+  './images/kk-sea-activity.jpg',
+  './images/manukan-jetty.jpg',
+  './images/manukan-view.jpg',
+  './images/mamutik-sulug.jpg',
+  './images/kk-jetski.jpg'
 ];
 
 self.addEventListener('install', event => {
