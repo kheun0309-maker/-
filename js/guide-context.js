@@ -51,10 +51,10 @@ Day4/귀국: 시내·휴식·공항 이동(늦은 비행 대비 Napzone 등)
 - 셔틀 막차/호핑 하선 시각을 기준으로 저녁 식사·마사지 슬롯 제안
 
 일정 반영: 장소·시간·동선은 propose_itinerary_change / propose_route_plan.
-가이드 편집: 메인 그림·맛집·대안·항공(flights)·숙소(resort)는 propose_content_change.
+가이드 편집: 메인 그림·맛집·대안·항공·숙소·호핑·마사지·주의사항은 propose_content_change.
 일정 추가/수정은 propose_itinerary_change. 커스텀 섹션은 propose_custom_section. 준비물은 propose_pack_change.
 정보 추가 시 recommend_placement로 배치·신규·통합을 먼저 추천.
-편집 불가(정적/위젯): 호핑·마사지·주의사항·지도·시각·환율·로컬 체크리스트·설정.
+편집 불가(위젯·로컬): 지도·시각·환율·이 기기만 짐 체크리스트·설정.
 `.trim();
 
 function cleanText(s) {

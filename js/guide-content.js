@@ -9,10 +9,23 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { logTripActivity } from './itinerary-editor.js';
 import { normalizeImageUrl, photoBlockHtml, listLocalImages } from './image-url.js';
+import { DEFAULT_HOPPING, DEFAULT_MASSAGE, DEFAULT_TIPS } from './guide-extra-defaults.js';
 
 export { normalizeImageUrl } from './image-url.js';
+export { DEFAULT_HOPPING, DEFAULT_MASSAGE, DEFAULT_TIPS } from './guide-extra-defaults.js';
 
-const SECTIONS = ['hero', 'food', 'alternatives', 'flights', 'resort'];
+const SECTIONS = ['hero', 'food', 'alternatives', 'flights', 'resort', 'hopping', 'massage', 'tips'];
+const CARD_SECTIONS = ['resort', 'hopping', 'massage'];
+const SECTION_LABELS = {
+  hero: '메인 그림',
+  food: '맛집',
+  alternatives: '귀국 대안',
+  flights: '항공',
+  resort: '숙소',
+  hopping: '호핑',
+  massage: '마사지',
+  tips: '주의사항'
+};
 
 export const DEFAULT_HERO = {
   slides: [
@@ -115,6 +128,13 @@ export const DEFAULT_ALTERNATIVES = {
       tag: '비추천에 가까움',
       title: 'D. 라사 리아에 끝까지 머물기',
       desc: '리조트 → 공항 약 45분 + 야간 도로. 00:35 비행이면 대략 21:30 전후 리조트 출발이 안전한데, 그러면 Day4 시내 일정이 애매해집니다.\n시내를 제대로 보려면 A 또는 B가 동선상 유리합니다.',
+      imageUrl: ''
+    },
+    {
+      id: 'timeline',
+      tag: '타임라인',
+      title: '추천 타임라인 (KE5762 00:35 기준)',
+      desc: '10:00 리조트 체크아웃 → 시내 쇼핑·맛집\n18:00~20:00 저녁·마사지(선택)\n21:00 공항 또는 에어로포드 이동\n21:30~23:00 Napzone 수면 / 샤워\n23:00~ 체크인·출국 → 00:35 이륙',
       imageUrl: ''
     }
   ]
@@ -273,7 +293,10 @@ let state = {
   food: deepClone(DEFAULT_FOOD),
   alternatives: deepClone(DEFAULT_ALTERNATIVES),
   flights: deepClone(DEFAULT_FLIGHTS),
-  resort: deepClone(DEFAULT_RESORT)
+  resort: deepClone(DEFAULT_RESORT),
+  hopping: deepClone(DEFAULT_HOPPING),
+  massage: deepClone(DEFAULT_MASSAGE),
+  tips: deepClone(DEFAULT_TIPS)
 };
 
 function esc(s) {
@@ -329,7 +352,10 @@ function cloneDefaults() {
     food: deepClone(DEFAULT_FOOD),
     alternatives: deepClone(DEFAULT_ALTERNATIVES),
     flights: deepClone(DEFAULT_FLIGHTS),
-    resort: deepClone(DEFAULT_RESORT)
+    resort: deepClone(DEFAULT_RESORT),
+    hopping: deepClone(DEFAULT_HOPPING),
+    massage: deepClone(DEFAULT_MASSAGE),
+    tips: deepClone(DEFAULT_TIPS)
   };
 }
 
@@ -465,7 +491,7 @@ function renderFlights() {
   }).join('');
 }
 
-function normalizeResortLinks(links) {
+function normalizeCardLinks(links) {
   if (!Array.isArray(links)) return [];
   return links.slice(0, 16).map(l => ({
     url: String(l?.url || '').trim().slice(0, 500),
@@ -475,7 +501,25 @@ function normalizeResortLinks(links) {
   })).filter(l => l.url && l.label);
 }
 
-function renderResortPhoto(it) {
+function normalizeGalleryImages(images) {
+  if (!Array.isArray(images)) return [];
+  return images.slice(0, 12).map(img => ({
+    url: normalizeImageUrl(img?.url || img?.imageUrl),
+    caption: String(img?.caption || '').slice(0, 80),
+    wide: Boolean(img?.wide)
+  })).filter(img => img.url);
+}
+
+function hrefAttrs(url, open = '') {
+  const href = String(url || '').trim();
+  if (!href) return '';
+  if (href.startsWith('#')) {
+    return `href="${esc(href)}"${open ? ` data-open="${esc(open)}"` : ''}`;
+  }
+  return `href="${esc(href)}" target="_blank" rel="noopener"`;
+}
+
+function renderCardPhoto(it) {
   if (!it.imageUrl) return '';
   if (it.imageFit === 'contain') {
     return `
@@ -491,23 +535,27 @@ function renderResortPhoto(it) {
   return `${photo}${credit}`;
 }
 
-function renderResortLinks(it) {
+function renderCardLinks(it) {
   const actionLinks = [];
   if (it.mapsUrl) {
-    actionLinks.push(`<a href="${esc(it.mapsUrl)}" target="_blank" rel="noopener">구글지도</a>`);
+    actionLinks.push(`<a ${hrefAttrs(it.mapsUrl)}>${esc(it.mapsLabel || '구글지도')}</a>`);
   }
   if (it.siteUrl) {
-    actionLinks.push(`<a class="soft" href="${esc(it.siteUrl)}" target="_blank" rel="noopener">사이트</a>`);
+    actionLinks.push(`<a class="soft" ${hrefAttrs(it.siteUrl)}>사이트</a>`);
+  }
+  if (it.reviewUrl) {
+    actionLinks.push(`<a class="review" ${hrefAttrs(it.reviewUrl)}>후기</a>`);
   }
   if (it.linkUrl) {
-    actionLinks.push(`<a class="soft" href="${esc(it.linkUrl)}" target="_blank" rel="noopener">${esc(it.linkLabel || '링크 열기')}</a>`);
+    const cls = it.linkUrl.startsWith('#') ? '' : ' class="soft"';
+    actionLinks.push(`<a${cls} ${hrefAttrs(it.linkUrl, it.linkOpen)}>${esc(it.linkLabel || '링크 열기')}</a>`);
   }
   const multi = Array.isArray(it.links) ? it.links : [];
   const noted = multi.filter(l => l.note);
   const plain = multi.filter(l => !l.note);
   for (const l of plain) {
     const cls = l.tone ? ` class="${esc(l.tone)}"` : '';
-    actionLinks.push(`<a${cls} href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`);
+    actionLinks.push(`<a${cls} ${hrefAttrs(l.url)}>${esc(l.label)}</a>`);
   }
   const actions = actionLinks.length
     ? `<div class="food-actions">${actionLinks.join('')}</div>`
@@ -515,7 +563,7 @@ function renderResortLinks(it) {
   const list = noted.length
     ? `<ul class="link-list" style="margin-top:8px">${noted.map(l => `
         <li>
-          <a href="${esc(l.url)}" target="_blank" rel="noopener">
+          <a ${hrefAttrs(l.url)}>
             <strong>${esc(l.label)}</strong>
             <span>${esc(l.note)}</span>
           </a>
@@ -524,23 +572,69 @@ function renderResortLinks(it) {
   return `${list}${actions}`;
 }
 
-function renderResort() {
-  const root = document.getElementById('resortEditable');
+function tagClass(tagTone) {
+  if (tagTone === 'warn') return 'tag warn';
+  if (tagTone === 'ok') return 'tag ok';
+  return 'tag';
+}
+
+function renderGalleryItem(it) {
+  const figs = (it.images || []).map(img => `
+    <figure${img.wide ? ' class="wide"' : ''}>
+      <img src="${esc(img.url)}" alt="${esc(img.caption || it.title || '')}" loading="lazy">
+      ${img.caption ? `<figcaption>${esc(img.caption)}</figcaption>` : ''}
+    </figure>`).join('');
+  return `
+    <div class="hop-photos" id="${esc(it.id)}" data-card-id="${esc(it.id)}">
+      ${figs}
+      ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)} · gallery</div>` : ''}
+    </div>`;
+}
+
+function renderGuideCardItem(it, section) {
+  if (it.kind === 'gallery') return renderGalleryItem(it);
+  if (it.kind === 'credit') {
+    return `<p class="photo-credit" id="${esc(it.id)}" data-card-id="${esc(it.id)}">${esc(it.body || '')}${canEdit() ? ` <span style="opacity:.65">(id: ${esc(it.id)})</span>` : ''}</p>`;
+  }
+  const photo = renderCardPhoto(it);
+  const links = renderCardLinks(it);
+  const body = it.body ? `<p>${nl2br(it.body)}</p>` : '';
+  const tag = it.tag ? `<span class="${tagClass(it.tagTone)}">${esc(it.tag)}</span>` : '';
+  return `
+    <div class="info-card" id="${esc(it.id)}" data-${esc(section)}-id="${esc(it.id)}">
+      ${photo}
+      ${tag}
+      <b>${esc(it.title)}</b>
+      ${body}
+      ${links}
+      ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
+    </div>`;
+}
+
+function renderCardSection(section, hostId) {
+  const root = document.getElementById(hostId);
   if (!root) return;
-  const items = state.resort?.items || [];
+  const items = state[section]?.items || [];
+  root.innerHTML = items.map(it => renderGuideCardItem(it, section)).join('');
+}
+
+function renderTips() {
+  const root = document.getElementById('tipsEditable');
+  if (!root) return;
+  const items = state.tips?.items || [];
   root.innerHTML = items.map(it => {
-    const photo = renderResortPhoto(it);
-    const links = renderResortLinks(it);
-    const body = it.body ? `<p>${nl2br(it.body)}</p>` : '';
+    const link = it.linkUrl
+      ? `<p style="margin-top:8px"><a ${hrefAttrs(it.linkUrl, it.linkOpen)}>${esc(it.linkLabel || '자세히')}</a></p>`
+      : '';
     return `
-      <div class="info-card" id="${esc(it.id)}" data-resort-id="${esc(it.id)}">
-        ${photo}
-        ${it.tag ? `<span class="tag ok">${esc(it.tag)}</span>` : ''}
-        <b>${esc(it.title)}</b>
-        ${body}
-        ${links}
-        ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
-      </div>`;
+      <details class="warn-item" id="${esc(it.id)}" data-tips-id="${esc(it.id)}">
+        <summary>${esc(it.title)}</summary>
+        <div class="warn-body">
+          <p>${nl2br(it.body || '')}</p>
+          ${link}
+          ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
+        </div>
+      </details>`;
   }).join('');
 }
 
@@ -549,7 +643,10 @@ function renderAll() {
   renderFood();
   renderAlternatives();
   renderFlights();
-  renderResort();
+  renderCardSection('resort', 'resortEditable');
+  renderCardSection('hopping', 'hoppingEditable');
+  renderCardSection('massage', 'massageEditable');
+  renderTips();
 }
 
 function normalizeHero(data) {
@@ -582,7 +679,7 @@ function normalizeFood(data) {
 function normalizeAlts(data) {
   const items = Array.isArray(data?.items) ? data.items : [];
   return {
-    items: items.slice(0, 12).map((it, i) => ({
+    items: items.slice(0, 16).map((it, i) => ({
       id: String(it.id || `alt${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `alt${i + 1}`,
       tag: String(it.tag || '').slice(0, 40),
       title: String(it.title || '').slice(0, 100),
@@ -613,22 +710,51 @@ function normalizeFlights(data) {
   };
 }
 
-function normalizeResort(data) {
+function normalizeGuideCards(data, idPrefix = 'card') {
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return {
+    items: items.slice(0, 20).map((it, i) => {
+      const kind = ['gallery', 'credit', 'card'].includes(it.kind) ? it.kind : 'card';
+      const id = String(it.id || `${idPrefix}${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `${idPrefix}${i + 1}`;
+      const tagTone = it.tagTone === 'warn' || it.tagTone === 'ok' ? it.tagTone : '';
+      return {
+        id,
+        kind,
+        tag: String(it.tag || '').slice(0, 40),
+        tagTone,
+        title: String(it.title || it.name || '').slice(0, 120),
+        body: String(it.body || it.desc || '').slice(0, 2500),
+        imageUrl: normalizeImageUrl(it.imageUrl),
+        imageFit: it.imageFit === 'contain' ? 'contain' : '',
+        imageCaption: String(it.imageCaption || '').slice(0, 200),
+        images: kind === 'gallery' ? normalizeGalleryImages(it.images) : [],
+        mapsUrl: String(it.mapsUrl || '').trim().slice(0, 500),
+        mapsLabel: String(it.mapsLabel || '').slice(0, 40),
+        siteUrl: String(it.siteUrl || '').trim().slice(0, 500),
+        reviewUrl: String(it.reviewUrl || '').trim().slice(0, 500),
+        linkUrl: String(it.linkUrl || '').trim().slice(0, 500),
+        linkLabel: String(it.linkLabel || '').slice(0, 40),
+        linkOpen: String(it.linkOpen || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40),
+        links: normalizeCardLinks(it.links)
+      };
+    }).filter(it => {
+      if (it.kind === 'gallery') return it.images.length > 0;
+      if (it.kind === 'credit') return Boolean(it.body);
+      return Boolean(it.title);
+    })
+  };
+}
+
+function normalizeTips(data) {
   const items = Array.isArray(data?.items) ? data.items : [];
   return {
     items: items.slice(0, 20).map((it, i) => ({
-      id: String(it.id || `resort${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `resort${i + 1}`,
-      tag: String(it.tag || '').slice(0, 40),
+      id: String(it.id || `tip${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `tip${i + 1}`,
       title: String(it.title || it.name || '').slice(0, 120),
-      body: String(it.body || it.desc || '').slice(0, 2500),
-      imageUrl: normalizeImageUrl(it.imageUrl),
-      imageFit: it.imageFit === 'contain' ? 'contain' : '',
-      imageCaption: String(it.imageCaption || '').slice(0, 200),
-      mapsUrl: String(it.mapsUrl || '').trim().slice(0, 500),
-      siteUrl: String(it.siteUrl || '').trim().slice(0, 500),
+      body: String(it.body || it.desc || '').slice(0, 1500),
       linkUrl: String(it.linkUrl || '').trim().slice(0, 500),
       linkLabel: String(it.linkLabel || '').slice(0, 40),
-      links: normalizeResortLinks(it.links)
+      linkOpen: String(it.linkOpen || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40)
     })).filter(it => it.title)
   };
 }
@@ -638,7 +764,10 @@ function normalizeSectionData(section, data) {
   if (section === 'food') return normalizeFood(data);
   if (section === 'alternatives') return normalizeAlts(data);
   if (section === 'flights') return normalizeFlights(data);
-  if (section === 'resort') return normalizeResort(data);
+  if (section === 'resort') return normalizeGuideCards(data, 'resort');
+  if (section === 'hopping') return normalizeGuideCards(data, 'hop');
+  if (section === 'massage') return normalizeGuideCards(data, 'massage');
+  if (section === 'tips') return normalizeTips(data);
   return data;
 }
 
@@ -753,29 +882,39 @@ function applyAltPatch(items, proposal) {
   return next;
 }
 
-function applyResortPatch(items, proposal) {
-  const next = items.map(it => ({ ...it, links: Array.isArray(it.links) ? it.links.map(l => ({ ...l })) : [] }));
+function applyGuideCardPatch(items, proposal, section = 'card') {
+  const next = items.map(it => ({
+    ...it,
+    links: Array.isArray(it.links) ? it.links.map(l => ({ ...l })) : [],
+    images: Array.isArray(it.images) ? it.images.map(l => ({ ...l })) : []
+  }));
   if (proposal.action === 'add') {
-    const id = String(proposal.itemId || `resort-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-    if (next.some(it => it.id === id)) throw new Error('이미 있는 숙소 카드 id예요.');
+    const id = String(proposal.itemId || `${section}-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    if (next.some(it => it.id === id)) throw new Error(`이미 있는 ${SECTION_LABELS[section] || section} 카드 id예요.`);
     next.push({
       id,
+      kind: proposal.kind === 'gallery' || proposal.kind === 'credit' ? proposal.kind : 'card',
       tag: proposal.tag || '',
+      tagTone: proposal.tagTone === 'warn' || proposal.tagTone === 'ok' ? proposal.tagTone : '',
       title: proposal.title || proposal.name || '',
       body: proposal.body || proposal.desc || '',
       imageUrl: proposal.imageUrl || '',
       imageFit: proposal.imageFit === 'contain' ? 'contain' : '',
       imageCaption: proposal.imageCaption || '',
+      images: normalizeGalleryImages(proposal.images),
       mapsUrl: proposal.mapsUrl || '',
+      mapsLabel: proposal.mapsLabel || '',
       siteUrl: proposal.siteUrl || '',
+      reviewUrl: proposal.reviewUrl || '',
       linkUrl: proposal.linkUrl || '',
       linkLabel: proposal.linkLabel || '링크 열기',
-      links: normalizeResortLinks(proposal.links)
+      linkOpen: proposal.linkOpen || '',
+      links: normalizeCardLinks(proposal.links)
     });
     return next;
   }
   const idx = next.findIndex(it => it.id === proposal.itemId);
-  if (idx < 0) throw new Error('숙소 카드 id를 찾지 못했어요. get_editable_content(resort)로 확인하세요.');
+  if (idx < 0) throw new Error(`${SECTION_LABELS[section] || section} 카드 id를 찾지 못했어요. get_editable_content(${section})로 확인하세요.`);
   if (proposal.action === 'delete') {
     next.splice(idx, 1);
     return next;
@@ -783,17 +922,58 @@ function applyResortPatch(items, proposal) {
   const cur = next[idx];
   next[idx] = {
     ...cur,
+    kind: proposal.kind != null && ['gallery', 'credit', 'card'].includes(proposal.kind) ? proposal.kind : cur.kind,
     tag: proposal.tag != null ? proposal.tag : cur.tag,
+    tagTone: proposal.tagTone != null
+      ? (proposal.tagTone === 'warn' || proposal.tagTone === 'ok' ? proposal.tagTone : '')
+      : cur.tagTone,
     title: proposal.title != null ? proposal.title : (proposal.name != null ? proposal.name : cur.title),
     body: proposal.body != null || proposal.desc != null ? (proposal.body || proposal.desc) : cur.body,
     imageUrl: proposal.imageUrl != null ? proposal.imageUrl : cur.imageUrl,
     imageFit: proposal.imageFit != null ? (proposal.imageFit === 'contain' ? 'contain' : '') : cur.imageFit,
     imageCaption: proposal.imageCaption != null ? proposal.imageCaption : cur.imageCaption,
+    images: proposal.images != null ? normalizeGalleryImages(proposal.images) : cur.images,
     mapsUrl: proposal.mapsUrl != null ? proposal.mapsUrl : cur.mapsUrl,
+    mapsLabel: proposal.mapsLabel != null ? proposal.mapsLabel : cur.mapsLabel,
     siteUrl: proposal.siteUrl != null ? proposal.siteUrl : cur.siteUrl,
+    reviewUrl: proposal.reviewUrl != null ? proposal.reviewUrl : cur.reviewUrl,
     linkUrl: proposal.linkUrl != null ? proposal.linkUrl : cur.linkUrl,
     linkLabel: proposal.linkLabel != null ? proposal.linkLabel : cur.linkLabel,
-    links: proposal.links != null ? normalizeResortLinks(proposal.links) : cur.links
+    linkOpen: proposal.linkOpen != null ? proposal.linkOpen : cur.linkOpen,
+    links: proposal.links != null ? normalizeCardLinks(proposal.links) : cur.links
+  };
+  return next;
+}
+
+function applyTipsPatch(items, proposal) {
+  const next = items.map(it => ({ ...it }));
+  if (proposal.action === 'add') {
+    const id = String(proposal.itemId || `tip-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    if (next.some(it => it.id === id)) throw new Error('이미 있는 주의사항 id예요.');
+    next.push({
+      id,
+      title: proposal.title || proposal.name || '',
+      body: proposal.body || proposal.desc || '',
+      linkUrl: proposal.linkUrl || '',
+      linkLabel: proposal.linkLabel || '',
+      linkOpen: proposal.linkOpen || ''
+    });
+    return next;
+  }
+  const idx = next.findIndex(it => it.id === proposal.itemId);
+  if (idx < 0) throw new Error('주의사항 id를 찾지 못했어요. get_editable_content(tips)로 확인하세요.');
+  if (proposal.action === 'delete') {
+    next.splice(idx, 1);
+    return next;
+  }
+  const cur = next[idx];
+  next[idx] = {
+    ...cur,
+    title: proposal.title != null ? proposal.title : (proposal.name != null ? proposal.name : cur.title),
+    body: proposal.body != null || proposal.desc != null ? (proposal.body || proposal.desc) : cur.body,
+    linkUrl: proposal.linkUrl != null ? proposal.linkUrl : cur.linkUrl,
+    linkLabel: proposal.linkLabel != null ? proposal.linkLabel : cur.linkLabel,
+    linkOpen: proposal.linkOpen != null ? proposal.linkOpen : cur.linkOpen
   };
   return next;
 }
@@ -869,7 +1049,10 @@ export async function attachGuideContentRoom(nextCtx) {
     if (section === 'food') state.food = normalizeFood(data?.items ? data : DEFAULT_FOOD);
     if (section === 'alternatives') state.alternatives = normalizeAlts(data?.items ? data : DEFAULT_ALTERNATIVES);
     if (section === 'flights') state.flights = normalizeFlights(data?.items ? data : DEFAULT_FLIGHTS);
-    if (section === 'resort') state.resort = normalizeResort(data?.items ? data : DEFAULT_RESORT);
+    if (section === 'resort') state.resort = normalizeGuideCards(data?.items ? data : DEFAULT_RESORT, 'resort');
+    if (section === 'hopping') state.hopping = normalizeGuideCards(data?.items ? data : DEFAULT_HOPPING, 'hop');
+    if (section === 'massage') state.massage = normalizeGuideCards(data?.items ? data : DEFAULT_MASSAGE, 'massage');
+    if (section === 'tips') state.tips = normalizeTips(data?.items ? data : DEFAULT_TIPS);
     renderAll();
   };
 
@@ -910,14 +1093,19 @@ export function getGuideContentApi() {
         alternatives: state.alternatives,
         flights: state.flights,
         resort: state.resort,
+        hopping: state.hopping,
+        massage: state.massage,
+        tips: state.tips,
         localImages: listLocalImages(),
-        hint: '숙소·픽업·셔틀은 resort (id: hotel|airport-pickup|limousine|third-party-pickup|resort-shuttle|blog-links|return-transfer). 항공은 flights.outbound / flights.return. 사진 imageUrl은 localImages의 ./images/... 를 우선 사용. 지도·부킹·후기 페이지 URL은 사진으로 쓰지 말 것.'
+        hint: '편집 가능: hero|food|alternatives|flights|resort|hopping|massage|tips. 숙소 id 예: hotel|airport-pickup|…. 항공: outbound|return. 사진 imageUrl은 localImages의 ./images/... 우선. 지도·부킹·후기 페이지 URL은 사진으로 쓰지 말 것. 지도/환율/설정/로컬짐은 편집 불가.'
       };
     },
     async applyProposal(proposal) {
       if (!canEdit()) throw new Error('여행방에 입장해야 적용할 수 있어요.');
       const section = proposal.section;
-      if (!SECTIONS.includes(section)) throw new Error('section은 hero|food|alternatives|flights|resort 중 하나여야 해요.');
+      if (!SECTIONS.includes(section)) {
+        throw new Error(`section은 ${SECTIONS.join('|')} 중 하나여야 해요.`);
+      }
 
       await ensureSection(section);
       const act = ({ add: '추가', update: '수정', delete: '삭제' })[proposal.action] || proposal.action;
@@ -1010,20 +1198,37 @@ export function getGuideContentApi() {
         });
       }
 
-      if (section === 'resort') {
-        if (proposal.action === 'add' && !(proposal.title || proposal.name)) {
-          throw new Error('숙소 카드 추가에는 title이 필요해요.');
+      if (CARD_SECTIONS.includes(section)) {
+        if (proposal.action === 'add' && !(proposal.title || proposal.name) && proposal.kind !== 'gallery' && proposal.kind !== 'credit') {
+          throw new Error(`${SECTION_LABELS[section]} 카드 추가에는 title이 필요해요.`);
         }
-        const items = applyResortPatch(state.resort.items || [], proposal);
+        const items = applyGuideCardPatch(state[section].items || [], proposal, section);
         const title = proposal.title || proposal.name
           || items.find(it => it.id === proposal.itemId)?.title
           || proposal.itemId
-          || '숙소';
-        return saveSection('resort', { items }, {
-          kind: 'resort',
+          || SECTION_LABELS[section];
+        return saveSection(section, { items }, {
+          kind: section.slice(0, 12),
           itemId: proposal.itemId || '',
-          summary: `숙소 ${act}: ${title}`,
-          detail: reason || `AI · 숙소 ${act}`
+          summary: `${SECTION_LABELS[section]} ${act}: ${title}`,
+          detail: reason || `AI · ${SECTION_LABELS[section]} ${act}`
+        });
+      }
+
+      if (section === 'tips') {
+        if (proposal.action === 'add' && !(proposal.title || proposal.name)) {
+          throw new Error('주의사항 추가에는 title이 필요해요.');
+        }
+        const items = applyTipsPatch(state.tips.items || [], proposal);
+        const title = proposal.title || proposal.name
+          || items.find(it => it.id === proposal.itemId)?.title
+          || proposal.itemId
+          || '주의사항';
+        return saveSection('tips', { items }, {
+          kind: 'tips',
+          itemId: proposal.itemId || '',
+          summary: `주의사항 ${act}: ${title}`,
+          detail: reason || `AI · 주의사항 ${act}`
         });
       }
       return null;

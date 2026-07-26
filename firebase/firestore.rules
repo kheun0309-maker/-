@@ -142,12 +142,12 @@ service cloud.firestore {
         allow delete: if signedIn() && validCode(tripId);
       }
 
-      // 히어로·맛집·대안·항공·숙소 (이미지 URL 포함, Storage 없음)
+      // 히어로·맛집·대안·항공·숙소·호핑·마사지·주의사항 (이미지 URL 포함, Storage 없음)
       match /guideSections/{sectionId} {
         allow read: if signedIn() && validCode(tripId);
         allow create, update: if signedIn()
           && validCode(tripId)
-          && sectionId in ['hero', 'food', 'alternatives', 'flights', 'resort']
+          && sectionId in ['hero', 'food', 'alternatives', 'flights', 'resort', 'hopping', 'massage', 'tips']
           && validNick(request.resource.data.updatedBy)
           && (
             (sectionId == 'hero'
@@ -159,12 +159,12 @@ service cloud.firestore {
               && request.resource.data.items.size() <= 20)
             || (sectionId == 'alternatives'
               && request.resource.data.items is list
-              && request.resource.data.items.size() <= 12)
+              && request.resource.data.items.size() <= 16)
             || (sectionId == 'flights'
               && request.resource.data.items is list
               && request.resource.data.items.size() > 0
               && request.resource.data.items.size() <= 8)
-            || (sectionId == 'resort'
+            || (sectionId in ['resort', 'hopping', 'massage', 'tips']
               && request.resource.data.items is list
               && request.resource.data.items.size() <= 20)
           );
