@@ -6,6 +6,7 @@ import { getCustomSectionsApi } from './custom-sections.js';
 import { getTripPackApi } from './trip-room.js';
 import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
 import { normalizeImageUrl, resolveAiImageUrl, listLocalImages } from './image-url.js';
+import { getMyLocation } from './geo.js';
 
 const KEY_STORAGE = 'kk-openai-api-key';
 const MODEL_STORAGE = 'kk-openai-model';
@@ -20,6 +21,13 @@ const SYSTEM_PROMPT = `당신은 이 여행 앱의 코파일럿입니다. 질문
 2) 영업시간·사진 URL·최신 정보는 web_search로 확인 (이미지 파일 업로드 불가, URL만)
 3) 변경은 제안 도구만 사용하고 즉시 저장하지 않음
 4) 핵심이 빠지면 ask_clarification
+5) 「여기」「근처」「가까운」「내 위치」요청이면 먼저 get_my_location 호출 (브라우저 위치 권한 필요)
+
+내 위치·근처 추천:
+- get_my_location으로 lat/lng·nearbyGuidePlaces 확인
+- 권한 거부/실패면 지도 「내 위치」허용을 안내하고, 리조트/시내 기준으로 대체 제안할지 물어보기
+- 근처 맛집: web_search에 좌표 또는 가장 가까운 명소(예: Asia City)를 넣고, 가이드 #food와 맞춰 propose_content_change + 필요 시 propose_itinerary_change
+- 거리는 직선 대략값. 이동시간은 가이드 동선 참고값을 함께 안내
 
 정보 추가/정리 요청 시 (중요):
 - 바로 저장 제안하지 말고 먼저 recommend_placement 호출
@@ -67,6 +75,24 @@ const TOOLS = [
       name: 'get_itinerary',
       description: '현재 앱에 저장된 일자별 일정 스냅샷을 가져옵니다. 수정/삭제 전 반드시 호출하세요.',
       parameters: { type: 'object', properties: {}, additionalProperties: false }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_location',
+      description:
+        '사용자 기기 GPS 위치를 가져옵니다. 「여기/근처/가까운」 맛집·동선 요청 시 먼저 호출. 가이드 명소까지 직선 거리도 반환.',
+      parameters: {
+        type: 'object',
+        properties: {
+          force: {
+            type: 'boolean',
+            description: 'true면 캐시를 무시하고 위치를 다시 받음'
+          }
+        },
+        additionalProperties: false
+      }
     }
   },
   {
@@ -846,6 +872,10 @@ export function initAiGuide() {
     if (name === 'get_itinerary') {
       return api.getSnapshot();
     }
+    if (name === 'get_my_location') {
+      setStatus('내 위치 확인 중… (권한 허용 필요)');
+      return getMyLocation({ force: Boolean(args.force) });
+    }
     if (name === 'get_editable_content') {
       const section = args.section || 'all';
       const content = getGuideContentApi().getSnapshot();
@@ -1399,7 +1429,8 @@ export function initAiGuide() {
         api.canEdit()
           ? `현재 여행방 ${api.tripCode()}에 ${api.nickname()}(으)로 입장되어 일정 편집 가능.`
           : '아직 여행방 미입장. 일정 제안은 가능하지만 적용하려면 입장이 필요함을 안내.',
-        '도구: get_guide_section, get_itinerary, get_editable_content, recommend_placement, web_search, ask_clarification, propose_itinerary_change, propose_route_plan, propose_content_change, propose_pack_change, propose_custom_section',
+        '도구: get_guide_section, get_itinerary, get_my_location, get_editable_content, recommend_placement, web_search, ask_clarification, propose_itinerary_change, propose_route_plan, propose_content_change, propose_pack_change, propose_custom_section',
+        '근처/여기: get_my_location → web_search/가이드 → propose_*',
         '정보 추가: recommend_placement → (필요시 ask_clarification) → propose_*',
         '메인 그림/맛집/대안/항공: get_editable_content → propose_content_change',
         '새 섹션·항목: propose_custom_section',

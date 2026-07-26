@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'kota-kinabalu-guide-v58';
+﻿const CACHE_NAME = 'kota-kinabalu-guide-v59';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './js/itinerary-data.js',
   './js/itinerary-editor.js',
   './js/image-url.js',
+  './js/geo.js',
   './js/guide-context.js',
   './js/guide-content.js',
   './js/custom-sections.js',

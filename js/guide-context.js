@@ -35,6 +35,7 @@ Day4/귀국: 시내·휴식·공항 이동(늦은 비행 대비 Napzone 등)
 - #airport-pickup 공항픽업: 도착홀 피켓, 호텔 리무진/그랩/써드파티
 - #third-party-pickup 써드파티: TYH 밴 MYR250·Alphard MYR350, OTA(KKday등) MYR120~160대, Grab MYR60~80(심야 불확실). 호텔 Innova MYR230(+심야50%)
 - #flights #map #tips #pack #itinerary #trip 도 앱에 있음
+- 내 위치: 코파일럿 get_my_location (브라우저 GPS). 「근처/여기」맛집·동선에 사용
 
 동선·이동 시간 참고(그랩/차량, 교통·대기 포함 여유):
 - 라사 리아 ↔ KKIA 공항: 약 45~55분

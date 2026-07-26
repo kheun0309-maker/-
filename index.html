@@ -1712,6 +1712,7 @@
           <div class="ai-chip-group">
             <span class="ai-chip-group-label">준비 · 팁</span>
             <div class="ai-suggest">
+              <button type="button" data-ai-q="get_my_location으로 내 위치를 확인한 뒤, 여기서 가까운 현지 맛집 1~2곳을 찾아 가이드(#food)에 추가 제안하고, 오늘/해당 Day 일정에도 넣어 정리해줘. 영업시간은 web_search로 확인.">내 위치 근처 맛집</button>
               <button type="button" data-ai-q="함께 준비 준비물 목록을 보고 호핑용으로 빠진 챙길 품목이 있으면 propose_pack_change로 추가 제안해줘.">짐 보완</button>
               <button type="button" data-ai-q="써드파티 공항 픽업과 호텔 리무진·Grab 가격을 가이드 기준으로 비교해 주고, KE5761 야간 도착에 뭘 고를지 추천해줘.">픽업 비교</button>
               <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
@@ -1832,6 +1833,8 @@
     import { initAiGuide } from './js/ai-guide.js';
     import { initGuideContentUi } from './js/guide-content.js';
     import { initCustomSectionsUi } from './js/custom-sections.js';
+    import { initGeoApi } from './js/geo.js';
+    initGeoApi();
     initGuideContentUi();
     initCustomSectionsUi();
     initAiGuide();
@@ -2423,37 +2426,59 @@
       chip.addEventListener('click', () => applyRoute(chip.dataset.route));
     });
 
-    gpsBtn.addEventListener('click', () => {
-      if (!navigator.geolocation) {
-        mapStatus.textContent = '이 브라우저는 위치 기능을 지원하지 않습니다.';
-        return;
-      }
+    gpsBtn.addEventListener('click', async () => {
       mapStatus.textContent = '위치 확인 중…';
       gpsBtn.disabled = true;
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          const latlng = [latitude, longitude];
-          if (userMarker) tripMap.removeLayer(userMarker);
-          userMarker = L.marker(latlng, { icon: userIcon })
-            .addTo(tripMap)
-            .bindPopup(`<strong>내 위치</strong><br>정확도 약 ${Math.round(accuracy)}m<br><a href="https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving" target="_blank" rel="noopener">내 위치 → 리조트 길찾기</a>`)
-            .openPopup();
-          tripMap.setView(latlng, 13);
-          mapStatus.textContent = '내 위치를 표시했습니다. 팝업에서 리조트 길찾기도 가능합니다.';
+      try {
+        let fix = window.kkGeo
+          ? await window.kkGeo.getMyLocation({ force: true })
+          : null;
+        // 모듈 로드 전이면 브라우저 GPS로 직접 받고 캐시에 남김
+        if (!fix && navigator.geolocation) {
+          fix = await new Promise(resolve => {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const accuracyM = pos.coords.accuracy;
+                window.kkGeo?.rememberLocation(lat, lng, accuracyM);
+                resolve({ ok: true, lat, lng, accuracyM, closestGuidePlace: null });
+              },
+              err => resolve({
+                ok: false,
+                error: ({
+                  1: '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.',
+                  2: '위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.',
+                  3: '위치 확인 시간이 초과되었습니다.'
+                })[err.code] || '위치를 가져오지 못했습니다.'
+              }),
+              { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            );
+          });
+        }
+        if (!fix?.ok) {
+          mapStatus.textContent = !navigator.geolocation
+            ? '이 브라우저는 위치 기능을 지원하지 않습니다.'
+            : (fix?.error || '위치를 가져오지 못했습니다.');
           gpsBtn.disabled = false;
-        },
-        err => {
-          const msg = {
-            1: '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.',
-            2: '위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.',
-            3: '위치 확인 시간이 초과되었습니다.'
-          };
-          mapStatus.textContent = msg[err.code] || '위치를 가져오지 못했습니다.';
-          gpsBtn.disabled = false;
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
-      );
+          return;
+        }
+        const { lat: latitude, lng: longitude, accuracyM: accuracy } = fix;
+        const latlng = [latitude, longitude];
+        if (userMarker) tripMap.removeLayer(userMarker);
+        userMarker = L.marker(latlng, { icon: userIcon })
+          .addTo(tripMap)
+          .bindPopup(`<strong>내 위치</strong><br>정확도 약 ${Math.round(accuracy)}m<br><a href="https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving" target="_blank" rel="noopener">내 위치 → 리조트 길찾기</a>`)
+          .openPopup();
+        tripMap.setView(latlng, 13);
+        const near = fix.closestGuidePlace
+          ? ` · 가까운 가이드 명소: ${fix.closestGuidePlace.name} (약 ${fix.closestGuidePlace.distanceKm}km)`
+          : '';
+        mapStatus.textContent = `내 위치를 표시했습니다${near}. 코파일럿에도 이 위치를 쓸 수 있어요.`;
+      } catch (_) {
+        mapStatus.textContent = '위치를 가져오지 못했습니다.';
+      }
+      gpsBtn.disabled = false;
     });
 
     /* ===== 홈 화면 설치 (PWA) ===== */
