@@ -2,6 +2,7 @@
 
 import { getItineraryApi } from './itinerary-editor.js';
 import { getGuideContentApi } from './guide-content.js';
+import { getCustomSectionsApi } from './custom-sections.js';
 import { getTripPackApi } from './trip-room.js';
 import { GUIDE_SUMMARY, getGuideContext, listGuideSections } from './guide-context.js';
 
@@ -19,16 +20,21 @@ const SYSTEM_PROMPT = `당신은 이 여행 앱의 AI 가이드입니다. 답변
 3) 변경은 제안 도구만 사용하고 즉시 저장하지 않음
 4) 핵심이 빠지면 ask_clarification
 
-일정: propose_itinerary_change / propose_route_plan
-가이드 콘텐츠: propose_content_change (hero|food|alternatives) — imageUrl은 https:// 또는 ./images/...
-준비물: propose_pack_change (함께 준비 pack)
+정보 추가/정리 요청 시 (중요):
+- 바로 저장 제안하지 말고 먼저 recommend_placement 호출
+- 사용자에게 추천안을 짧게 제시: (1) 어느 기존 섹션에 넣을지 (2) 새 섹션 만들지 (3) 기존 항목 수정·통합할지 (4) 일정/짐에 넣을지
+- 추천이 2개 이상이면 ask_clarification으로 선택 질문 후, 선택에 맞춰 propose_* 진행
+- 한 가지가 명백하면 추천을 한 줄로 알리고 바로 propose_* (reason에 배치 근거 명시)
 
-이미지 규칙:
-- Storage 업로드 없음. web_search로 공개 이미지 URL을 찾거나 앱 ./images/ 경로 사용
-- 확실하지 않은 URL은 넣지 말 것. 제안 카드에 미리보기가 뜸
-- 히어로 교체: section=hero, action=update, itemId=h1~h5, imageUrl+caption
+일정 추가·수정·삭제: propose_itinerary_change / propose_route_plan
+항공: propose_content_change(section=flights, itemId=outbound|return) + 관련 일정도 함께
+가이드: propose_content_change (hero|food|alternatives|flights)
+커스텀: propose_custom_section (section / item)
+준비물: propose_pack_change
 
-규칙: 한국어·간결. #food #late-rest #itinerary #trip. 금액 MYR 우선.`;
+이미지: URL만 (https:// 또는 ./images/...). 불확실하면 넣지 말 것.
+
+규칙: 한국어·간결. #food #late-rest #itinerary #flights #trip. 금액 MYR 우선.`;
 
 const TOOLS = [
   {
@@ -67,7 +73,7 @@ const TOOLS = [
         properties: {
           section: {
             type: 'string',
-            enum: ['all', 'hero', 'food', 'alternatives', 'pack'],
+            enum: ['all', 'hero', 'food', 'alternatives', 'flights', 'pack', 'custom'],
             description: '가져올 섹션'
           }
         },
@@ -94,15 +100,31 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'recommend_placement',
+      description: '정보를 어디에 넣을지 추천합니다. 기존 섹션 추가·새 섹션·기존 항목 수정/통합·일정/짐 옵션을 반환. 정보 추가 요청 시 먼저 호출.',
+      parameters: {
+        type: 'object',
+        properties: {
+          topic: { type: 'string', description: '주제 키워드 (예: 쇼핑, 카페, 귀국편, 짐)' },
+          summary: { type: 'string', description: '넣으려는 내용 한 줄 요약' }
+        },
+        required: ['topic'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'ask_clarification',
-      description: '일정 제안 전 확인이 필요할 때 사용. 이번 턴은 질문으로 끝냅니다.',
+      description: '배치/내용 확인이 필요할 때 사용. 이번 턴은 질문으로 끝냅니다.',
       parameters: {
         type: 'object',
         properties: {
           questions: {
             type: 'array',
             items: { type: 'string' },
-            description: '1~3개의 짧은 확인 질문'
+            description: '1~3개의 짧은 확인 질문 (배치 선택 포함)'
           }
         },
         required: ['questions'],
@@ -173,17 +195,19 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'propose_content_change',
-      description: '히어로(메인 그림)·맛집·귀국 대안 추가/수정/삭제 제안. imageUrl은 URL만. 적용 후 저장.',
+      description: '히어로·맛집·귀국 대안·항공(flights) 추가/수정/삭제. 항공은 outbound/return id. imageUrl은 URL만.',
       parameters: {
         type: 'object',
         properties: {
-          section: { type: 'string', enum: ['hero', 'food', 'alternatives'] },
+          section: { type: 'string', enum: ['hero', 'food', 'alternatives', 'flights'] },
           action: { type: 'string', enum: ['add', 'update', 'delete'] },
-          itemId: { type: 'string', description: 'update/delete 필수. hero는 h1~h5 등' },
+          itemId: { type: 'string', description: 'update/delete 필수. hero=h1~h5, flights=outbound|return' },
           tag: { type: 'string' },
+          tagTone: { type: 'string', enum: ['ok', 'warn'], description: '항공 태그 색' },
           name: { type: 'string', description: '맛집 이름' },
-          title: { type: 'string', description: '대안 제목' },
+          title: { type: 'string', description: '대안/항공 제목' },
           desc: { type: 'string' },
+          body: { type: 'string', description: '항공 부가 설명' },
           caption: { type: 'string', description: '히어로 캡션' },
           imageUrl: { type: 'string', description: 'https://... 또는 ./images/...' },
           mapsUrl: { type: 'string' },
@@ -191,6 +215,12 @@ const TOOLS = [
           reviewUrl: { type: 'string' },
           linkUrl: { type: 'string' },
           linkLabel: { type: 'string' },
+          flightNo: { type: 'string', description: '예: KE5762' },
+          dateLabel: { type: 'string', description: '예: 8/17(월) 새벽' },
+          from: { type: 'string', description: '출발 공항 코드 ICN/BKI' },
+          to: { type: 'string', description: '도착 공항 코드' },
+          departTime: { type: 'string', description: '출발 시각 HH:MM' },
+          arriveTime: { type: 'string', description: '도착 시각 HH:MM' },
           reason: { type: 'string' }
         },
         required: ['section', 'action', 'reason'],
@@ -215,11 +245,187 @@ const TOOLS = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'propose_custom_section',
+      description: '커스텀 가이드 섹션 또는 그 안 정보 카드 추가/수정/삭제. 쇼핑·카페·팁 등 새 주제를 만들 때 사용.',
+      parameters: {
+        type: 'object',
+        properties: {
+          target: { type: 'string', enum: ['section', 'item'], description: 'section=접기 섹션 자체, item=섹션 안 카드' },
+          action: { type: 'string', enum: ['add', 'update', 'delete'] },
+          sectionId: { type: 'string', description: '영문/숫자 id (예: shopping). item 작업·section 수정/삭제에 필수' },
+          title: { type: 'string', description: '섹션 제목 (예: 🛒 쇼핑 팁)' },
+          intro: { type: 'string', description: '섹션 짧은 소개' },
+          itemId: { type: 'string', description: '항목 id. item update/delete 필수' },
+          itemTitle: { type: 'string', description: '항목 제목' },
+          tag: { type: 'string' },
+          body: { type: 'string', description: '항목 본문' },
+          imageUrl: { type: 'string' },
+          mapsUrl: { type: 'string' },
+          linkUrl: { type: 'string' },
+          linkLabel: { type: 'string' },
+          reason: { type: 'string' }
+        },
+        required: ['target', 'action', 'reason'],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
 function $(id) {
   return document.getElementById(id);
+}
+
+function blobText(...parts) {
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+function scoreHay(hay, needles) {
+  let score = 0;
+  const h = String(hay || '').toLowerCase();
+  for (const n of needles) {
+    const t = String(n || '').toLowerCase().trim();
+    if (t && h.includes(t)) score += t.length >= 3 ? 3 : 1;
+  }
+  return score;
+}
+
+/** 정보 추가 시 배치·신규·통합 후보 추천 */
+function buildPlacementRecommendations(topic, summary = '') {
+  const q = blobText(topic, summary);
+  const tokens = q.split(/[\s,/·|~\-]+/).filter(t => t.length >= 2);
+  const content = getGuideContentApi().getSnapshot();
+  const custom = getCustomSectionsApi().getSnapshot();
+  const options = [];
+
+  const buckets = [
+    { kind: 'add_to_food', keys: ['맛집', '식사', '씨푸드', '해산물', 'restaurant', '카페', '커피', '바쿠테', '락사', '먹거리', '식당'], label: '시내 추천 맛집 (#food)', how: 'propose_content_change section=food action=add' },
+    { kind: 'add_to_flights', keys: ['항공', '비행', '편명', 'ke57', '출국', '귀국', '이륙', '착륙', '비행기', '스케줄'], label: '항공 일정 (#flights)', how: 'propose_content_change section=flights action=update itemId=outbound|return' },
+    { kind: 'add_to_alts', keys: ['napzone', '캡슐', '에어로포드', '데이유즈', '늦게', '귀국휴식'], label: '귀국·늦게 쉴 대안 (#late-rest)', how: 'propose_content_change section=alternatives' },
+    { kind: 'add_to_pack', keys: ['짐', '챙길', '준비물', '썬크림', '선크림', '어댑터', '수영복', '모기'], label: '함께 준비 · 준비물', how: 'propose_pack_change action=add' },
+    { kind: 'add_to_itin', keys: ['일정', '동선', '타임', '슬롯', 'day1', 'day2', 'day3', 'day4'], label: '일자별 일정 (#itinerary)', how: 'propose_itinerary_change' },
+    { kind: 'guide_massage', keys: ['마사지', '스파', 'chillax', 'warisan'], label: '마사지 (#massage) + 필요시 커스텀/일정', how: '일정 반영 또는 propose_custom_section' },
+    { kind: 'guide_hopping', keys: ['호핑', '섬', '마누칸', '제티', '스노클'], label: '호핑 (#hopping) + 일정 반영', how: 'propose_itinerary_change 또는 커스텀 팁' },
+    { kind: 'guide_shopping', keys: ['쇼핑', '몰', 'imago', '가야', '기념품', '시장'], label: '쇼핑(커스텀 섹션 추천)', how: 'propose_custom_section target=section' }
+  ];
+
+  for (const b of buckets) {
+    const sc = scoreHay(q, b.keys);
+    if (sc > 0) {
+      options.push({
+        kind: b.kind,
+        label: b.label,
+        actionHint: b.how,
+        reason: `'${topic}'이(가) ${b.label} 주제와 맞습니다.`,
+        score: sc
+      });
+    }
+  }
+
+  for (const it of content.food?.items || []) {
+    const hay = blobText(it.name, it.desc, it.tag);
+    const sc = scoreHay(hay, tokens) + scoreHay(q, [it.name]);
+    if (sc >= 3) {
+      options.push({
+        kind: 'update_food_item',
+        label: `기존 맛집 수정·통합: ${it.name}`,
+        section: 'food',
+        itemId: it.id,
+        actionHint: `propose_content_change section=food action=update itemId=${it.id}`,
+        reason: '비슷한 맛집이 이미 있어 새 카드보다 보강·통합이 나을 수 있어요.',
+        score: sc + 2
+      });
+    }
+  }
+
+  for (const it of content.flights?.items || []) {
+    const hay = blobText(it.title, it.flightNo, it.body, it.id);
+    const sc = scoreHay(hay, tokens) + scoreHay(q, [it.flightNo, '항공', '귀국', '출국']);
+    if (sc >= 3) {
+      options.push({
+        kind: 'update_flight',
+        label: `기존 항공 수정: ${it.title || it.flightNo}`,
+        section: 'flights',
+        itemId: it.id,
+        actionHint: `propose_content_change section=flights action=update itemId=${it.id}`,
+        reason: '항공 정보가 이미 있으니 시간을 고치거나 메모를 보강하세요. 관련 일정도 같이 수정 권장.',
+        score: sc + 3
+      });
+    }
+  }
+
+  for (const sec of custom.sections || []) {
+    const hay = blobText(sec.title, sec.intro, ...(sec.items || []).map(i => `${i.title} ${i.body} ${i.tag}`));
+    const sc = scoreHay(hay, tokens) + scoreHay(q, [sec.title, sec.id]);
+    if (sc >= 2) {
+      options.push({
+        kind: 'add_to_custom_section',
+        label: `기존 커스텀 섹션에 항목 추가: ${sec.title}`,
+        sectionId: sec.id,
+        actionHint: `propose_custom_section target=item action=add sectionId=${sec.id}`,
+        reason: '관련 섹션이 이미 있어요. 새 섹션보다 항목 추가가 깔끔합니다.',
+        score: sc + 3
+      });
+      for (const it of sec.items || []) {
+        const isc = scoreHay(blobText(it.title, it.body, it.tag), tokens);
+        if (isc >= 3) {
+          options.push({
+            kind: 'update_custom_item',
+            label: `기존 항목 수정·통합: ${sec.title} › ${it.title}`,
+            sectionId: sec.id,
+            itemId: it.id,
+            actionHint: `propose_custom_section target=item action=update sectionId=${sec.id} itemId=${it.id}`,
+            reason: '같은 주제 항목이 있어 내용을 합치거나 고치는 편이 좋아요.',
+            score: isc + 4
+          });
+        }
+      }
+    }
+  }
+
+  const topBuiltin = options.reduce((m, o) => Math.max(m, o.score || 0), 0);
+  const slug = String(topic || 'tips')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'tips';
+  options.push({
+    kind: 'new_custom_section',
+    label: `새 커스텀 섹션 만들기: ${topic}`,
+    suggestedTitle: topic,
+    suggestedSectionId: slug,
+    actionHint: 'propose_custom_section target=section action=add → 이어서 target=item action=add',
+    reason: topBuiltin >= 4
+      ? '기존 섹션도 가능하지만, 주제를 따로 모으고 싶으면 새 섹션이 좋아요.'
+      : '맞는 고정 섹션이 약하면 새 섹션으로 모으는 걸 권장합니다.',
+    score: topBuiltin >= 4 ? 2 : 5
+  });
+
+  if (/day\s*[1-4]|데이\s*[1-4]|일정|동선/.test(q)) {
+    options.push({
+      kind: 'also_itinerary',
+      label: '일자별 일정에도 함께 반영',
+      actionHint: 'propose_itinerary_change (가이드/섹션 반영과 병행)',
+      reason: '가이드에만 두면 동선에서 빠질 수 있어요. 일정 슬롯에도 넣는 걸 권장합니다.',
+      score: 3
+    });
+  }
+
+  options.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const top = options.slice(0, 5);
+  return {
+    topic,
+    summary: summary || '',
+    recommended: top[0] || null,
+    alternatives: top.slice(1),
+    options: top,
+    nextStep: '추천·대안을 사용자에게 보여 주세요. 선택이 필요하면 ask_clarification, 확정되면 actionHint로 propose_* 하세요.'
+  };
 }
 
 function loadKey() {
@@ -456,10 +662,13 @@ export function initAiGuide() {
     hideEmptyHint();
     const itinApi = getItineraryApi();
     const contentApi = getGuideContentApi();
+    const customApi = getCustomSectionsApi();
     const packApi = getTripPackApi();
-    const canApply = proposal.type === 'content' || proposal.type === 'pack'
-      ? (proposal.type === 'pack' ? packApi.canEdit() : contentApi.canEdit())
-      : itinApi.canEdit();
+    const canApply = proposal.type === 'content' || proposal.type === 'custom'
+      ? (proposal.type === 'custom' ? customApi.canEdit() : contentApi.canEdit())
+      : proposal.type === 'pack'
+        ? packApi.canEdit()
+        : itinApi.canEdit();
     const card = document.createElement('div');
     card.className = 'ai-bubble ai-assistant ai-proposal';
     const lines = [];
@@ -482,7 +691,7 @@ export function initAiGuide() {
       });
       lines.push('</div>');
     } else if (proposal.type === 'content') {
-      const secLabel = ({ hero: '메인 그림', food: '맛집', alternatives: '귀국 대안' })[proposal.section] || proposal.section;
+      const secLabel = ({ hero: '메인 그림', food: '맛집', alternatives: '귀국 대안', flights: '항공' })[proposal.section] || proposal.section;
       lines.push(`<div class="ai-proposal-title">${esc(secLabel)} ${esc(actionLabel)} 제안</div>`);
       if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
       if (proposal.imageUrl) {
@@ -494,9 +703,14 @@ export function initAiGuide() {
       } else {
         if (proposal.name) lines.push(`<div>이름: ${esc(proposal.name)}</div>`);
         if (proposal.title) lines.push(`<div>제목: ${esc(proposal.title)}</div>`);
+        if (proposal.flightNo) lines.push(`<div>편명: ${esc(proposal.flightNo)}</div>`);
+        if (proposal.dateLabel) lines.push(`<div>날짜: ${esc(proposal.dateLabel)}</div>`);
+        if (proposal.departTime || proposal.arriveTime) {
+          lines.push(`<div>시간: ${esc(proposal.from || '')} ${esc(proposal.departTime || '')} → ${esc(proposal.to || '')} ${esc(proposal.arriveTime || '')}</div>`);
+        }
         if (proposal.caption) lines.push(`<div>캡션: ${esc(proposal.caption)}</div>`);
         if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
-        if (proposal.desc) lines.push(`<div>${esc(proposal.desc)}</div>`);
+        if (proposal.body || proposal.desc) lines.push(`<div>${esc(proposal.body || proposal.desc)}</div>`);
         if (proposal.imageUrl) lines.push(`<div class="tiny">URL: ${esc(proposal.imageUrl)}</div>`);
       }
       if (proposal.itemId) lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
@@ -508,6 +722,22 @@ export function initAiGuide() {
       if (proposal.action === 'delete') lines.push(`<div>삭제 id: ${esc(proposal.itemId || '')}</div>`);
       else if (proposal.text) lines.push(`<div>${esc(proposal.text)}</div>`);
       if (proposal.itemId && proposal.action !== 'add') lines.push(`<div class="tiny">id: ${esc(proposal.itemId)}</div>`);
+      lines.push('</div>');
+    } else if (proposal.type === 'custom') {
+      const scope = proposal.target === 'item' ? '섹션 항목' : '커스텀 섹션';
+      lines.push(`<div class="ai-proposal-title">${esc(scope)} ${esc(actionLabel)} 제안</div>`);
+      if (proposal.reason) lines.push(`<div class="ai-proposal-reason">${esc(proposal.reason)}</div>`);
+      if (proposal.imageUrl) {
+        lines.push(`<img class="ai-proposal-thumb" src="${esc(proposal.imageUrl)}" alt="미리보기" referrerpolicy="no-referrer">`);
+      }
+      lines.push('<div class="ai-proposal-body">');
+      if (proposal.sectionId) lines.push(`<div>sectionId: ${esc(proposal.sectionId)}</div>`);
+      if (proposal.title) lines.push(`<div>섹션 제목: ${esc(proposal.title)}</div>`);
+      if (proposal.intro) lines.push(`<div>소개: ${esc(proposal.intro)}</div>`);
+      if (proposal.itemTitle) lines.push(`<div>항목: ${esc(proposal.itemTitle)}</div>`);
+      if (proposal.tag) lines.push(`<div>태그: ${esc(proposal.tag)}</div>`);
+      if (proposal.body) lines.push(`<div>${esc(proposal.body)}</div>`);
+      if (proposal.itemId) lines.push(`<div class="tiny">itemId: ${esc(proposal.itemId)}</div>`);
       lines.push('</div>');
     } else {
       lines.push(`<div class="ai-proposal-title">일정 ${esc(actionLabel)} 제안 · ${esc(dayLabel(proposal.day))}</div>`);
@@ -565,15 +795,22 @@ export function initAiGuide() {
       const section = args.section || 'all';
       const content = getGuideContentApi().getSnapshot();
       const pack = getTripPackApi().getSnapshot();
+      const custom = getCustomSectionsApi().getSnapshot();
       if (section === 'hero') return { hero: content.hero, editable: content.editable };
       if (section === 'food') return { food: content.food, editable: content.editable };
       if (section === 'alternatives') return { alternatives: content.alternatives, editable: content.editable };
+      if (section === 'flights') return { flights: content.flights, editable: content.editable };
       if (section === 'pack') return pack;
-      return { ...content, pack };
+      if (section === 'custom') return custom;
+      return { ...content, pack, custom };
     }
     if (name === 'web_search') {
       setStatus('웹 검색 중…');
       return webSearch(apiKey, args.query);
+    }
+    if (name === 'recommend_placement') {
+      setStatus('어디에 넣을지 분석 중…');
+      return buildPlacementRecommendations(args.topic || '', args.summary || '');
     }
     if (name === 'ask_clarification') {
       const qs = Array.isArray(args.questions) ? args.questions.filter(Boolean).slice(0, 3) : [];
@@ -654,8 +891,8 @@ export function initAiGuide() {
     if (name === 'propose_content_change') {
       const section = args.section;
       const action = args.action;
-      if (!['hero', 'food', 'alternatives'].includes(section)) {
-        return { ok: false, error: 'section은 hero|food|alternatives 여야 해요.' };
+      if (!['hero', 'food', 'alternatives', 'flights'].includes(section)) {
+        return { ok: false, error: 'section은 hero|food|alternatives|flights 여야 해요.' };
       }
       if ((action === 'update' || action === 'delete') && !args.itemId) {
         return { ok: false, error: 'update/delete에는 itemId가 필요해요. get_editable_content로 확인하세요.' };
@@ -666,6 +903,9 @@ export function initAiGuide() {
       if (action === 'add' && section === 'food' && !args.name) {
         return { ok: false, error: '맛집 추가에는 name이 필요해요.' };
       }
+      if (action === 'add' && section === 'flights' && !(args.title || args.flightNo)) {
+        return { ok: false, error: '항공 추가에는 title 또는 flightNo가 필요해요.' };
+      }
       const id = `c${++proposalSeq}`;
       const proposal = {
         id,
@@ -674,9 +914,11 @@ export function initAiGuide() {
         action,
         itemId: args.itemId || '',
         tag: args.tag || '',
+        tagTone: args.tagTone || '',
         name: args.name || '',
         title: args.title || '',
         desc: args.desc || '',
+        body: args.body || '',
         caption: args.caption || '',
         imageUrl: args.imageUrl || '',
         mapsUrl: args.mapsUrl || '',
@@ -684,6 +926,12 @@ export function initAiGuide() {
         reviewUrl: args.reviewUrl || '',
         linkUrl: args.linkUrl || '',
         linkLabel: args.linkLabel || '',
+        flightNo: args.flightNo || '',
+        dateLabel: args.dateLabel || '',
+        from: args.from || '',
+        to: args.to || '',
+        departTime: args.departTime || '',
+        arriveTime: args.arriveTime || '',
         reason: args.reason || '',
         status: 'pending'
       };
@@ -719,6 +967,60 @@ export function initAiGuide() {
         ok: true,
         proposalId: id,
         status: 'waiting_user_confirmation'
+      };
+    }
+    if (name === 'propose_custom_section') {
+      const target = args.target;
+      const action = args.action;
+      if (!['section', 'item'].includes(target)) {
+        return { ok: false, error: 'target은 section 또는 item 이어야 해요.' };
+      }
+      if (target === 'section') {
+        if (action === 'add' && !args.title) {
+          return { ok: false, error: '섹션 추가에는 title이 필요해요.' };
+        }
+        if ((action === 'update' || action === 'delete') && !args.sectionId) {
+          return { ok: false, error: '섹션 수정/삭제에는 sectionId가 필요해요.' };
+        }
+      }
+      if (target === 'item') {
+        if (!args.sectionId) {
+          return { ok: false, error: '항목 작업에는 sectionId가 필요해요. 없으면 먼저 섹션을 추가하세요.' };
+        }
+        if (action === 'add' && !(args.itemTitle || args.title || args.name)) {
+          return { ok: false, error: '항목 추가에는 itemTitle이 필요해요.' };
+        }
+        if ((action === 'update' || action === 'delete') && !args.itemId) {
+          return { ok: false, error: '항목 수정/삭제에는 itemId가 필요해요.' };
+        }
+      }
+      const id = `s${++proposalSeq}`;
+      const proposal = {
+        id,
+        type: 'custom',
+        target,
+        action,
+        sectionId: args.sectionId || '',
+        title: args.title || '',
+        intro: args.intro || '',
+        itemId: args.itemId || '',
+        itemTitle: args.itemTitle || args.title || args.name || '',
+        tag: args.tag || '',
+        body: args.body || args.desc || '',
+        imageUrl: args.imageUrl || '',
+        mapsUrl: args.mapsUrl || '',
+        linkUrl: args.linkUrl || '',
+        linkLabel: args.linkLabel || '',
+        reason: args.reason || '',
+        status: 'pending'
+      };
+      proposals.set(id, proposal);
+      appendProposalCard(proposal);
+      return {
+        ok: true,
+        proposalId: id,
+        status: 'waiting_user_confirmation',
+        note: '적용 전 저장되지 않습니다.'
       };
     }
     return { ok: false, error: `알 수 없는 도구: ${name}` };
@@ -866,10 +1168,11 @@ export function initAiGuide() {
 
     const itinApi = getItineraryApi();
     const contentApi = getGuideContentApi();
+    const customApi = getCustomSectionsApi();
     const packApi = getTripPackApi();
     const needsRoom = true;
-    const canApply = proposal.type === 'content'
-      ? contentApi.canEdit()
+    const canApply = proposal.type === 'content' || proposal.type === 'custom'
+      ? (proposal.type === 'custom' ? customApi.canEdit() : contentApi.canEdit())
       : proposal.type === 'pack'
         ? packApi.canEdit()
         : itinApi.canEdit();
@@ -894,6 +1197,24 @@ export function initAiGuide() {
         });
         if (proposal.section === 'food') document.getElementById('food')?.setAttribute('open', '');
         if (proposal.section === 'alternatives') document.getElementById('late-rest')?.setAttribute('open', '');
+        if (proposal.section === 'flights') document.getElementById('flights')?.setAttribute('open', '');
+      } else if (proposal.type === 'custom') {
+        const result = await customApi.applyProposal(proposal);
+        proposal.status = 'applied';
+        const sid = result?.id || result?.sectionId || proposal.sectionId || '';
+        const hash = sid ? `#custom-${sid}` : '';
+        appendBubble('assistant', `커스텀 섹션에 반영했어요.${hash ? ` 앱에서 보기: ${hash}` : ''}`);
+        history.push({
+          role: 'assistant',
+          content: `사용자가 커스텀 섹션 제안(${pid})을 적용했습니다. target=${proposal.target}, action=${proposal.action}, sectionId=${sid}.`
+        });
+        if (sid) {
+          const el = document.getElementById(`custom-${sid}`);
+          if (el) {
+            el.open = true;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       } else if (proposal.type === 'pack') {
         if (proposal.action === 'add') await packApi.addPack(proposal.text);
         else if (proposal.action === 'update') await packApi.updatePack(proposal.itemId, proposal.text);
@@ -1002,9 +1323,11 @@ export function initAiGuide() {
         api.canEdit()
           ? `현재 여행방 ${api.tripCode()}에 ${api.nickname()}(으)로 입장되어 일정 편집 가능.`
           : '아직 여행방 미입장. 일정 제안은 가능하지만 적용하려면 입장이 필요함을 안내.',
-        '도구: get_guide_section, get_itinerary, get_editable_content, web_search, ask_clarification, propose_itinerary_change, propose_route_plan, propose_content_change, propose_pack_change',
-        '메인 그림/맛집/대안/이미지URL: get_editable_content → web_search(필요시) → propose_content_change',
-        '준비물: get_editable_content(pack) → propose_pack_change'
+        '도구: get_guide_section, get_itinerary, get_editable_content, recommend_placement, web_search, ask_clarification, propose_itinerary_change, propose_route_plan, propose_content_change, propose_pack_change, propose_custom_section',
+        '정보 추가: recommend_placement → (필요시 ask_clarification) → propose_*',
+        '메인 그림/맛집/대안/항공: get_editable_content → propose_content_change',
+        '새 섹션·항목: propose_custom_section',
+        '준비물: propose_pack_change'
       ].filter(Boolean).join('\n\n');
 
       const messages = [

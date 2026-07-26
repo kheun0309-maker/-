@@ -477,6 +477,9 @@
       display: block; width: 100%; height: 140px; object-fit: cover;
       border-radius: 10px; margin-bottom: 8px; background: #e8f2f4;
     }
+    .custom-sections-host { display: contents; }
+    .custom-sections-host[hidden] { display: none !important; }
+    .custom-section summary::before { content: none; }
     .ai-proposal-thumb {
       display: block; width: 100%; max-height: 140px; object-fit: cover;
       border-radius: 10px; margin: 6px 0; background: #e8f2f4;
@@ -559,27 +562,41 @@
     .timeline li.itin-item {
       position: relative;
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr);
-      gap: 10px;
+      grid-template-columns: 4.6rem minmax(0, 1fr);
+      column-gap: 10px;
       align-items: start;
-      padding: 0 0 14px 6px;
+      padding: 0 0 14px 2px;
     }
     .timeline li.itin-item.is-editable {
-      grid-template-columns: 18px 58px minmax(0, 1fr);
-      gap: 8px;
+      grid-template-columns: 1rem 4.6rem minmax(0, 1fr);
+      column-gap: 6px;
     }
     .timeline li.itin-item::before {
-      content: ''; position: absolute; left: 64px; top: 10px; bottom: -2px; width: 2px;
+      content: ''; position: absolute;
+      left: calc(2px + 4.6rem + 4px);
+      top: 10px; bottom: -2px; width: 2px;
       background: linear-gradient(180deg, var(--teal), transparent);
+      pointer-events: none;
     }
-    .timeline li.itin-item.is-editable::before { left: 90px; }
+    .timeline li.itin-item.is-editable::before {
+      left: calc(2px + 1rem + 6px + 4.6rem + 3px);
+    }
     .timeline li.itin-item:last-child { padding-bottom: 0; }
     .timeline li.itin-item:last-child::before { display: none; }
-    .itin-item .t-time { min-width: 0; word-break: keep-all; }
-    .itin-item .t-body { min-width: 0; }
+    .itin-item .t-time {
+      min-width: 0; max-width: 100%;
+      box-sizing: border-box;
+      padding-right: 2px;
+      white-space: pre-line;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .itin-item .t-body { min-width: 0; overflow: hidden; }
     .itin-item.is-editable .itin-drag {
-      color: var(--soft); font-size: 0.85rem; cursor: grab; padding-top: 10px;
-      text-align: center; user-select: none;
+      color: var(--soft); font-size: 0.8rem; cursor: grab; padding-top: 8px;
+      text-align: center; user-select: none; line-height: 1;
     }
     .itin-item.is-dragging { opacity: 0.55; }
     .itin-item.drag-over { outline: 2px dashed var(--teal); border-radius: 10px; }
@@ -696,7 +713,10 @@
       border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; color: var(--ink);
     }
     .itin-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-    .t-time { font-size: 0.78rem; font-weight: 700; color: var(--teal); padding-top: 2px; font-variant-numeric: tabular-nums; }
+    .t-time {
+      font-size: 0.7rem; font-weight: 700; color: var(--teal);
+      padding-top: 2px; font-variant-numeric: tabular-nums;
+    }
     .t-body { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
     .t-place { font-size: 0.76rem; color: var(--coral); font-weight: 600; margin-bottom: 2px; }
     .t-task { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
@@ -1080,6 +1100,10 @@
           <button type="button" data-ai-q="get_editable_content로 히어로를 보고, 코타키나발루 석양 공개 이미지 URL을 검색해 메인 그림(hero) 한 장을 바꾸는 propose_content_change를 해줘. URL만, Storage 없음.">메인 그림</button>
           <button type="button" data-ai-q="추천 맛집에 괜찮은 KK 로컬 식당 하나를 사진 URL과 함께 propose_content_change(section=food, add)로 제안해줘. web_search로 확인.">맛집 추가</button>
           <button type="button" data-ai-q="함께 준비 준비물 목록을 보고 호핑용으로 빠진 챙길 품목이 있으면 propose_pack_change로 추가 제안해줘.">짐 추가</button>
+          <button type="button" data-ai-q="get_editable_content(custom)로 확인한 뒤, '쇼핑 팁' 커스텀 섹션을 propose_custom_section(target=section, add)로 제안하고, Imago 몰 정보를 target=item add로 이어서 제안해줘. 사진 URL은 web_search.">섹션 추가</button>
+          <button type="button" data-ai-q="다음에 넣을 정보를 어디에 두면 좋을지 recommend_placement로 분석해줘. 기존 섹션 추가 vs 새 섹션 vs 기존 항목 수정·통합 vs 일정 반영 옵션을 추천하고, 선택이 필요하면 물어봐.">어디에 넣을까</button>
+          <button type="button" data-ai-q="get_itinerary로 Day3를 보고, 시내 카페 일정을 하나 추가 propose_itinerary_change로 제안해줘. 시간·장소·메모 포함.">일정 추가</button>
+          <button type="button" data-ai-q="get_editable_content(flights)와 get_itinerary를 보고, 귀국편(return) 시간을 바꾸려면 새 시각을 물어본 뒤 flights 수정 + 관련 일정 수정을 함께 제안해줘.">항공 변경</button>
           <button type="button" data-ai-q="셔틀이랑 그랩 중 시내 갈 때 뭐가 나을지 가이드 기준으로 알려줘.">셔틀 vs 그랩</button>
         </div>
         <div class="ai-chat-log" id="aiChatLog" aria-live="polite">
@@ -1215,25 +1239,8 @@
     <details class="widget fold-widget" id="flights">
       <summary>✈️ 항공 일정</summary>
       <div class="fold-body">
-      <div class="flight-item">
-        <span class="tag ok">확정</span>
-        <b>가는 편 · KE5761 · 8/13(목)</b>
-        <span>
-          인천(ICN) 19:15 출발 → 코타키나발루(BKI) 23:35 도착<br>
-          직항 약 5시간 20분 · 터미널 ICN T2 → BKI T1<br>
-          ※ 대한항공 코드셰어(진에어 운항일 가능) · 출국 2.5~3시간 전 공항 도착
-        </span>
-      </div>
-      <div class="flight-item">
-        <span class="tag warn">추천 · 미정</span>
-        <b>오는 편 · KE5762 · 8/17(월) 새벽</b>
-        <span>
-          BKI 00:35 출발 → ICN 06:55 도착 (예상)<br>
-          가는 편 KE5761과 짝이 되는 귀국편이라 가장 무난합니다.<br>
-          ※ 스케줄은 성수기·요일에 따라 00:35~01:10 / 06:55~07:35로 변동될 수 있어요. 예약 전 대한항공·진에어에서 8/16~17 날짜로 꼭 재확인하세요.<br>
-          ※ 대안: KE5788 (BKI 23:55 → ICN 06:05) — 16일 밤 출발을 원하면 이쪽도 검토
-        </span>
-      </div>
+      <p class="tiny" style="margin:-4px 0 10px">여행방 입장 후 AI로 편명·시간을 바꿀 수 있어요. 바꾸면 일자별 일정도 같이 수정 제안받는 걸 권장합니다.</p>
+      <div id="flightsEditable"></div>
       </div>
     </details>
 
@@ -1415,6 +1422,8 @@
       <p class="tiny">가격·메뉴·영업시간은 변동될 수 있어요. 방문 전 지도 앱에서 한번 더 확인하세요.</p>
       </div>
     </details>
+
+    <div id="customSectionsHost" class="custom-sections-host" hidden></div>
 
     <details class="widget fold-widget" id="massage">
       <summary>💆 마사지 · 요금 · 추천</summary>
@@ -1728,7 +1737,9 @@
   <script type="module">
     import { initAiGuide } from './js/ai-guide.js';
     import { initGuideContentUi } from './js/guide-content.js';
+    import { initCustomSectionsUi } from './js/custom-sections.js';
     initGuideContentUi();
+    initCustomSectionsUi();
     initAiGuide();
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1993,6 +2004,7 @@
         { title: '동선 지도', desc: '공항 · 리조트 · 시내 · 내 위치', open: 'map', href: 'map', keys: ['지도', '맵', '동선', '길찾기', 'gps', '위치'] },
         { title: '함께 준비', desc: '준비물 · 공지 · 출발 전 할 일', open: 'trip', href: 'trip', keys: ['함께', '공지', '준비물', '체크리스트', '공유'] },
         { title: '설정', desc: '여행방 코드 · AI 키 · 모델', open: 'settings', href: 'settings', keys: ['설정', '여행방', '방코드', 'api', '키', '모델', 'openai'] },
+        { title: 'AI 섹션 추가', desc: '쇼핑·카페 등 커스텀 섹션', open: 'ai', href: 'ai', keys: ['섹션', '추가', '커스텀', '쇼핑', '카페'] },
         { title: '현지 시각 · 환율', desc: '한국/코타 시간 · MYR↔원', open: 'live', href: 'live', keys: ['환율', '링깃', 'myr', '시간', '시계', '환전'] },
         { title: '귀국 · 휴식', desc: '늦은 비행 · 공항 대기 · Napzone', open: 'late-rest', href: 'late-rest', keys: ['귀국', '휴식', '낮잠', 'napzone', '에어로포드', '늦은비행'] },
         { title: '주의사항', desc: '모기 · 햇빛 · 물 · 안전', open: 'tips', href: 'tips', keys: ['주의', '팁', '모기', '선크림', '안전', '물'] },

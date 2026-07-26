@@ -406,12 +406,22 @@ function buildShellHtml(days) {
   `;
 }
 
+function formatTimeDisplay(time) {
+  const t = String(time || '').trim();
+  if (!t) return '';
+  // 17:30~18:30 / 17:30 ~ 18:30 → 두 줄로 나눠 카드와 겹치지 않게
+  const m = t.match(/^(\d{1,2}:\d{2})\s*~\s*(\d{1,2}:\d{2})(.*)$/);
+  if (m) return `${m[1]}~\n${m[2]}${m[3] || ''}`;
+  if (t.length > 8 && t.includes('~')) return t.replace(/\s*~\s*/, '~\n');
+  return t;
+}
+
 function renderItem(item, dayId) {
   const maps = item.placeMapsUrl || mapsUrlFor(item.place, '');
   return `
     <li class="itin-item ${editable ? 'is-editable' : ''}" data-item-id="${esc(item.id)}" draggable="${editable ? 'true' : 'false'}">
       ${editable ? '<div class="itin-drag" aria-hidden="true">⋮⋮</div>' : ''}
-      <div class="t-time">${esc(item.time || '')}</div>
+      <div class="t-time">${esc(formatTimeDisplay(item.time || ''))}</div>
       <div class="t-body">
         <div class="t-place">${esc(item.place || '')}</div>
         <div class="t-task">${esc(item.task || '')}</div>

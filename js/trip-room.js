@@ -23,6 +23,7 @@ import {
 import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
 import { attachItineraryRoom, detachItineraryRoom, logTripActivity } from './itinerary-editor.js';
 import { attachGuideContentRoom, detachGuideContentRoom } from './guide-content.js';
+import { attachCustomSectionsRoom, detachCustomSectionsRoom } from './custom-sections.js';
 
 const STORAGE_KEY = 'kk-trip-room-session';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -174,7 +175,9 @@ function itinKindLabel(kind) {
     hero: '메인 그림',
     food: '맛집',
     alt: '귀국 대안',
-    pack: '준비물'
+    pack: '준비물',
+    custom: '커스텀 섹션',
+    flight: '항공'
   })[kind] || '변경';
 }
 
@@ -907,6 +910,9 @@ async function enterRoom() {
   attachGuideContentRoom({ db, tripCode, nickname }).catch(err => {
     console.error(err);
   });
+  attachCustomSectionsRoom({ db, tripCode, nickname }).catch(err => {
+    console.error(err);
+  });
 }
 
 async function toggleItem(colName, id, checked) {
@@ -1019,6 +1025,7 @@ async function leaveRoom() {
   renderUnreadBadges();
   detachItineraryRoom();
   detachGuideContentRoom();
+  detachCustomSectionsRoom();
   setStatus('방에서 나왔습니다. 설정에서 다시 입장할 수 있어요.');
 }
 

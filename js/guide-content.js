@@ -9,7 +9,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { logTripActivity } from './itinerary-editor.js';
 
-const SECTIONS = ['hero', 'food', 'alternatives'];
+const SECTIONS = ['hero', 'food', 'alternatives', 'flights'];
 
 export const DEFAULT_HERO = {
   slides: [
@@ -117,6 +117,37 @@ export const DEFAULT_ALTERNATIVES = {
   ]
 };
 
+export const DEFAULT_FLIGHTS = {
+  items: [
+    {
+      id: 'outbound',
+      tag: '확정',
+      tagTone: 'ok',
+      title: '가는 편 · KE5761 · 8/13(목)',
+      flightNo: 'KE5761',
+      dateLabel: '8/13(목)',
+      from: 'ICN',
+      to: 'BKI',
+      departTime: '19:15',
+      arriveTime: '23:35',
+      body: '직항 약 5시간 20분 · 터미널 ICN T2 → BKI T1\n※ 대한항공 코드셰어(진에어 운항일 가능) · 출국 2.5~3시간 전 공항 도착'
+    },
+    {
+      id: 'return',
+      tag: '추천 · 미정',
+      tagTone: 'warn',
+      title: '오는 편 · KE5762 · 8/17(월) 새벽',
+      flightNo: 'KE5762',
+      dateLabel: '8/17(월) 새벽',
+      from: 'BKI',
+      to: 'ICN',
+      departTime: '00:35',
+      arriveTime: '06:55',
+      body: '가는 편 KE5761과 짝이 되는 귀국편이라 가장 무난합니다.\n※ 스케줄은 성수기·요일에 따라 변동될 수 있어요. 예약 전 대한항공·진에어에서 꼭 재확인하세요.\n※ 대안: KE5788 (BKI 23:55 → ICN 06:05)'
+    }
+  ]
+};
+
 let ctx = null;
 let unsub = null;
 let heroTimer = null;
@@ -129,7 +160,8 @@ function deepClone(obj) {
 let state = {
   hero: deepClone(DEFAULT_HERO),
   food: deepClone(DEFAULT_FOOD),
-  alternatives: deepClone(DEFAULT_ALTERNATIVES)
+  alternatives: deepClone(DEFAULT_ALTERNATIVES),
+  flights: deepClone(DEFAULT_FLIGHTS)
 };
 
 function esc(s) {
@@ -157,7 +189,8 @@ function cloneDefaults() {
   return {
     hero: deepClone(DEFAULT_HERO),
     food: deepClone(DEFAULT_FOOD),
-    alternatives: deepClone(DEFAULT_ALTERNATIVES)
+    alternatives: deepClone(DEFAULT_ALTERNATIVES),
+    flights: deepClone(DEFAULT_FLIGHTS)
   };
 }
 
@@ -277,10 +310,31 @@ function renderAlternatives() {
   }).join('');
 }
 
+function renderFlights() {
+  const root = document.getElementById('flightsEditable');
+  if (!root) return;
+  const items = state.flights?.items || [];
+  root.innerHTML = items.map(it => {
+    const tone = it.tagTone === 'warn' ? 'warn' : 'ok';
+    const route = `${esc(it.from || '')} ${esc(it.departTime || '')} 출발 → ${esc(it.to || '')} ${esc(it.arriveTime || '')} 도착`;
+    return `
+      <div class="flight-item" data-flight-id="${esc(it.id)}">
+        ${it.tag ? `<span class="tag ${tone}">${esc(it.tag)}</span>` : ''}
+        <b>${esc(it.title)}</b>
+        <span>
+          ${route}<br>
+          ${nl2br(it.body || '')}
+        </span>
+        ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
 function renderAll() {
   renderHero();
   renderFood();
   renderAlternatives();
+  renderFlights();
 }
 
 function normalizeHero(data) {
@@ -325,14 +379,37 @@ function normalizeAlts(data) {
   };
 }
 
+function normalizeFlights(data) {
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return {
+    items: items.slice(0, 8).map((it, i) => ({
+      id: String(it.id || `flight${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `flight${i + 1}`,
+      tag: String(it.tag || '').slice(0, 40),
+      tagTone: it.tagTone === 'warn' ? 'warn' : 'ok',
+      title: String(it.title || '').slice(0, 100),
+      flightNo: String(it.flightNo || '').slice(0, 20),
+      dateLabel: String(it.dateLabel || '').slice(0, 40),
+      from: String(it.from || '').slice(0, 12),
+      to: String(it.to || '').slice(0, 12),
+      departTime: String(it.departTime || '').slice(0, 20),
+      arriveTime: String(it.arriveTime || '').slice(0, 20),
+      body: String(it.body || it.desc || '').slice(0, 800)
+    })).filter(it => it.title || it.flightNo)
+  };
+}
+
+function normalizeSectionData(section, data) {
+  if (section === 'hero') return normalizeHero(data);
+  if (section === 'food') return normalizeFood(data);
+  if (section === 'alternatives') return normalizeAlts(data);
+  if (section === 'flights') return normalizeFlights(data);
+  return data;
+}
+
 async function ensureSection(section) {
   const snap = await getDoc(sectionRef(section));
   if (snap.exists()) return snap.data();
-  const base = section === 'hero'
-    ? normalizeHero(state.hero)
-    : section === 'food'
-      ? normalizeFood(state.food)
-      : normalizeAlts(state.alternatives);
+  const base = normalizeSectionData(section, state[section] || {});
   const payload = {
     ...base,
     updatedBy: ctx.nickname,
@@ -344,13 +421,12 @@ async function ensureSection(section) {
 
 async function saveSection(section, data, eventMeta = null) {
   if (!canEdit()) throw new Error('여행방에 입장해야 가이드를 수정할 수 있어요.');
-  const normalized = section === 'hero'
-    ? normalizeHero(data)
-    : section === 'food'
-      ? normalizeFood(data)
-      : normalizeAlts(data);
-  if (section === 'hero' && !normalized.slides.length) {
+  const normalized = normalizeSectionData(section, data);
+  if (section === 'hero' && !normalized.slides?.length) {
     throw new Error('히어로 이미지가 최소 1장 필요해요.');
+  }
+  if (section === 'flights' && !normalized.items?.length) {
+    throw new Error('항공 정보가 최소 1개 필요해요.');
   }
   await setDoc(sectionRef(section), {
     ...normalized,
@@ -441,6 +517,62 @@ function applyAltPatch(items, proposal) {
   return next;
 }
 
+function applyFlightPatch(items, proposal) {
+  const next = items.map(it => ({ ...it }));
+  const buildTitle = (it) => {
+    if (proposal.title) return proposal.title;
+    const no = proposal.flightNo != null ? proposal.flightNo : it.flightNo;
+    const date = proposal.dateLabel != null ? proposal.dateLabel : it.dateLabel;
+    const leg = it.id === 'return' || /return|귀국|오는/i.test(String(no || it.title || ''))
+      ? '오는 편'
+      : '가는 편';
+    if (no || date) return `${leg}${no ? ` · ${no}` : ''}${date ? ` · ${date}` : ''}`;
+    return it.title || '항공편';
+  };
+
+  if (proposal.action === 'add') {
+    const id = String(proposal.itemId || `flight-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    if (next.some(it => it.id === id)) throw new Error('이미 있는 항공 id예요.');
+    const draft = {
+      id,
+      tag: proposal.tag || '',
+      tagTone: proposal.tagTone === 'warn' ? 'warn' : 'ok',
+      title: '',
+      flightNo: proposal.flightNo || '',
+      dateLabel: proposal.dateLabel || '',
+      from: proposal.from || '',
+      to: proposal.to || '',
+      departTime: proposal.departTime || '',
+      arriveTime: proposal.arriveTime || '',
+      body: proposal.body || proposal.desc || ''
+    };
+    draft.title = buildTitle(draft);
+    next.push(draft);
+    return next;
+  }
+  const idx = next.findIndex(it => it.id === proposal.itemId);
+  if (idx < 0) throw new Error('항공 id를 찾지 못했어요. outbound|return 등 get_editable_content(flights)로 확인하세요.');
+  if (proposal.action === 'delete') {
+    next.splice(idx, 1);
+    return next;
+  }
+  const cur = next[idx];
+  next[idx] = {
+    ...cur,
+    tag: proposal.tag != null ? proposal.tag : cur.tag,
+    tagTone: proposal.tagTone != null ? (proposal.tagTone === 'warn' ? 'warn' : 'ok') : cur.tagTone,
+    flightNo: proposal.flightNo != null ? proposal.flightNo : cur.flightNo,
+    dateLabel: proposal.dateLabel != null ? proposal.dateLabel : cur.dateLabel,
+    from: proposal.from != null ? proposal.from : cur.from,
+    to: proposal.to != null ? proposal.to : cur.to,
+    departTime: proposal.departTime != null ? proposal.departTime : cur.departTime,
+    arriveTime: proposal.arriveTime != null ? proposal.arriveTime : cur.arriveTime,
+    body: proposal.body != null || proposal.desc != null ? (proposal.body || proposal.desc) : cur.body,
+    title: proposal.title != null ? proposal.title : buildTitle(cur)
+  };
+  return next;
+}
+
 export function initGuideContentUi() {
   state = cloneDefaults();
   renderAll();
@@ -455,6 +587,7 @@ export async function attachGuideContentRoom(nextCtx) {
     if (section === 'hero') state.hero = normalizeHero(data?.slides ? data : DEFAULT_HERO);
     if (section === 'food') state.food = normalizeFood(data?.items ? data : DEFAULT_FOOD);
     if (section === 'alternatives') state.alternatives = normalizeAlts(data?.items ? data : DEFAULT_ALTERNATIVES);
+    if (section === 'flights') state.flights = normalizeFlights(data?.items ? data : DEFAULT_FLIGHTS);
     renderAll();
   };
 
@@ -493,13 +626,14 @@ export function getGuideContentApi() {
         hero: state.hero,
         food: state.food,
         alternatives: state.alternatives,
-        hint: '수정/삭제 시 itemId(또는 hero slide id)를 사용하세요. imageUrl은 https:// 또는 ./images/ 경로.'
+        flights: state.flights,
+        hint: '항공은 flights.outbound / flights.return. 일정 항목은 propose_itinerary_change로 같이 수정 권장.'
       };
     },
     async applyProposal(proposal) {
       if (!canEdit()) throw new Error('여행방에 입장해야 적용할 수 있어요.');
       const section = proposal.section;
-      if (!SECTIONS.includes(section)) throw new Error('section은 hero|food|alternatives 중 하나여야 해요.');
+      if (!SECTIONS.includes(section)) throw new Error('section은 hero|food|alternatives|flights 중 하나여야 해요.');
 
       await ensureSection(section);
       const act = ({ add: '추가', update: '수정', delete: '삭제' })[proposal.action] || proposal.action;
@@ -571,6 +705,24 @@ export function getGuideContentApi() {
           itemId: proposal.itemId || '',
           summary: `귀국 대안 ${act}: ${title}`,
           detail: reason || `AI · 귀국 대안 ${act}`
+        });
+      }
+
+      if (section === 'flights') {
+        if (proposal.action === 'add' && !(proposal.title || proposal.flightNo)) {
+          throw new Error('항공 추가에는 title 또는 flightNo가 필요해요.');
+        }
+        if ((proposal.action === 'update' || proposal.action === 'delete') && !proposal.itemId) {
+          throw new Error('항공 수정/삭제에는 itemId(outbound|return)가 필요해요.');
+        }
+        const items = applyFlightPatch(state.flights.items || [], proposal);
+        const hit = items.find(it => it.id === proposal.itemId) || items[items.length - 1];
+        const label = hit?.flightNo || hit?.title || proposal.itemId || '항공';
+        return saveSection('flights', { items }, {
+          kind: 'flight',
+          itemId: proposal.itemId || hit?.id || '',
+          summary: `항공 ${act}: ${label} ${hit?.departTime || ''}→${hit?.arriveTime || ''}`.trim(),
+          detail: reason || `AI · 항공 ${act}`
         });
       }
       return null;
