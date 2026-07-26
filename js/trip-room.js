@@ -849,13 +849,6 @@ async function enterRoom() {
     snap => {
       dataCache.itin = snap.docs;
       afterDataSnap('itin');
-      // 일정 섹션을 보고 있는 중이면 새 변경도 바로 읽음 처리
-      const itinEl = document.getElementById('itinerary');
-      if (itinEl?.open) {
-        const rect = itinEl.getBoundingClientRect();
-        const vh = window.innerHeight || 0;
-        if (rect.top < vh * 0.8 && rect.bottom > vh * 0.15) markItinRead();
-      }
       if (snap.docs.length > 40) {
         snap.docs.slice(40).forEach(extra => {
           deleteDoc(extra.ref).catch(() => {});
@@ -1061,52 +1054,15 @@ function bindUi() {
     const counts = countUnreadByType();
     if (counts.itin && !counts.pack && !counts.tasks && !counts.notes) {
       const itin = document.getElementById('itinerary');
-      if (itin) {
-        itin.open = true;
-        itin.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      markItinRead();
+      const feed = document.getElementById('itinChangeFeed');
+      if (itin) itin.open = true;
+      (feed || itin)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     const trip = document.getElementById('trip');
     if (trip) trip.open = true;
   });
 
-  const isItineraryInView = () => {
-    const itin = document.getElementById('itinerary');
-    if (!itin?.open) return false;
-    const rect = itin.getBoundingClientRect();
-    const vh = window.innerHeight || 0;
-    return rect.top < vh * 0.8 && rect.bottom > vh * 0.15;
-  };
-
-  const maybeMarkItinSeen = () => {
-    if (isItineraryInView()) markItinRead();
-  };
-
-  const bindItinSeenOnOpen = () => {
-    const itin = document.getElementById('itinerary');
-    if (!itin) return;
-    itin.addEventListener('toggle', () => {
-      if (itin.open) window.setTimeout(maybeMarkItinSeen, 50);
-    });
-    document.querySelectorAll('[data-open="itinerary"]').forEach(link => {
-      link.addEventListener('click', () => {
-        window.setTimeout(maybeMarkItinSeen, 120);
-      });
-    });
-    window.addEventListener('hashchange', () => {
-      if (location.hash === '#itinerary') window.setTimeout(maybeMarkItinSeen, 120);
-    });
-    window.addEventListener('scroll', maybeMarkItinSeen, { passive: true });
-    if (typeof IntersectionObserver === 'function') {
-      const io = new IntersectionObserver(entries => {
-        if (entries.some(e => e.isIntersecting)) markItinRead();
-      }, { threshold: 0.2 });
-      io.observe(itin);
-    }
-  };
-  bindItinSeenOnOpen();
   wireItinChangeFeedUi();
 
   document.addEventListener('visibilitychange', () => {
