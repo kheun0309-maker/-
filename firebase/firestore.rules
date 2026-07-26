@@ -1,4 +1,6 @@
 rules_version = '2';
+// guideSections 허용: hero|food|alternatives|flights|resort|hopping|massage|tips
+// 로컬 게시: firebase deploy --only firestore:rules
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
