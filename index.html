@@ -388,8 +388,30 @@
       display: none; margin: 0 0 10px; padding: 9px 11px; border-radius: 12px;
       background: #fff1ec; border: 1px solid #ffd2c4; color: var(--coral);
       font-size: 0.84rem; font-weight: 700;
+      align-items: center; justify-content: space-between; gap: 8px;
     }
-    .trip-unread-banner.is-on { display: block; }
+    .trip-unread-banner.is-on { display: flex; }
+    .trip-unread-banner button {
+      flex: 0 0 auto; border: 0; border-radius: 10px; padding: 8px 10px;
+      background: var(--coral); color: #fff; font: inherit; font-size: 0.78rem; font-weight: 800;
+      cursor: pointer;
+    }
+    .trip-tabs button { position: relative; }
+    .tab-badge {
+      display: none; margin-left: 4px; min-width: 16px; height: 16px; padding: 0 4px;
+      border-radius: 999px; background: var(--coral); color: #fff;
+      font-size: 0.66rem; font-weight: 800; line-height: 16px; vertical-align: middle;
+    }
+    .tab-badge.is-on { display: inline-block; }
+    .trip-item.is-new, .trip-note.is-new {
+      border-color: #ffb39a; background: #fff7f3;
+      box-shadow: inset 3px 0 0 var(--coral);
+    }
+    .trip-new-tag {
+      display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+      background: var(--coral); color: #fff; font-size: 0.66rem; font-weight: 800;
+      vertical-align: middle;
+    }
     .footer-note { text-align: center; font-size: 0.7rem; color: var(--soft); margin-top: 8px; }
     .install-banner {
       display: none; position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
@@ -565,7 +587,10 @@
       <summary>👥 함께 준비</summary>
       <div class="fold-body" id="tripRoom">
         <p class="trip-hint">닉네임으로 여행방에 들어가면 <b>준비물 · 출발 전 할 일 · 메모</b>를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
-        <div class="trip-unread-banner" id="tripUnreadBanner" role="status"></div>
+        <div class="trip-unread-banner" id="tripUnreadBanner" role="status">
+          <span id="tripUnreadText"></span>
+          <button type="button" id="tripMarkReadBtn">확인했어요</button>
+        </div>
 
         <div class="trip-setup" id="tripSetup" hidden>
           <strong>Firebase 연결이 필요합니다</strong>
@@ -612,9 +637,9 @@
           <div class="trip-members" id="tripMembers" aria-label="참가자"></div>
 
           <div class="trip-tabs" role="tablist">
-            <button type="button" class="active" data-trip-tab="pack">준비물</button>
-            <button type="button" data-trip-tab="tasks">출발 전</button>
-            <button type="button" data-trip-tab="notes">메모</button>
+            <button type="button" class="active" data-trip-tab="pack">준비물<span class="tab-badge" data-tab-badge="pack">0</span></button>
+            <button type="button" data-trip-tab="tasks">출발 전<span class="tab-badge" data-tab-badge="tasks">0</span></button>
+            <button type="button" data-trip-tab="notes">메모<span class="tab-badge" data-tab-badge="notes">0</span></button>
           </div>
 
           <div data-trip-pane="pack">
@@ -1362,7 +1387,7 @@
     <details class="widget fold-widget" id="booking">
       <summary>✅ 출발 전 할 일 (이 기기만)</summary>
       <div class="fold-body">
-      <p class="tiny">개인용입니다. 공유 체크는 <a href="#trip" data-open="trip">함께 준비</a>에서 하세요.</p>
+      <p class="tiny">함께 체크하려면 <a href="#trip" data-open="trip">함께 준비 → 출발 전</a> 탭을 쓰세요. 아래는 이 기기 개인용 백업입니다.</p>
       <ul class="check-list">
         <li><input type="checkbox"><span>KE5761 좌석·수하물 확인 · 인천 T2 체크인 시간 메모</span></li>
         <li><input type="checkbox"><span>귀국편 예약 (추천: KE5762 8/17 00:35경)</span></li>

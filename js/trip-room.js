@@ -96,6 +96,8 @@ let unsubs = [];
 let lastReadAt = 0;
 let dataCache = { pack: [], tasks: [], notes: [] };
 const unreadBanner = document.getElementById('tripUnreadBanner');
+const unreadText = document.getElementById('tripUnreadText');
+const markReadBtn = document.getElementById('tripMarkReadBtn');
 
 function setStatus(msg, isError = false) {
   if (!el.status) return;
@@ -111,73 +113,93 @@ function toMs(value) {
   return 0;
 }
 
-function isTripSectionOpen() {
-  const trip = document.getElementById('trip');
-  return Boolean(trip?.open) && document.visibilityState === 'visible';
-}
-
 function loadLastRead(code) {
   lastReadAt = Number(localStorage.getItem(readKey(code)) || 0);
 }
 
-function markRead() {
-  lastReadAt = Date.now();
-  if (tripCode) localStorage.setItem(readKey(tripCode), String(lastReadAt));
-  renderUnreadBadge(0);
+function isNoteUnread(data) {
+  if (!data || data.author === nickname) return false;
+  return toMs(data.createdAt) > lastReadAt;
 }
 
-function countUnread() {
-  if (!tripCode || !nickname) return 0;
-  let count = 0;
+function isItemUnread(data) {
+  if (!data) return false;
+  const when = toMs(data.updatedAt);
+  if (when <= lastReadAt) return false;
+  const actor = data.updatedBy || data.doneBy || data.createdBy;
+  return Boolean(actor && actor !== nickname);
+}
 
+function countUnreadByType() {
+  const counts = { pack: 0, tasks: 0, notes: 0, total: 0 };
+  if (!tripCode || !nickname) return counts;
+
+  dataCache.pack.forEach(docSnap => {
+    if (isItemUnread(docSnap.data())) counts.pack += 1;
+  });
+  dataCache.tasks.forEach(docSnap => {
+    if (isItemUnread(docSnap.data())) counts.tasks += 1;
+  });
   dataCache.notes.forEach(docSnap => {
-    const data = docSnap.data();
-    if (!data || data.author === nickname) return;
-    if (toMs(data.createdAt) > lastReadAt) count += 1;
+    if (isNoteUnread(docSnap.data())) counts.notes += 1;
   });
-
-  [...dataCache.pack, ...dataCache.tasks].forEach(docSnap => {
-    const data = docSnap.data();
-    if (!data) return;
-    const when = toMs(data.updatedAt);
-    if (when <= lastReadAt) return;
-    const actor = data.doneBy || data.createdBy;
-    if (actor && actor !== nickname) count += 1;
-  });
-
-  return count;
+  counts.total = counts.pack + counts.tasks + counts.notes;
+  return counts;
 }
 
-function renderUnreadBadge(count) {
+function setBadgeEl(elBadge, count) {
+  if (!elBadge) return;
   const n = Math.max(0, Number(count) || 0);
   const label = n > 99 ? '99+' : String(n);
-  document.querySelectorAll('[data-trip-badge]').forEach(badge => {
-    badge.textContent = label;
-    badge.classList.toggle('is-on', n > 0);
-    badge.setAttribute('aria-label', n > 0 ? `안 읽은 소식 ${label}개` : '');
-  });
-  if (unreadBanner) {
-    if (n > 0 && !isTripSectionOpen()) {
-      unreadBanner.textContent = `안 읽은 소식 ${label}개 · 여기를 열어 확인하세요`;
+  elBadge.textContent = label;
+  elBadge.classList.toggle('is-on', n > 0);
+}
+
+function renderUnreadBadges() {
+  const counts = countUnreadByType();
+  const n = counts.total;
+  const label = n > 99 ? '99+' : String(n);
+
+  document.querySelectorAll('[data-trip-badge]').forEach(badge => setBadgeEl(badge, n));
+  setBadgeEl(document.querySelector('[data-tab-badge="pack"]'), counts.pack);
+  setBadgeEl(document.querySelector('[data-tab-badge="tasks"]'), counts.tasks);
+  setBadgeEl(document.querySelector('[data-tab-badge="notes"]'), counts.notes);
+
+  if (unreadBanner && unreadText) {
+    if (n > 0) {
+      const parts = [];
+      if (counts.pack) parts.push(`준비물 ${counts.pack}`);
+      if (counts.tasks) parts.push(`출발 전 ${counts.tasks}`);
+      if (counts.notes) parts.push(`메모 ${counts.notes}`);
+      unreadText.textContent = `안 본 소식 ${label}개 (${parts.join(' · ')})`;
       unreadBanner.classList.add('is-on');
     } else {
-      unreadBanner.textContent = '';
+      unreadText.textContent = '';
       unreadBanner.classList.remove('is-on');
     }
   }
+
   document.title = n > 0 ? `(${label}) ${TITLE_BASE}` : TITLE_BASE;
 }
 
-function refreshUnread() {
+function refreshUnread({ rerender = false } = {}) {
   if (!tripCode) {
-    renderUnreadBadge(0);
+    renderUnreadBadges();
     return;
   }
-  if (isTripSectionOpen()) {
-    markRead();
-    return;
+  renderUnreadBadges();
+  if (rerender) {
+    renderChecklist(el.packList, dataCache.pack, 'packItems');
+    renderChecklist(el.taskList, dataCache.tasks, 'taskItems');
+    renderNotes(dataCache.notes);
   }
-  renderUnreadBadge(countUnread());
+}
+
+function markRead({ silent = false } = {}) {
+  lastReadAt = Date.now();
+  if (tripCode) localStorage.setItem(readKey(tripCode), String(lastReadAt));
+  refreshUnread({ rerender: true });
+  if (!silent) setStatus('새 소식을 확인 처리했어요.');
 }
 
 function saveSession() {
@@ -249,6 +271,7 @@ async function seedList(colName, texts, creator) {
       done: false,
       doneBy: null,
       createdBy: creator,
+      updatedBy: creator,
       updatedAt: serverTimestamp()
     });
   });
@@ -365,12 +388,14 @@ function renderChecklist(target, docs, colName) {
   }
   docs.forEach(d => {
     const data = d.data();
+    const unread = isItemUnread(data);
     const li = document.createElement('li');
-    li.className = 'trip-item' + (data.done ? ' is-done' : '');
+    li.className = 'trip-item' + (data.done ? ' is-done' : '') + (unread ? ' is-new' : '');
     li.innerHTML = `
       <label>
         <input type="checkbox" ${data.done ? 'checked' : ''} data-id="${d.id}" data-col="${colName}">
         <span class="trip-item-text"></span>
+        ${unread ? '<span class="trip-new-tag">NEW</span>' : ''}
       </label>
       <div class="trip-item-meta">
         <span class="trip-who"></span>
@@ -379,8 +404,9 @@ function renderChecklist(target, docs, colName) {
     `;
     li.querySelector('.trip-item-text').textContent = data.text || '';
     const who = li.querySelector('.trip-who');
+    const actor = data.updatedBy || data.doneBy || data.createdBy;
     if (data.done && data.doneBy) who.textContent = `✓ ${data.doneBy}`;
-    else if (data.createdBy) who.textContent = data.createdBy;
+    else if (actor) who.textContent = actor;
     target.appendChild(li);
   });
 }
@@ -393,8 +419,9 @@ function renderNotes(docs) {
   }
   docs.forEach(d => {
     const data = d.data();
+    const unread = isNoteUnread(data);
     const li = document.createElement('li');
-    li.className = 'trip-note';
+    li.className = 'trip-note' + (unread ? ' is-new' : '');
     const when = data.createdAt?.toDate ? data.createdAt.toDate() : null;
     const time = when
       ? when.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -402,13 +429,14 @@ function renderNotes(docs) {
     li.innerHTML = `
       <div class="trip-note-head">
         <strong></strong>
+        ${unread ? '<span class="trip-new-tag">NEW</span>' : ''}
         <span></span>
         <button type="button" class="trip-del" data-id="${d.id}" data-col="notes" aria-label="삭제">삭제</button>
       </div>
       <p></p>
     `;
     li.querySelector('strong').textContent = data.author || '익명';
-    li.querySelector('span').textContent = time;
+    li.querySelector('span:not(.trip-new-tag)').textContent = time;
     li.querySelector('p').textContent = data.text || '';
     el.noteList.appendChild(li);
   });
@@ -418,7 +446,7 @@ async function enterRoom() {
   showRoom();
   clearUnsubs();
   loadLastRead(tripCode);
-  if (!lastReadAt) markRead();
+  if (!lastReadAt) markRead({ silent: true });
   dataCache = { pack: [], tasks: [], notes: [] };
 
   unsubs.push(onSnapshot(collection(db, 'trips', tripCode, 'members'), snap => {
@@ -464,6 +492,7 @@ async function toggleItem(colName, id, checked) {
   await updateDoc(ref, {
     done: checked,
     doneBy: checked ? nickname : null,
+    updatedBy: nickname,
     updatedAt: serverTimestamp()
   });
 }
@@ -480,6 +509,7 @@ async function addItem(colName, text) {
     done: false,
     doneBy: null,
     createdBy: nickname,
+    updatedBy: nickname,
     updatedAt: serverTimestamp()
   });
 }
@@ -505,7 +535,7 @@ async function leaveRoom() {
   dataCache = { pack: [], tasks: [], notes: [] };
   clearSession();
   showGate();
-  renderUnreadBadge(0);
+  renderUnreadBadges();
   setStatus('방에서 나왔습니다.');
 }
 
@@ -614,30 +644,13 @@ function bindUi() {
       el.panes.forEach(p => {
         p.hidden = p.dataset.tripPane !== name;
       });
-      markRead();
     });
   });
 
-  document.getElementById('trip')?.addEventListener('toggle', () => {
-    if (isTripSectionOpen()) markRead();
-    else refreshUnread();
-  });
-
-  document.querySelectorAll('[data-open="trip"]').forEach(link => {
-    link.addEventListener('click', () => {
-      setTimeout(() => markRead(), 120);
-    });
-  });
+  markReadBtn?.addEventListener('click', () => markRead());
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshUnread();
-  });
-
-  unreadBanner?.addEventListener('click', () => {
-    const trip = document.getElementById('trip');
-    if (trip) trip.open = true;
-    markRead();
-    trip?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
 

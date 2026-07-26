@@ -57,6 +57,11 @@ service cloud.firestore {
             !('doneBy' in request.resource.data)
             || request.resource.data.doneBy == null
             || (request.resource.data.doneBy is string && request.resource.data.doneBy.size() <= 24)
+          )
+          && (
+            !('updatedBy' in request.resource.data)
+            || request.resource.data.updatedBy == null
+            || (request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 24)
           );
         allow delete: if signedIn() && validCode(tripId);
       }
@@ -73,6 +78,11 @@ service cloud.firestore {
             !('doneBy' in request.resource.data)
             || request.resource.data.doneBy == null
             || (request.resource.data.doneBy is string && request.resource.data.doneBy.size() <= 24)
+          )
+          && (
+            !('updatedBy' in request.resource.data)
+            || request.resource.data.updatedBy == null
+            || (request.resource.data.updatedBy is string && request.resource.data.updatedBy.size() <= 24)
           );
         allow delete: if signedIn() && validCode(tripId);
       }
