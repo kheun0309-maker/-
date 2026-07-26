@@ -1,0 +1,26 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="코타키나발루 여행">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ad7e8"/>
+      <stop offset="55%" stop-color="#00a3a3"/>
+      <stop offset="100%" stop-color="#067a8a"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2ec4b6"/>
+      <stop offset="100%" stop-color="#067a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#sky)"/>
+  <path d="M0 250 Q80 210 160 240 T320 230 T512 250 V512 H0 Z" fill="url(#sea)"/>
+  <path d="M0 330 Q90 300 180 325 T360 315 T512 335 V512 H0 Z" fill="#04949c" opacity="0.55"/>
+  <path d="M70 250 L145 170 L210 250 Z" fill="#0f4c5c" opacity="0.85"/>
+  <path d="M120 250 L195 145 L270 250 Z" fill="#163a45"/>
+  <circle cx="390" cy="120" r="42" fill="#ffc857"/>
+  <circle cx="390" cy="120" r="28" fill="#ffe29a" opacity="0.85"/>
+  <path d="M60 390 Q140 350 220 390 T380 385 T512 400 V460 Q400 430 280 450 T60 445 Z" fill="#ffc857"/>
+  <path d="M340 300 C360 220 420 190 455 175 C430 210 425 250 430 300 C400 285 365 290 340 300 Z" fill="#1f9d6a"/>
+  <path d="M430 300 C450 250 490 230 505 220 C485 250 480 280 482 310 C460 300 440 300 430 300 Z" fill="#178a5c"/>
+  <rect x="422" y="300" width="14" height="70" rx="6" fill="#8b5a2b"/>
+  <circle cx="120" cy="420" r="10" fill="#ff6b4a"/>
+  <circle cx="160" cy="435" r="7" fill="#fff"/>
+</svg>

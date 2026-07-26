@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#067a8a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="코타키나발루">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="라사 리아 · 호핑 · 반딧불이 · 맛집 — 설레는 코타키나발루 4일 여행 가이드">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" sizes="180x180">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" sizes="192x192">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>코타키나발루 · 라사 리아 4일</title>
+  <style>
+    :root {
+      --bg: #dff5f4;
+      --bg-deep: #c8ebe8;
+      --surface: rgba(255,255,255,0.88);
+      --ink: #0f2f3a;
+      --muted: #4d6b76;
+      --soft: #6f8b95;
+      --ocean: #067a8a;
+      --teal: #00a3a3;
+      --sand: #ffc857;
+      --coral: #ff6b4a;
+      --leaf: #1f9d6a;
+      --line: rgba(6, 122, 138, 0.16);
+      --shadow: 0 12px 30px rgba(6, 90, 100, 0.12);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      max-width: 480px; margin: 0 auto; min-height: 100vh;
+      font-family: 'Noto Sans KR', sans-serif; color: var(--ink); line-height: 1.65;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(255, 107, 74, 0.16), transparent 28%),
+        radial-gradient(circle at 88% 12%, rgba(255, 200, 87, 0.22), transparent 30%),
+        radial-gradient(circle at 50% 40%, rgba(0, 163, 163, 0.12), transparent 45%),
+        linear-gradient(180deg, #f3fffd 0%, var(--bg) 42%, var(--bg-deep) 100%);
+    }
+    header {
+      position: relative; min-height: 72vh; padding: 0; text-align: center; color: #fff; overflow: hidden;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(6, 40, 50, 0.15) 0%, rgba(6, 70, 80, 0.35) 45%, rgba(6, 50, 60, 0.82) 100%),
+        url('./images/manukan-beach.jpg') center/cover no-repeat;
+      transform: scale(1.06);
+      animation: heroDrift 14s ease-in-out infinite alternate;
+    }
+    .hero-wave {
+      position: absolute; left: -10%; right: -10%; bottom: -2px; height: 70px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'%3E%3Cpath fill='%23dff5f4' d='M0,64 C240,110 480,10 720,48 C960,86 1200,20 1440,56 L1440,100 L0,100 Z'/%3E%3C/svg%3E") bottom/100% 100% no-repeat;
+      animation: waveSlide 7s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes heroDrift { from { transform: scale(1.06) translateY(0); } to { transform: scale(1.12) translateY(-10px); } }
+    @keyframes waveSlide { from { transform: translateX(-1.5%); } to { transform: translateX(1.5%); } }
+    .hero-inner { position: relative; z-index: 2; padding: 48px 22px 42px; }
+    .eyebrow {
+      display: inline-block; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--sand); margin-bottom: 12px; font-weight: 700;
+      animation: fadeUp 0.7s ease both;
+    }
+    header h1 {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif; font-size: clamp(2.4rem, 9vw, 3rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; line-height: 1.05;
+      text-shadow: 0 8px 28px rgba(0,0,0,0.28);
+      animation: fadeUp 0.75s ease 0.05s both;
+    }
+    .header-sub {
+      font-size: 1rem; opacity: 0.95; margin: 0 auto 18px; max-width: 20em; font-weight: 500;
+      animation: fadeUp 0.75s ease 0.12s both;
+    }
+    .header-meta {
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px;
+      animation: fadeUp 0.75s ease 0.18s both;
+    }
+    .chip {
+      font-size: 0.72rem; padding: 6px 11px; border-radius: 999px; font-weight: 600;
+      background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.28); backdrop-filter: blur(6px);
+    }
+    .hero-cta {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 0.8s ease 0.25s both;
+    }
+    .hero-cta a {
+      text-decoration: none; font-weight: 800; font-size: 0.84rem; padding: 12px 16px; border-radius: 14px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .hero-cta a:active { transform: scale(0.97); }
+    .hero-cta .primary { background: var(--coral); color: #fff; }
+    .hero-cta .ghost { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .spark-strip {
+      display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; margin: -4px 0 10px;
+      scrollbar-width: none; animation: fadeUp 0.7s ease 0.3s both;
+    }
+    .spark-strip::-webkit-scrollbar { display: none; }
+    .spark {
+      flex: 0 0 auto; background: linear-gradient(135deg, #fff 0%, #e8fffb 100%);
+      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; min-width: 118px;
+      box-shadow: var(--shadow);
+    }
+    .spark b { display: block; font-size: 0.78rem; color: var(--ocean); margin-bottom: 2px; }
+    .spark span { font-size: 0.7rem; color: var(--muted); }
+    main { padding: 8px 12px 92px; }
+    .widget {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow);
+      backdrop-filter: blur(8px); animation: riseIn 0.55s ease both;
+    }
+    .widget:nth-of-type(1) { animation-delay: 0.05s; }
+    .widget:nth-of-type(2) { animation-delay: 0.1s; }
+    .widget:nth-of-type(3) { animation-delay: 0.15s; }
+    @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+    .widget-title {
+      font-size: 1rem; font-weight: 800; color: var(--ocean); margin-bottom: 10px;
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif; letter-spacing: -0.02em;
+    }
+    .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .time-card { background: linear-gradient(180deg, #f0fafb, #e7f5f7); border: 1px solid var(--line); border-radius: 12px; padding: 11px; }
+    .time-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; }
+    .time-value { font-size: 1.3rem; font-weight: 700; color: var(--ocean); font-variant-numeric: tabular-nums; }
+    .time-sub { font-size: 0.7rem; color: var(--soft); margin-top: 2px; }
+    .fx-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: end; }
+    .fx-field label { display: block; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; }
+    .fx-field input, .info-table input, select {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px;
+      font-size: 0.95rem; font-family: inherit; background: #fff; color: var(--ink);
+    }
+    .fx-swap {
+      width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line);
+      background: #fff; color: var(--teal); font-size: 0.95rem; margin-bottom: 2px;
+    }
+    .fx-note, .tiny { font-size: 0.72rem; color: var(--soft); margin-top: 8px; }
+    .flight-item, .info-card, .pack-item {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px;
+    }
+    .warn-item {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 0; margin-bottom: 8px; overflow: hidden;
+    }
+    .flight-item:last-child, .info-card:last-child, .pack-item:last-child, .warn-item:last-child { margin-bottom: 0; }
+    .warn-item summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 12px; font-weight: 700; color: var(--ocean); font-size: 0.9rem; user-select: none;
+    }
+    .warn-item summary::-webkit-details-marker { display: none; }
+    .warn-item summary::after {
+      content: '▾'; color: var(--teal); font-size: 0.85rem; transition: transform 0.2s ease; flex: 0 0 auto;
+    }
+    .warn-item[open] summary::after { transform: rotate(180deg); }
+    .warn-item .warn-body { padding: 0 12px 12px; border-top: 1px dashed var(--line); }
+    .warn-item .warn-body p { font-size: 0.82rem; color: var(--muted); padding-top: 10px; }
+    .photo-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .photo-card {
+      position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+      background: #dceef2; aspect-ratio: 4 / 3;
+    }
+    .photo-card.wide { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
+    .photo-card img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 0.45s ease;
+    }
+    .photo-card:hover img { transform: scale(1.04); }
+    .photo-caption {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 7px;
+      background: linear-gradient(transparent, rgba(10, 40, 55, 0.82));
+      color: #f7fcfd; font-size: 0.68rem; font-weight: 600; line-height: 1.35;
+    }
+    .day-photo {
+      margin: 0 0 12px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+      aspect-ratio: 16 / 9; background: #dceef2;
+    }
+    .day-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-credit { font-size: 0.68rem; color: var(--soft); margin-top: 8px; line-height: 1.4; }
+    .link-list { list-style: none; display: grid; gap: 8px; }
+    .link-list a {
+      display: block; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 11px 12px; text-decoration: none; color: inherit;
+    }
+    .link-list a strong { display: block; color: var(--ocean); font-size: 0.86rem; margin-bottom: 2px; }
+    .link-list a span { display: block; font-size: 0.76rem; color: var(--muted); }
+    .option-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 8px;
+    }
+    .option-card:last-child { margin-bottom: 0; }
+    .option-card h3 { font-size: 0.9rem; color: var(--ocean); margin-bottom: 4px; font-family: inherit; font-weight: 700; }
+    .option-card p { font-size: 0.8rem; color: var(--muted); }
+    .option-card .tag { margin-top: 6px; }
+    .map-shell {
+      position: relative; border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--line); background: #dceef2;
+    }
+    #tripMap { width: 100%; height: 280px; z-index: 1; }
+    .map-gps-btn {
+      position: absolute; right: 10px; bottom: 10px; z-index: 500;
+      border: none; border-radius: 999px; padding: 10px 12px;
+      background: var(--ocean); color: #fff; font-size: 0.78rem; font-weight: 700;
+      font-family: inherit; box-shadow: var(--shadow); cursor: pointer;
+    }
+    .map-gps-btn:active { transform: scale(0.98); }
+    .map-status {
+      font-size: 0.72rem; color: var(--muted); margin: 8px 0 0;
+      min-height: 1.2em;
+    }
+    .route-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px;
+    }
+    .route-chip {
+      border: 1px solid var(--line); background: #fff; color: var(--muted);
+      border-radius: 999px; padding: 7px 11px; font-size: 0.72rem; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+    }
+    .route-chip.active {
+      background: var(--ocean); border-color: var(--ocean); color: #fff;
+    }
+    .gmap-btn {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; text-decoration: none; color: inherit;
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 11px 12px; margin-top: 8px; font-size: 0.82rem;
+    }
+    .gmap-btn strong { color: var(--ocean); }
+    .gmap-btn span { color: var(--coral); font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+    .map-legend {
+      display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; font-size: 0.7rem; color: var(--muted);
+    }
+    .map-legend i {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px;
+    }
+    .flight-item b, .info-card b { display: block; color: var(--ocean); font-size: 0.9rem; margin-bottom: 4px; }
+    .flight-item span, .info-card p { font-size: 0.82rem; color: var(--muted); }
+    .tag {
+      display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+      background: #e7f5f7; color: var(--teal); margin-right: 4px; margin-bottom: 4px;
+    }
+    .tag.warn { background: #fff1ec; color: var(--coral); }
+    .tag.ok { background: #eaf7ef; color: #2f7d5a; }
+    .day-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+    .day-tabs::-webkit-scrollbar { display: none; }
+    .day-tab {
+      flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: var(--muted);
+      border-radius: 999px; padding: 8px 12px; font-size: 0.76rem; font-weight: 600; font-family: inherit; cursor: pointer;
+    }
+    .day-tab.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+    .day-panel { display: none; }
+    .day-panel.active { display: block; }
+    .day-head { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+    .day-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700; color: #fff; background: var(--teal);
+      padding: 4px 10px; border-radius: 8px; margin-bottom: 6px;
+    }
+    .day-head h2 { font-family: 'Outfit', 'Noto Sans KR', sans-serif; font-size: 1.18rem; color: var(--ocean); margin-bottom: 4px; font-weight: 800; }
+    .food-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .food-actions a {
+      display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
+      font-size: 0.72rem; font-weight: 800; color: #fff; background: var(--ocean);
+      padding: 7px 10px; border-radius: 10px;
+    }
+    .food-actions a.soft { background: #fff; color: var(--ocean); border: 1px solid var(--line); }
+    .food-actions a.review { background: var(--coral); }
+    .info-card:hover { border-color: rgba(0, 163, 163, 0.45); transform: translateY(-1px); transition: 0.2s ease; }
+    .day-head p { font-size: 0.84rem; color: var(--muted); }
+    .timeline { list-style: none; }
+    .timeline li {
+      position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 0 0 14px 6px;
+    }
+    .timeline li::before {
+      content: ''; position: absolute; left: 64px; top: 10px; bottom: -2px; width: 2px;
+      background: linear-gradient(180deg, var(--teal), transparent);
+    }
+    .timeline li:last-child { padding-bottom: 0; }
+    .timeline li:last-child::before { display: none; }
+    .t-time { font-size: 0.78rem; font-weight: 700; color: var(--teal); padding-top: 2px; font-variant-numeric: tabular-nums; }
+    .t-body { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .t-place { font-size: 0.76rem; color: var(--coral); font-weight: 600; margin-bottom: 2px; }
+    .t-task { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+    .t-note { font-size: 0.76rem; color: var(--muted); margin-top: 4px; }
+    .link-btn {
+      display: inline-block; margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: var(--ocean);
+      text-decoration: none; border-bottom: 1px solid rgba(11,79,108,0.35);
+    }
+    .check-list { list-style: none; display: grid; gap: 6px; }
+    .check-list li {
+      display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start;
+      font-size: 0.84rem; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px;
+    }
+    .check-list input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--teal); }
+    .nav {
+      position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
+      width: min(452px, calc(100% - 20px)); display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border: 1px solid var(--line);
+      border-radius: 20px; padding: 6px; box-shadow: 0 14px 34px rgba(6, 90, 100, 0.18); z-index: 30;
+    }
+    .nav a {
+      text-decoration: none; color: var(--muted); text-align: center; font-size: 0.62rem; font-weight: 700;
+      padding: 8px 2px; border-radius: 14px;
+    }
+    .nav a span { display: block; font-size: 1rem; margin-bottom: 1px; }
+    .nav a:hover, .nav a:focus { background: linear-gradient(180deg, #e8fffb, #dff7f4); color: var(--ocean); }
+    .footer-note { text-align: center; font-size: 0.7rem; color: var(--soft); margin-top: 8px; }
+    .install-banner {
+      display: none; position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
+      background: linear-gradient(135deg, #067a8a 0%, #00a3a3 55%, #1f9d6a 100%);
+      color: #fff; border-radius: 18px; padding: 14px; box-shadow: var(--shadow);
+      animation: fadeUp 0.6s ease both;
+    }
+    .install-banner.show { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; }
+    .install-banner img {
+      width: 56px; height: 56px; border-radius: 14px; object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.45);
+    }
+    .install-banner strong { display: block; font-size: 0.92rem; font-weight: 800; margin-bottom: 2px; }
+    .install-banner p { font-size: 0.74rem; opacity: 0.92; line-height: 1.4; }
+    .install-banner .actions { display: grid; gap: 6px; }
+    .install-banner button {
+      border: none; border-radius: 10px; padding: 8px 10px; font-size: 0.72rem; font-weight: 800;
+      font-family: inherit; cursor: pointer;
+    }
+    .install-banner .install-btn { background: #ff6b4a; color: #fff; }
+    .install-banner .later-btn { background: rgba(255,255,255,0.18); color: #fff; }
+    .install-help {
+      display: none; margin-top: 8px; grid-column: 1 / -1;
+      background: rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; font-size: 0.74rem; line-height: 1.5;
+    }
+    .install-help.show { display: block; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="eyebrow">Borneo Escape · Rasa Ria</div>
+      <h1>코타키나발루</h1>
+      <p class="header-sub">바다에 뛰어들고, 섬을 Hopping하고, 버터새우에 미소 짓는 4일</p>
+      <div class="header-meta">
+        <span class="chip">8.13 → 8.17</span>
+        <span class="chip">리조트 호캉스</span>
+        <span class="chip">호핑 · 반딧불이</span>
+      </div>
+      <div class="hero-cta">
+        <a class="primary" href="#itinerary">일정 보기</a>
+        <a class="ghost" href="#food">맛집 탐방</a>
+        <a class="ghost" href="#map">지도 열기</a>
+      </div>
+    </div>
+    <div class="hero-wave" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <aside class="install-banner" id="installBanner" aria-label="홈 화면 추가">
+      <img src="./icons/icon-192.png" alt="코타키나발루 앱 아이콘">
+      <div>
+        <strong>홈 화면에 코타키나발루 추가</strong>
+        <p>바다·키나발루 아이콘으로 바로가기. 여행 전까지 매일 열어보세요.</p>
+      </div>
+      <div class="actions">
+        <button class="install-btn" id="installBtn" type="button">설치</button>
+        <button class="later-btn" id="installLaterBtn" type="button">나중에</button>
+      </div>
+      <div class="install-help" id="installHelp">
+        <b>아이폰 Safari</b><br>
+        공유 버튼 → <b>홈 화면에 추가</b> → 추가<br><br>
+        <b>안드로이드 Chrome</b><br>
+        메뉴(⋮) → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>
+      </div>
+    </aside>
+
+    <div class="spark-strip" aria-label="여행 하이라이트">
+      <div class="spark"><b>Day 2 휴식</b><span>풀 · 반딧불이</span></div>
+      <div class="spark"><b>Day 3 호핑</b><span>사피 · 마누칸</span></div>
+      <div class="spark"><b>시내 씨푸드</b><span>버터새우 필수</span></div>
+      <div class="spark"><b>라사 리아</b><span>시내에서 멀어 호캉스</span></div>
+    </div>
+
+    <section class="widget" id="live">
+      <div class="widget-title">⏱ 지금 시각</div>
+      <div class="time-grid">
+        <div class="time-card">
+          <div class="time-label">한국 (서울)</div>
+          <div class="time-value" id="koreaTime">--:--</div>
+          <div class="time-sub" id="koreaDate">불러오는 중</div>
+        </div>
+        <div class="time-card">
+          <div class="time-label">말레이시아 (KK)</div>
+          <div class="time-value" id="kkTime">--:--</div>
+          <div class="time-sub" id="kkDate">불러오는 중</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="widget" id="flights">
+      <div class="widget-title">✈️ 항공 일정</div>
+      <div class="flight-item">
+        <span class="tag ok">확정</span>
+        <b>가는 편 · KE5761 · 8/13(목)</b>
+        <span>
+          인천(ICN) 19:15 출발 → 코타키나발루(BKI) 23:35 도착<br>
+          직항 약 5시간 20분 · 터미널 ICN T2 → BKI T1<br>
+          ※ 대한항공 코드셰어(진에어 운항일 가능) · 출국 2.5~3시간 전 공항 도착
+        </span>
+      </div>
+      <div class="flight-item">
+        <span class="tag warn">추천 · 미정</span>
+        <b>오는 편 · KE5762 · 8/17(월) 새벽</b>
+        <span>
+          BKI 00:35 출발 → ICN 06:55 도착 (예상)<br>
+          가는 편 KE5761과 짝이 되는 귀국편이라 가장 무난합니다.<br>
+          ※ 스케줄은 성수기·요일에 따라 00:35~01:10 / 06:55~07:35로 변동될 수 있어요. 예약 전 대한항공·진에어에서 8/16~17 날짜로 꼭 재확인하세요.<br>
+          ※ 대안: KE5788 (BKI 23:55 → ICN 06:05) — 16일 밤 출발을 원하면 이쪽도 검토
+        </span>
+      </div>
+    </section>
+
+    <section class="widget" id="resort">
+      <div class="widget-title">🏨 숙소 · 샹그릴라 라사 리아</div>
+      <div class="info-card">
+        <b>Shangri-La Rasa Ria, Kota Kinabalu</b>
+        <p>
+          Pantai Dalit, Tuaran, Sabah 89208<br>
+          전화 +60 88-797-888<br>
+          시내·공항에서 차로 약 45분 · 투아란(Tuaran) 쪽 해변 리조트라 시내와 꽤 멉니다.
+        </p>
+        <a class="link-btn" href="https://www.shangri-la.com/kotakinabalu/rasariaresort/" target="_blank" rel="noopener">리조트 공식 사이트</a>
+      </div>
+      <div class="info-card">
+        <b>공항 픽업 (호텔 리무진) — 도착일 필수 추천</b>
+        <p>
+          23:35 야간 도착 + 시내에서 먼 위치라 현장에서 택시 흥정보다 <strong>사전 픽업 예약</strong>이 안전합니다.<br><br>
+          · 예약: 객실 예약 시 항공편 입력, 또는 리조트에 최소 하루 전 연락<br>
+          · 미팅: 도착 터미널에서 리조트 직원이 기다림. 못 찾으면 +60 88-797-888<br>
+          · 소요: 공항 → 리조트 약 45분<br><br>
+          <strong>공식 편도 요금(세금 포함, 참고)</strong><br>
+          · Toyota Innova 4인승 MYR 230<br>
+          · Van 6인승 MYR 250<br>
+          · Alphard 6인승(Wi-Fi) MYR 290<br>
+          · Mercedes MYR 470<br><br>
+          <span class="tag warn">심야 할증</span> 00:00~06:00 출발 시 +50%<br>
+          도착 23:35 → 입국·수하물 후 자정 넘기면 할증 적용될 수 있습니다.<br>
+          예약 4시간 이내 취소 시 100% 위약금.
+        </p>
+        <a class="link-btn" href="https://www.shangri-la.com/kotakinabalu/rasariaresort/about/map-directions/hotel-limousine/" target="_blank" rel="noopener">호텔 리무진 요금표</a>
+      </div>
+      <div class="info-card">
+        <b>귀국 시 공항 이동</b>
+        <p>
+          KE5762(00:35) 기준이면 16일 저녁에 시내를 보고, 밤늦게 리조트 또는 공항 인근에서 대기 후 이동하는 동선이 됩니다.<br>
+          리조트 → 공항도 약 45분 + 여유 포함해 <strong>출발 3시간 전</strong> 공항 도착을 목표로 리무진/그랩을 잡아 두세요.
+        </p>
+      </div>
+    </section>
+
+    <section class="widget" id="fx">
+      <div class="widget-title">💱 환율 계산 (MYR ↔ KRW)</div>
+      <div class="fx-row">
+        <div class="fx-field">
+          <label for="myrInput">링깃 (MYR)</label>
+          <input id="myrInput" type="number" value="100" min="0" inputmode="decimal">
+        </div>
+        <button class="fx-swap" type="button" id="fxSwap" aria-label="통화 방향 전환">⇄</button>
+        <div class="fx-field">
+          <label for="krwInput">원 (KRW)</label>
+          <input id="krwInput" type="number" value="30000" min="0" inputmode="decimal">
+        </div>
+      </div>
+      <p class="fx-note" id="fxNote">참고 환율 1 MYR ≈ 300원 · 실제 환율은 변동됩니다.</p>
+    </section>
+
+    <section class="widget" id="map">
+      <div class="widget-title">🗺 동선 지도 · 내 위치</div>
+      <div class="route-chips" id="routeChips">
+        <button class="route-chip active" type="button" data-route="all">전체</button>
+        <button class="route-chip" type="button" data-route="arrive">공항→리조트</button>
+        <button class="route-chip" type="button" data-route="hop">리조트→호핑</button>
+        <button class="route-chip" type="button" data-route="city">리조트→시내</button>
+        <button class="route-chip" type="button" data-route="depart">시내→공항</button>
+      </div>
+      <div class="map-shell">
+        <div id="tripMap" role="img" aria-label="코타키나발루 여행 동선 지도"></div>
+        <button class="map-gps-btn" id="gpsBtn" type="button">📍 내 위치</button>
+      </div>
+      <p class="map-status" id="mapStatus">마커를 누르거나 동선을 선택하세요. ‘내 위치’로 현재 위치를 표시합니다.</p>
+      <div class="map-legend">
+        <span><i style="background:#0b4f6c"></i>공항</span>
+        <span><i style="background:#148f8f"></i>리조트</span>
+        <span><i style="background:#d96b4c"></i>호핑 선착장</span>
+        <span><i style="background:#2f7d5a"></i>시내·맛집</span>
+        <span><i style="background:#c9a227"></i>내 위치</span>
+      </div>
+      <a class="gmap-btn" id="gmapLink" href="https://www.google.com/maps/dir/?api=1&origin=Kota+Kinabalu+International+Airport&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving" target="_blank" rel="noopener">
+        <strong id="gmapLabel">구글지도로 길찾기 · 공항 → 라사 리아</strong>
+        <span>열기 →</span>
+      </a>
+      <a class="gmap-btn" href="https://www.google.com/maps/search/?api=1&query=Shangri-La+Rasa+Ria+Kota+Kinabalu" target="_blank" rel="noopener">
+        <strong>리조트 위치 구글지도에서 보기</strong>
+        <span>열기 →</span>
+      </a>
+      <p class="tiny">※ 호핑 선착장(옛 Jesselton Point)은 2026.3.1부터 <strong>Jesselton Quay 뒤 South Jetty</strong>로 이전되었습니다. 그랩 목적지를 “South Jetty / Jesselton Quay”로 잡으세요.</p>
+    </section>
+
+    <section class="widget" id="photos">
+      <div class="widget-title">📸 현지 분위기 사진</div>
+      <div class="photo-grid">
+        <figure class="photo-card wide">
+          <img src="./images/tanjung-aru-islands.jpg" alt="탄중아루 해변과 툰쿠 압둘 라만 제도" loading="lazy">
+          <figcaption class="photo-caption">탄중아루에서 바라본 호핑 섬들 · 코타키나발루</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/manukan-beach.jpg" alt="마누칸 섬 해변" loading="lazy">
+          <figcaption class="photo-caption">마누칸 섬 해변 (호핑)</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/kk-islands.jpg" alt="마누칸·마무틱·수룩 섬" loading="lazy">
+          <figcaption class="photo-caption">마누칸·마무틱·수룩 섬</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/mangrove-boat.jpg" alt="클리아스 강 맹그로브" loading="lazy">
+          <figcaption class="photo-caption">사바 맹그로브 리버 (반딧불이 분위기)</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/gaya-market.jpg" alt="가야 스트리트 선데이 마켓" loading="lazy">
+          <figcaption class="photo-caption">가야 스트리트 선데이 마켓</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/kkia-airport.jpg" alt="코타키나발루 국제공항" loading="lazy">
+          <figcaption class="photo-caption">KKIA 공항</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/mount-kinabalu.jpg" alt="키나발루 산" loading="lazy">
+          <figcaption class="photo-caption">키나발루 산 (원경)</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/kk-tanjung-boat.jpg" alt="탄중아루 해변의 배" loading="lazy">
+          <figcaption class="photo-caption">탄중아루 해변</figcaption>
+        </figure>
+        <figure class="photo-card">
+          <img src="./images/kk-sea-activity.jpg" alt="코타키나발루 해상 액티비티" loading="lazy">
+          <figcaption class="photo-caption">해상 액티비티 분위기</figcaption>
+        </figure>
+      </div>
+      <p class="photo-credit">출처: Wikimedia Commons · Unsplash (CC/무료 라이선스). 라사 리아 공식 외관 사진은 저작권상 공개 이미지를 쓰기 어려워, 같은 지역의 실제 해변·섬·시내·맹그로브 사진으로 구성했습니다.</p>
+    </section>
+
+    <section class="widget" id="itinerary">
+      <div class="widget-title">📅 일자별 일정</div>
+      <div class="day-tabs" role="tablist">
+        <button class="day-tab active" data-day="day1" type="button">Day1 · 13</button>
+        <button class="day-tab" data-day="day2" type="button">Day2 · 14</button>
+        <button class="day-tab" data-day="day3" type="button">Day3 · 15</button>
+        <button class="day-tab" data-day="day4" type="button">Day4 · 16</button>
+      </div>
+
+      <article class="day-panel active" id="day1">
+        <div class="day-head">
+          <span class="day-badge">DAY 1 · 8/13 목</span>
+          <h2>야간 도착 &amp; 리조트 휴식</h2>
+          <p>늦게 도착하니 이동만 하고 바로 잡니다.</p>
+        </div>
+        <div class="day-photo">
+          <img src="./images/kkia-airport.jpg" alt="코타키나발루 국제공항" loading="lazy">
+        </div>
+        <ul class="timeline">
+          <li>
+            <div class="t-time">16:15~</div>
+            <div class="t-body">
+              <div class="t-place">인천공항 T2</div>
+              <div class="t-task">체크인 · 출국</div>
+              <div class="t-note">KE5761 기준 19:15 출발 → 최소 16:30 전 공항 도착 권장</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">19:15</div>
+            <div class="t-body">
+              <div class="t-place">ICN → BKI</div>
+              <div class="t-task">KE5761 이륙</div>
+              <div class="t-note">비행 약 5시간 20분 · 기내 눈가리개·양말 챙기기</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">23:35</div>
+            <div class="t-body">
+              <div class="t-place">KKIA T1</div>
+              <div class="t-task">입국 · 수하물 · 픽업 미팅</div>
+              <div class="t-note">입국카드/여권 준비. 도착홀에서 샹그릴라 피켓 확인. 안 보이면 +60 88-797-888</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">00:20~</div>
+            <div class="t-body">
+              <div class="t-place">라사 리아</div>
+              <div class="t-task">체크인 · 휴식</div>
+              <div class="t-note">공항에서 약 45분. 늦은 도착이라 심야 할증 여부만 확인 후 바로 취침</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="day-panel" id="day2">
+        <div class="day-head">
+          <span class="day-badge">DAY 2 · 8/14 금</span>
+          <h2>리조트 풀데이 + 반딧불이</h2>
+          <p>늦잠·수영으로 쉬고, 저녁은 리조트 반딧불이 투어.</p>
+        </div>
+        <div class="day-photo">
+          <img src="./images/mangrove-boat.jpg" alt="맹그로브 리버 크루즈" loading="lazy">
+        </div>
+        <ul class="timeline">
+          <li>
+            <div class="t-time">늦잠</div>
+            <div class="t-body">
+              <div class="t-place">라사 리아</div>
+              <div class="t-task">여유롭게 기상 · 조식</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">오전~오후</div>
+            <div class="t-body">
+              <div class="t-place">비치 / 풀</div>
+              <div class="t-task">수영 · 산책 · 휴식</div>
+              <div class="t-note">시내 일정 없음. 선크림·모자·수분 보충</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">낮</div>
+            <div class="t-body">
+              <div class="t-place">Activity Information Centre</div>
+              <div class="t-task">반딧불이 투어 예약·확인</div>
+              <div class="t-note">Garden Wing The Shop(2층) 또는 Ocean Wing에서 예약. 당일 취소 가능 여부 확인</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">저녁</div>
+            <div class="t-body">
+              <div class="t-place">리조트 리버 크루즈</div>
+              <div class="t-task">Sunset Cruise &amp; Fireflies Watching</div>
+              <div class="t-note">
+                리조트 공식 프로그램 · 약 2시간 30분<br>
+                성인 MYR 180 / 아동(4–11) MYR 95 (SST 포함, 공식 요금표 기준)<br>
+                모기약·얇은 긴팔·미끄럼 방지 신발 착용
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">밤</div>
+            <div class="t-body">
+              <div class="t-place">리조트</div>
+              <div class="t-task">귀가 · 휴식</div>
+              <div class="t-note">내일 호핑을 위해 일찍 자는 편이 좋음</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="day-panel" id="day3">
+        <div class="day-head">
+          <span class="day-badge">DAY 3 · 8/15 토</span>
+          <h2>호핑투어 + 시내 저녁</h2>
+          <p>리조트가 멀어서 아침 일찍 시내/선착장으로 나갑니다.</p>
+        </div>
+        <div class="day-photo">
+          <img src="./images/manukan-beach.jpg" alt="마누칸 섬 해변 호핑" loading="lazy">
+        </div>
+        <ul class="timeline">
+          <li>
+            <div class="t-time">06:30~</div>
+            <div class="t-body">
+              <div class="t-place">라사 리아 → 시내</div>
+              <div class="t-task">그랩/리조트 차량으로 이동</div>
+              <div class="t-note">시내·제티까지 보통 45~60분. 호핑 집결 시간에 맞춰 전날 픽업 예약</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">오전~오후</div>
+            <div class="t-body">
+              <div class="t-place">티만만 · 마뭉군 · 수피 등</div>
+              <div class="t-task">섬 호핑 · 스노클링</div>
+              <div class="t-note">수영복·래시가드·방수팩·여분 옷·현금. 점심은 상품에 포함되는지 확인</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">17:30~</div>
+            <div class="t-body">
+              <div class="t-place">시내 (제티 근처)</div>
+              <div class="t-task">샤워·옷 갈아입기 후 저녁</div>
+              <div class="t-note">해산물·가야스트리트/워터프론트 쪽 식사 추천</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">19:30~</div>
+            <div class="t-body">
+              <div class="t-place">시내 스파</div>
+              <div class="t-task">마사지</div>
+              <div class="t-note">호핑 후 피로 풀기. 끝나면 그랩으로 리조트 복귀(밤길 50분 내외)</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="day-panel" id="day4">
+        <div class="day-head">
+          <span class="day-badge">DAY 4 · 8/16 일</span>
+          <h2>체크아웃 · 시내 · 귀국 대기</h2>
+          <p>낮에는 시내, 밤은 공항으로. 서울은 17일 새벽 도착.</p>
+        </div>
+        <div class="day-photo">
+          <img src="./images/gaya-market.jpg" alt="가야 스트리트 시내" loading="lazy">
+        </div>
+        <ul class="timeline">
+          <li>
+            <div class="t-time">오전</div>
+            <div class="t-body">
+              <div class="t-place">라사 리아</div>
+              <div class="t-task">조식 · 체크아웃</div>
+              <div class="t-note">캐리어는 시내 락커/트렌스퍼 차량에 실을지, 공항으로 직행할지 전날 결정</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">낮</div>
+            <div class="t-body">
+              <div class="t-place">시내</div>
+              <div class="t-task">쇼핑 · 맛집</div>
+              <div class="t-note">임필리아 / 필리피노 마켓 / 가야 스트리트 · 맛집은 아래 ‘시내 추천 맛집’ 참고</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">저녁</div>
+            <div class="t-body">
+              <div class="t-place">시내 또는 공항</div>
+              <div class="t-task">여유 식사 · 공항 이동</div>
+              <div class="t-note">늦은 비행이면 아래 ‘늦게 쉴 대안’ 참고. 리조트에서 바로 가면 여유를 두고 출발</div>
+            </div>
+          </li>
+          <li>
+            <div class="t-time">00:35</div>
+            <div class="t-body">
+              <div class="t-place">BKI → ICN</div>
+              <div class="t-task">KE5762 이륙 (추천·미정)</div>
+              <div class="t-note">서울 06:55 도착 예상 · 실제 예약 시간으로 교체하세요</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="widget" id="food">
+      <div class="widget-title">🍽 시내 추천 맛집</div>
+      <p class="tiny" style="margin:-4px 0 10px">지도·후기 링크로 바로 열어보세요. 버터새우·칠리크랩은 필수 코스!</p>
+
+      <div class="info-card">
+        <span class="tag ok">해산물 대표</span>
+        <b>웰컴 씨푸드 · Asia City</b>
+        <p>
+          KK 대표 해산물집. 수조에서 골라 조리법 지정.<br>
+          시그니처: 버터새우, 칠리크랩, 공심채, 계란볶음밥<br>
+          Asia City / 힐튼 KK 인근 · 피크타임 대기 많음
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Welcome+Seafood+Restaurant+Asia+City+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
+          <a class="soft" href="https://wsr.com.my/en/" target="_blank" rel="noopener">공식 사이트</a>
+          <a class="review" href="https://triple.guide/restaurants/c290bf86-92f1-42bf-a80a-fd36250a383a" target="_blank" rel="noopener">트리플 후기</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag ok">해산물 대표</span>
+        <b>쌍천 씨푸드 (Suang Tain / 双天)</b>
+        <p>
+          오징어튀김·드라이버터새우 호평. Sedco Complex / Kampung Air.<br>
+          영업 대략 14:30~23:00 · 웰컴과 취향 따라 택1해도 OK
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Suang+Tain+Seafood+Restaurant+Sedco+Complex+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
+          <a class="review" href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Seafood-Restaurant-Suangtain-Seafood-review.html" target="_blank" rel="noopener">블로그 후기</a>
+          <a class="soft" href="https://travel.eundol.com/entry/%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%ED%98%84%EC%A7%80-%EB%A7%9B%EC%A7%91-%EC%8C%8D%EC%B2%9C%EC%94%A8%ED%91%B8%EB%93%9C" target="_blank" rel="noopener">메뉴 참고</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag">가성비 씨푸드</span>
+        <b>KK 가든 씨푸드</b>
+        <p>
+          현지인·가성비로 자주 추천. 블랙페퍼크랩·드라이버터새우·계란볶음밥.
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=KK+Garden+Seafood+Restaurant+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
+          <a class="review" href="https://triple.guide/restaurants/d12628a1-44b7-4238-9134-48a381877c70" target="_blank" rel="noopener">트리플 후기</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag">로컬</span>
+        <b>Kedai Kopi Fatt Kee</b>
+        <p>
+          Ang’s Hotel 아래 코피티암. 굴소스 치킨윙·호키엔미 유명. 웨이팅 대비.
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Kedai+Kopi+Fatt+Kee+Ang+Hotel+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
+          <a class="soft" href="http://www.thanislim.com/2013/06/kota-kinabalu-food-guide-for-tourists.html" target="_blank" rel="noopener">로컬 가이드</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag">로컬</span>
+        <b>Yee Fung Laksa · 바쿠테</b>
+        <p>
+          사바식 락사·바쿠테는 시내 골목에서 가볍게. Day4 쇼핑 동선에 끼우기 좋음.<br>
+          돼지고기 메뉴는 할랄 여부 확인.
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Yee+Fung+Laksa+Kota+Kinabalu" target="_blank" rel="noopener">락사 지도</a>
+          <a class="soft" href="https://www.google.com/maps/search/?api=1&query=Bak+Kut+Teh+Kota+Kinabalu" target="_blank" rel="noopener">바쿠테 지도</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <span class="tag">분위기</span>
+        <b>워터프론트 · Jesselton Quay</b>
+        <p>
+          호핑 후 저녁·야시장 분위기. Day3 마사지 전후와 잘 맞음.
+        </p>
+        <div class="food-actions">
+          <a href="https://www.google.com/maps/search/?api=1&query=Jesselton+Quay+Kota+Kinabalu" target="_blank" rel="noopener">구글지도</a>
+          <a class="soft" href="https://www.google.com/maps/search/?api=1&query=Filipino+Market+Kota+Kinabalu" target="_blank" rel="noopener">필리피노 마켓</a>
+        </div>
+      </div>
+      <p class="tiny">가격·메뉴·영업시간은 변동될 수 있어요. 방문 전 지도 앱에서 한번 더 확인하세요.</p>
+    </section>
+
+    <section class="widget" id="hopping">
+      <div class="widget-title">🏝 호핑투어 참고 · 블로그</div>
+      <div class="info-card">
+        <b>한눈에 보는 섬 특징</b>
+        <p>
+          · <strong>사피(Sapi)</strong> — 스노클링·물놀이 중심, 붐빔<br>
+          · <strong>마누칸(Manukan)</strong> — 해변 넓고 여유·사진·산책, 액티비티(패러/씨워킹) 많음<br>
+          · <strong>마무틱(Mamutik)</strong> — 작고 스노클링 포인트, 성게·바위 주의 → 아쿠아슈즈<br>
+          · 집결: <strong>Jesselton Quay 뒤 South Jetty</strong> (옛 Jesselton Point, 2026.3 이전)<br>
+          · 입장료·보트비 포함 여부 상품마다 다름<br>
+          · 라사 리아에서 제티까지 45~60분 → <strong>아침 일찍 픽업</strong> 필수
+        </p>
+      </div>
+      <div class="info-card">
+        <b>예약·준비 팁</b>
+        <p>
+          · 섬 2곳 + 액티비티 여러 개는 시간이 빠듯 → 액티비티 많으면 섬 1~2곳만<br>
+          · 점심 포함/미포함 확인. 미포함이면 컵라면·간식 챙기기<br>
+          · 선크림·래시가드·방수팩·여분 옷·현금(섬 내 카드 약함)<br>
+          · 우천·파고 시 일정 변경될 수 있음
+        </p>
+      </div>
+      <p class="tiny" style="margin-bottom:8px">후기·팁 참고 링크 (새 탭)</p>
+      <ul class="link-list">
+        <li>
+          <a href="https://www.sabahparks.org.my/tunku-abdul-rahman-park/" target="_blank" rel="noopener">
+            <strong>툰쿠 압둘 라만 파크 공식 (Sabah Parks)</strong>
+            <span>섬 구성·공원 안내 · 공식 참고</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Island-Tour-Review.html" target="_blank" rel="noopener">
+            <strong>마무틱 &amp; 마누칸 섬 투어 후기</strong>
+            <span>rose1538 · 동선·대기·섬별 분위기 정리</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://nowonetip.com/150" target="_blank" rel="noopener">
+            <strong>사피·마누칸 호핑투어 후기 (8월)</strong>
+            <span>nowonetip · 제셀톤 포인트·섬별 팁·우기/건기 메모</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://dalmoo.co.kr/%ec%bd%94%ed%83%80%ed%82%a4%eb%82%98%eb%b0%9c%eb%a3%a8-%ec%82%ac%ed%94%bc%ec%84%ac-%eb%a7%88%eb%88%84%ec%b9%b8%ec%84%ac-%ed%98%b8%ed%95%91%ed%88%ac%ec%96%b4-%ea%b0%80%ea%b2%a9-%ed%8c%81/" target="_blank" rel="noopener">
+            <strong>사피·마누칸 가격·팁 총정리</strong>
+            <span>dalmoo · 스노클링·액티비티·성게 주의</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://donotworry.co.kr/23" target="_blank" rel="noopener">
+            <strong>호핑 + 마사지까지 하루 동선</strong>
+            <span>donotworry · Day3 패턴과 비슷한 일정 참고</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://nadragon.tistory.com/178" target="_blank" rel="noopener">
+            <strong>마누칸·마무틱 + 패러·씨워킹 후기</strong>
+            <span>nadragon · 액티비티·컵라면·성게 경험담</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://travel.rose1538.com/2025/07/Kota-Kinabalu-Seafood-Restaurant-Suangtain-Seafood-review.html" target="_blank" rel="noopener">
+            <strong>쌍천 씨푸드 후기 (맛집 참고)</strong>
+            <span>rose1538 · 메뉴·가격대 감 잡기</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <section class="widget" id="late-rest">
+      <div class="widget-title">🌙 마지막 날 · 늦게 쉴 대안</div>
+      <p class="tiny" style="margin:-2px 0 10px">귀국편이 심야~새벽(예: 00:35)이면, 리조트에서 버티기보다 <strong>공항 근처에서 쉬는 편</strong>이 훨씬 편합니다.</p>
+
+      <div class="option-card">
+        <span class="tag ok">가장 추천</span>
+        <h3>A. 공항 캡슐호텔 — Napzone KKIA by Sovotel</h3>
+        <p>
+          KKIA Terminal 1 안(랜드사이드) 캡슐. 샤워·수건·락커·짧은 시간 이용(수 시간 단위) 가능.<br>
+          시내/리조트에서 저녁 보내고 <strong>21:00~22:00경 공항 이동 → 캡슐에서 2~4시간 수면 → 체크인</strong>이 현실적인 루트입니다.<br>
+          Booking/Agoda에서 “Napzone KKIA”로 검색. 남녀 구역·공용 욕실.
+        </p>
+        <a class="link-btn" href="https://www.booking.com/hotel/my/napzone-kota-kinabalu.html" target="_blank" rel="noopener">Napzone KKIA 예약 보기</a>
+      </div>
+
+      <div class="option-card">
+        <span class="tag">대안</span>
+        <h3>B. 에어로포드(Aeropod) · 공항 인근 호텔 1박</h3>
+        <p>
+          공항에서 차로 수 분 거리의 쇼핑몰·호텔이 붙어 있습니다. Day4 체크아웃 후 시내를 보고, 저녁에 에어로포드로 이동해 짧게 잔 뒤 자정 전후 공항으로 가면 됩니다.<br>
+          캐리어를 낮에 맡겨 두기 좋고, 가족·커플에게 캡슐보다 편할 수 있습니다.
+        </p>
+      </div>
+
+      <div class="option-card">
+        <span class="tag">가성비</span>
+        <h3>C. 시내 데이유즈 / 늦은 체크아웃 + 공항 직행</h3>
+        <p>
+          시내 호텔에 Day4만 데이유즈(또는 늦은 체크아웃)를 잡고 샤워·짐 정리 후, 밤늦게 공항으로 이동합니다.<br>
+          공항 대기실에서 쪽잠도 가능하지만 냉방·소음이 있어 <strong>Napzone이 훨씬 낫습니다.</strong>
+        </p>
+      </div>
+
+      <div class="option-card">
+        <span class="tag warn">비추천에 가까움</span>
+        <h3>D. 라사 리아에 끝까지 머물기</h3>
+        <p>
+          리조트 → 공항 약 45분 + 야간 도로. 00:35 비행이면 대략 <strong>21:30 전후 리조트 출발</strong>이 안전한데, 그러면 Day4 시내 일정이 애매해집니다.<br>
+          시내를 제대로 보려면 A 또는 B가 동선상 유리합니다.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <b>추천 타임라인 (KE5762 00:35 기준)</b>
+        <p>
+          10:00 리조트 체크아웃 → 시내 쇼핑·맛집<br>
+          18:00~20:00 저녁·마사지(선택)<br>
+          21:00 공항 또는 에어로포드 이동<br>
+          21:30~23:00 Napzone 수면 / 샤워<br>
+          23:00~ 체크인·출국 → 00:35 이륙
+        </p>
+      </div>
+    </section>
+
+    <section class="widget" id="tips">
+      <div class="widget-title">⚠ 주의사항 <span style="font-weight:500;color:var(--soft);font-size:0.78rem;">· 눌러서 펼치기</span></div>
+      <details class="warn-item">
+        <summary>1. 리조트가 멀다</summary>
+        <div class="warn-body">
+          <p>공항·시내 모두 약 45~60분. Day3 호핑·Day4 시내는 이동 시간을 일정에 반드시 넣으세요. 그랩은 리조트에서 잡히지 않을 때가 있어, 리조트 데스크에 차량을 미리 부탁하는 게 안전합니다.</p>
+        </div>
+      </details>
+      <details class="warn-item">
+        <summary>2. 야간 도착 픽업</summary>
+        <div class="warn-body">
+          <p>현장 택시 흥정은 야간에 불리합니다. 호텔 리무진을 하루 전 예약하고, 항공편 번호(KE5761)·도착 23:35를 알려 주세요. 자정 넘기면 심야 할증(+50%) 가능.</p>
+        </div>
+      </details>
+      <details class="warn-item">
+        <summary>3. 날씨·모기</summary>
+        <div class="warn-body">
+          <p>8월 사바는 더운 열대 기후(낮 30°C 전후). 갑작스런 소나기 대비. 반딧불이·맹그로브는 모기가 많으니 기피제 필수.</p>
+        </div>
+      </details>
+      <details class="warn-item">
+        <summary>4. 입국·환전</summary>
+        <div class="warn-body">
+          <p>한국 여권은 단기 관광 무비자(통상 90일). 귀국 항공권·숙소 정보를 보여 달라는 경우 있음. 공항·시내 환전소 이용 가능. 카드 결제는 리조트·대형몰 위주.</p>
+        </div>
+      </details>
+      <details class="warn-item">
+        <summary>5. 호핑 안전</summary>
+        <div class="warn-body">
+          <p>해파리·산호 대비 아쿠아슈즈 추천. 귀중품은 방수팩. 음주 후 스노클링 금지. 자외선이 강해 래시가드가 편합니다.</p>
+        </div>
+      </details>
+      <details class="warn-item">
+        <summary>6. 귀국편은 미정</summary>
+        <div class="warn-body">
+          <p>가이드에 넣은 KE5762는 추천안입니다. 확정되면 시간·편명을 알려 주시면 일정표를 수정해 드립니다.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="widget" id="pack">
+      <div class="widget-title">🎒 챙길 품목</div>
+      <ul class="check-list" id="packList">
+        <li><input type="checkbox"><span>여권 · 항공 e-티켓 · 숙소 예약 확인서(픽업·입국 대비)</span></li>
+        <li><input type="checkbox"><span>국제운전면허(렌트 시) / 여행자보험 증권</span></li>
+        <li><input type="checkbox"><span>멀티어댑터(말레이시아 Type G 3구) · 보조배터리</span></li>
+        <li><input type="checkbox"><span>선크림 SPF50 · 모자 · 선글라스</span></li>
+        <li><input type="checkbox"><span>수영복 · 래시가드 · 아쿠아슈즈 · 마이크로파이버 타월</span></li>
+        <li><input type="checkbox"><span>방수팩 / 지퍼백 · 여벌 속옷·양말</span></li>
+        <li><input type="checkbox"><span>모기 기피제 · 얇은 긴팔·긴바지(반딧불이용)</span></li>
+        <li><input type="checkbox"><span>상비약(해열진통·소화·밴드·멀미약)</span></li>
+        <li><input type="checkbox"><span>현금 소액 MYR + 카드 1~2장</span></li>
+        <li><input type="checkbox"><span>우산 또는 가벼운 우비 · 슬리퍼</span></li>
+        <li><input type="checkbox"><span>수면안대·귀마개(가는 편 야간 비행)</span></li>
+        <li><input type="checkbox"><span>드라이백 / 휴대폰 방수 케이스(호핑)</span></li>
+      </ul>
+      <p class="tiny">체크는 이 기기 브라우저에만 저장됩니다.</p>
+    </section>
+
+    <section class="widget" id="booking">
+      <div class="widget-title">✅ 출발 전 할 일</div>
+      <ul class="check-list">
+        <li><input type="checkbox"><span>KE5761 좌석·수하물 확인 · 인천 T2 체크인 시간 메모</span></li>
+        <li><input type="checkbox"><span>귀국편 예약 (추천: KE5762 8/17 00:35경)</span></li>
+        <li><input type="checkbox"><span>라사 리아 공항 픽업 예약 (항공편·인원·캐리어 수 전달)</span></li>
+        <li><input type="checkbox"><span>리조트 Activity Desk에 8/14 반딧불이(Sunset+Fireflies) 예약</span></li>
+        <li><input type="checkbox"><span>8/15 호핑투어 예약 + 리조트→제티 픽업 시간 확정</span></li>
+        <li><input type="checkbox"><span>시내 마사지 대략 시간대 예약(호핑 후 19:30~)</span></li>
+        <li><input type="checkbox"><span>귀국일 리조트→공항 차량 예약</span></li>
+        <li><input type="checkbox"><span>늦은 비행 대비 Napzone KKIA 또는 에어로포드 짧게 예약</span></li>
+        <li><input type="checkbox"><span>호핑투어(South Jetty / Jesselton Quay) + 리조트→시내 픽업 시간 확정</span></li>
+      </ul>
+      <p class="footer-note">요금·스케줄은 공식 사이트/예약 시점에 따라 달라질 수 있습니다.</p>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="빠른 이동">
+    <a href="#map"><span>🗺</span>지도</a>
+    <a href="#itinerary"><span>📅</span>일정</a>
+    <a href="#food"><span>🍽</span>맛집</a>
+    <a href="#hopping"><span>🏝</span>호핑</a>
+    <a href="#late-rest"><span>🌙</span>휴식</a>
+  </nav>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const MYR_TO_KRW = 300;
+    const koreaTime = document.getElementById('koreaTime');
+    const koreaDate = document.getElementById('koreaDate');
+    const kkTime = document.getElementById('kkTime');
+    const kkDate = document.getElementById('kkDate');
+    const myrInput = document.getElementById('myrInput');
+    const krwInput = document.getElementById('krwInput');
+    const fxNote = document.getElementById('fxNote');
+    const fxSwap = document.getElementById('fxSwap');
+    let fxDirection = 'myr-to-krw';
+
+    const formatParts = (date, timeZone) => {
+      const time = new Intl.DateTimeFormat('ko-KR', {
+        timeZone, hour: '2-digit', minute: '2-digit', hour12: false
+      }).format(date);
+      const day = new Intl.DateTimeFormat('ko-KR', {
+        timeZone, month: 'long', day: 'numeric', weekday: 'short'
+      }).format(date);
+      return { time, day };
+    };
+
+    const tickClocks = () => {
+      const now = new Date();
+      const kr = formatParts(now, 'Asia/Seoul');
+      const my = formatParts(now, 'Asia/Kuala_Lumpur');
+      koreaTime.textContent = kr.time;
+      koreaDate.textContent = kr.day;
+      kkTime.textContent = my.time;
+      kkDate.textContent = my.day;
+    };
+
+    const syncFx = source => {
+      const myr = Number(myrInput.value);
+      const krw = Number(krwInput.value);
+      if (source === 'myr' && Number.isFinite(myr)) krwInput.value = Math.round(myr * MYR_TO_KRW);
+      else if (source === 'krw' && Number.isFinite(krw)) myrInput.value = (krw / MYR_TO_KRW).toFixed(2);
+      fxNote.textContent = `참고 환율 1 MYR ≈ ${MYR_TO_KRW.toLocaleString('ko-KR')}원 · 실제 환율은 변동됩니다.`;
+    };
+
+    myrInput.addEventListener('input', () => syncFx('myr'));
+    krwInput.addEventListener('input', () => syncFx('krw'));
+    fxSwap.addEventListener('click', () => {
+      fxDirection = fxDirection === 'myr-to-krw' ? 'krw-to-myr' : 'myr-to-krw';
+      syncFx(fxDirection === 'myr-to-krw' ? 'myr' : 'krw');
+    });
+
+    document.querySelectorAll('.day-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.day).classList.add('active');
+      });
+    });
+
+    const PACK_KEY = 'kk-rasaria-pack-checks';
+    const packBoxes = [...document.querySelectorAll('#packList input, #booking input')];
+    try {
+      const saved = JSON.parse(localStorage.getItem(PACK_KEY) || '[]');
+      packBoxes.forEach((box, i) => { box.checked = !!saved[i]; });
+    } catch (_) {}
+    packBoxes.forEach(box => box.addEventListener('change', () => {
+      localStorage.setItem(PACK_KEY, JSON.stringify(packBoxes.map(b => b.checked)));
+    }));
+
+    tickClocks();
+    setInterval(tickClocks, 1000);
+    syncFx('myr');
+
+    /* ===== 동선 지도 · 내 위치 · 구글지도 길찾기 ===== */
+    const places = {
+      airport: { name: 'KKIA 공항', lat: 5.9372, lng: 116.0513, color: '#0b4f6c', note: '도착·출발' },
+      resort: { name: '샹그릴라 라사 리아', lat: 6.15377, lng: 116.14823, color: '#148f8f', note: '숙소 · 투아란' },
+      jetty: { name: '호핑 선착장 (South Jetty)', lat: 5.9958, lng: 116.0789, color: '#d96b4c', note: 'Jesselton Quay 뒤 · 2026.3 이전' },
+      gaya: { name: '가야 스트리트', lat: 5.98395, lng: 116.07721, color: '#2f7d5a', note: '시내·쇼핑' },
+      seafood: { name: '웰컴/쌍천 씨푸드 일대', lat: 5.9748, lng: 116.0718, color: '#2f7d5a', note: 'Asia City · 해산물' },
+      napzone: { name: 'Napzone KKIA', lat: 5.9385, lng: 116.0505, color: '#0b4f6c', note: '공항 캡슐 · 늦은 비행 휴식' },
+      manukan: { name: '마누칸 섬', lat: 5.9745, lng: 115.9995, color: '#d96b4c', note: '호핑' }
+    };
+
+    const routes = {
+      all: {
+        label: '구글지도로 전체 동선 열기',
+        url: 'https://www.google.com/maps/dir/Kota+Kinabalu+International+Airport/Shangri-La+Rasa+Ria,+Kota+Kinabalu/Jesselton+Quay,+Kota+Kinabalu/Kota+Kinabalu+International+Airport',
+        focus: ['airport', 'resort', 'jetty', 'gaya', 'seafood', 'napzone', 'manukan'],
+        line: [],
+        status: '주요 포인트 전체 표시 중'
+      },
+      arrive: {
+        label: '구글지도로 길찾기 · 공항 → 라사 리아',
+        url: 'https://www.google.com/maps/dir/?api=1&origin=Kota+Kinabalu+International+Airport&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving',
+        focus: ['airport', 'resort'],
+        line: ['airport', 'resort'],
+        status: 'Day1 동선 · 약 45분 운전'
+      },
+      hop: {
+        label: '구글지도로 길찾기 · 리조트 → 호핑 선착장',
+        url: 'https://www.google.com/maps/dir/?api=1&origin=Shangri-La+Rasa+Ria,+Kota+Kinabalu&destination=Jesselton+Quay,+Kota+Kinabalu&travelmode=driving',
+        focus: ['resort', 'jetty', 'manukan'],
+        line: ['resort', 'jetty'],
+        status: 'Day3 동선 · 리조트→South Jetty 약 45~60분'
+      },
+      city: {
+        label: '구글지도로 길찾기 · 리조트 → 시내',
+        url: 'https://www.google.com/maps/dir/?api=1&origin=Shangri-La+Rasa+Ria,+Kota+Kinabalu&destination=Gaya+Street,+Kota+Kinabalu&travelmode=driving',
+        focus: ['resort', 'gaya', 'seafood'],
+        line: ['resort', 'gaya', 'seafood'],
+        status: 'Day3 저녁·Day4 시내 동선'
+      },
+      depart: {
+        label: '구글지도로 길찾기 · 시내 → 공항',
+        url: 'https://www.google.com/maps/dir/?api=1&origin=Gaya+Street,+Kota+Kinabalu&destination=Kota+Kinabalu+International+Airport&travelmode=driving',
+        focus: ['gaya', 'seafood', 'napzone', 'airport'],
+        line: ['gaya', 'airport'],
+        status: 'Day4 귀국 동선 · Napzone에서 휴식 가능'
+      }
+    };
+
+    const mapStatus = document.getElementById('mapStatus');
+    const gmapLink = document.getElementById('gmapLink');
+    const gmapLabel = document.getElementById('gmapLabel');
+    const gpsBtn = document.getElementById('gpsBtn');
+    let tripMap = null;
+    let userMarker = null;
+    let routeLine = null;
+    const markers = {};
+
+    const pinIcon = (color) => L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const userIcon = L.divIcon({
+      className: '',
+      html: '<div style="width:16px;height:16px;border-radius:50%;background:#c9a227;border:3px solid #fff;box-shadow:0 0 0 4px rgba(201,162,39,.35)"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+
+    const applyRoute = (key) => {
+      const route = routes[key] || routes.all;
+      document.querySelectorAll('.route-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.route === key);
+      });
+      gmapLink.href = route.url;
+      gmapLabel.textContent = route.label;
+      mapStatus.textContent = route.status;
+
+      const bounds = [];
+      Object.entries(markers).forEach(([id, marker]) => {
+        const on = route.focus.includes(id);
+        if (on) {
+          marker.addTo(tripMap);
+          bounds.push(marker.getLatLng());
+        } else {
+          tripMap.removeLayer(marker);
+        }
+      });
+
+      if (routeLine) {
+        tripMap.removeLayer(routeLine);
+        routeLine = null;
+      }
+      if (route.line && route.line.length >= 2) {
+        const linePts = route.line.map(id => [places[id].lat, places[id].lng]);
+        routeLine = L.polyline(linePts, {
+          color: '#0b4f6c', weight: 3, opacity: 0.55, dashArray: '6 8'
+        }).addTo(tripMap);
+      }
+      if (bounds.length) {
+        tripMap.fitBounds(bounds, { padding: [36, 36], maxZoom: 12 });
+      }
+    };
+
+    const initTripMap = () => {
+      if (!window.L || !document.getElementById('tripMap')) return;
+      tripMap = L.map('tripMap', { zoomControl: true, attributionControl: true })
+        .setView([6.02, 116.1], 10);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(tripMap);
+
+      Object.entries(places).forEach(([id, p]) => {
+        const marker = L.marker([p.lat, p.lng], { icon: pinIcon(p.color) })
+          .bindPopup(`<strong>${p.name}</strong><br><span style="font-size:12px;color:#5a7380">${p.note}</span><br><a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">구글지도에서 보기</a>`);
+        markers[id] = marker;
+      });
+
+      applyRoute('all');
+      setTimeout(() => tripMap.invalidateSize(), 200);
+    };
+
+    document.querySelectorAll('.route-chip').forEach(chip => {
+      chip.addEventListener('click', () => applyRoute(chip.dataset.route));
+    });
+
+    gpsBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        mapStatus.textContent = '이 브라우저는 위치 기능을 지원하지 않습니다.';
+        return;
+      }
+      mapStatus.textContent = '위치 확인 중…';
+      gpsBtn.disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          const latlng = [latitude, longitude];
+          if (userMarker) tripMap.removeLayer(userMarker);
+          userMarker = L.marker(latlng, { icon: userIcon })
+            .addTo(tripMap)
+            .bindPopup(`<strong>내 위치</strong><br>정확도 약 ${Math.round(accuracy)}m<br><a href="https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving" target="_blank" rel="noopener">내 위치 → 리조트 길찾기</a>`)
+            .openPopup();
+          tripMap.setView(latlng, 13);
+          mapStatus.textContent = '내 위치를 표시했습니다. 팝업에서 리조트 길찾기도 가능합니다.';
+          gpsBtn.disabled = false;
+        },
+        err => {
+          const msg = {
+            1: '위치 권한이 거부되었습니다. 브라우저 설정에서 허용해 주세요.',
+            2: '위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.',
+            3: '위치 확인 시간이 초과되었습니다.'
+          };
+          mapStatus.textContent = msg[err.code] || '위치를 가져오지 못했습니다.';
+          gpsBtn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+      );
+    });
+
+    /* ===== 홈 화면 설치 (PWA) ===== */
+    const installBanner = document.getElementById('installBanner');
+    const installBtn = document.getElementById('installBtn');
+    const installLaterBtn = document.getElementById('installLaterBtn');
+    const installHelp = document.getElementById('installHelp');
+    const INSTALL_DISMISS_KEY = 'kk-install-dismissed';
+    let deferredPrompt = null;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    const showInstallBanner = () => {
+      if (isStandalone) return;
+      if (localStorage.getItem(INSTALL_DISMISS_KEY) === '1') return;
+      installBanner.classList.add('show');
+      if (isIos || !deferredPrompt) installHelp.classList.add('show');
+    };
+
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredPrompt = event;
+      showInstallBanner();
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice.catch(() => null);
+        deferredPrompt = null;
+        if (choice && choice.outcome === 'accepted') {
+          installBanner.classList.remove('show');
+          return;
+        }
+      }
+      installHelp.classList.add('show');
+      installBtn.textContent = '방법 보기';
+    });
+
+    installLaterBtn.addEventListener('click', () => {
+      localStorage.setItem(INSTALL_DISMISS_KEY, '1');
+      installBanner.classList.remove('show');
+    });
+
+    window.addEventListener('load', () => {
+      initTripMap();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+      // iOS는 beforeinstallprompt가 없어 안내 배너를 바로 노출
+      if (isIos) showInstallBanner();
+      else setTimeout(showInstallBanner, 1200);
+    });
+  </script>
+</body>
+</html>

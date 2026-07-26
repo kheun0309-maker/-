@@ -1,0 +1,5 @@
+여행일정/
+*.tmp
+.DS_Store
+Thumbs.db
+icons/kk-source.png

@@ -1,0 +1,72 @@
+{
+  "id": "./index.html",
+  "name": "코타키나발루 여행",
+  "short_name": "코타키나발루",
+  "description": "라사 리아 · 호핑 · 반딧불이 · 맛집까지, 설레는 코타키나발루 4일 가이드",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "browser"],
+  "orientation": "portrait",
+  "background_color": "#067a8a",
+  "theme_color": "#067a8a",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "여행 일정",
+      "short_name": "일정",
+      "description": "일자별 코타키나발루 일정 보기",
+      "url": "./index.html#itinerary",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "동선 지도",
+      "short_name": "지도",
+      "description": "공항·리조트·호핑 동선",
+      "url": "./index.html#map",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "맛집 리스트",
+      "short_name": "맛집",
+      "description": "시내 추천 맛집과 링크",
+      "url": "./index.html#food",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["travel", "lifestyle", "navigation"],
+  "prefer_related_applications": false
+}
