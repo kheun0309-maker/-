@@ -12,7 +12,7 @@ import { normalizeImageUrl, photoBlockHtml, listLocalImages } from './image-url.
 
 export { normalizeImageUrl } from './image-url.js';
 
-const SECTIONS = ['hero', 'food', 'alternatives', 'flights'];
+const SECTIONS = ['hero', 'food', 'alternatives', 'flights', 'resort'];
 
 export const DEFAULT_HERO = {
   slides: [
@@ -151,6 +151,114 @@ export const DEFAULT_FLIGHTS = {
   ]
 };
 
+export const DEFAULT_RESORT = {
+  items: [
+    {
+      id: 'hotel',
+      tag: '',
+      title: 'Shangri-La Rasa Ria, Kota Kinabalu',
+      body: 'Pantai Dalit, Tuaran, Sabah 89208\n전화 +60 88-797-888\n시내·공항에서 차로 약 45분 · 투아란(Tuaran) 쪽 해변 리조트라 시내와 꽤 멉니다.',
+      siteUrl: 'https://www.shangri-la.com/kotakinabalu/rasariaresort/',
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Shangri-La+Rasa+Ria+Kota+Kinabalu',
+      imageUrl: ''
+    },
+    {
+      id: 'airport-pickup',
+      tag: 'Day1 핵심',
+      title: '공항 → 픽업 미팅까지 가는 법',
+      body: 'KE5761 23:35 도착이면 야간이라 사전 픽업(호텔 리무진/프라이빗)을 강력 추천합니다. 리조트까지 약 45~50분.\n\n1. 하기 · 입국심사 — BKI T1. MDAC(디지털 입국신고)는 한국에서 미리. 여권·숙소·귀국편 준비\n2. 수하물 — Baggage Claim에서 캐리어 수령 (보통 벨트 1~2)\n3. 도착홀(Arrivals)로 나오기 — 수하물 뒤 출구를 나오면 미팅 존. 유심·환전 부스가 보임\n4. 피켓 찾기 — Shangri-La / Rasa Ria 또는 이름 피켓을 든 직원을 찾음. 호텔·써드파티 픽업 모두 보통 여기\n5. 못 찾으면 바로 전화 — 리조트 +60 88-797-888 (공식 안내). 바우처에 적힌 기사 번호도 확인\n6. 차량 탑승 — 직원이 주차장/픽업 차까지 안내. 짐 확인 후 출발 → 라사 리아 약 45분\n\n그랩을 쓸 때: 한국에서 Grab 앱·카드 등록. 도착홀 밖으로 나온 뒤 호출하고, 앱에 표시된 Gate(출구) 번호를 지정한 뒤 기사에게 메시지로 기둥/게이트 번호를 보내면 엇갈림이 줄어듭니다. 라사 리아까지는 시내보다 멀어 요금이 더 나오고, 심야엔 배차가 늦을 수 있어요.\n공항 택시: 입국장 밖 택시 카운터 정찰제(선불). 바가지보다 안전하지만 그랩보다 비싼 편.',
+      imageUrl: ''
+    },
+    {
+      id: 'limousine',
+      tag: '',
+      title: '호텔 리무진 요금 · 예약 (공식)',
+      body: '· 예약: 객실 예약 시 항공편 입력, 또는 리조트에 최소 하루 전 연락\n· 미팅: 도착 터미널(도착홀)에서 직원이 대기 — 공식 안내\n· Innova MYR 230 · Van MYR 250 · Alphard MYR 290 · Mercedes MYR 470 (세금 포함, 참고)\n· 심야 할증 00:00~06:00 +50% · 23:35 도착 후 자정 넘기면 할증 가능\n· 예약 4시간 이내 취소 시 100% 위약금',
+      mapsUrl: 'https://www.google.com/maps/dir/?api=1&origin=Kota+Kinabalu+International+Airport&destination=Shangri-La+Rasa+Ria,+Kota+Kinabalu&travelmode=driving',
+      links: [
+        { url: 'https://www.shangri-la.com/kotakinabalu/rasariaresort/about/map-directions/hotel-limousine/', label: '리무진 요금표' },
+        { url: 'https://www.shangri-la.com/kr/kotakinabalu/rasariaresort/about/map-directions/', label: '오시는 길(한글)', tone: 'soft' }
+      ],
+      imageUrl: ''
+    },
+    {
+      id: 'third-party-pickup',
+      tag: '써드파티',
+      title: '공항 → 라사 리아 · 써드파티 픽업 (가격 참고)',
+      body: '호텔 리무진 말고도 현지 투어사·OTA·Grab으로 공항↔숙소 이동을 예약할 수 있습니다. 편도 약 45~55분. 아래는 차량 1대 편도 기준 참고가이며, 인원·짐·야간할증·시기에 따라 달라집니다.\n\n· 현지 투어사 프라이빗 (예: TYH Borneo Tours)\n  · 밴(라사 리아 등 외곽): MYR 250 / 편도\n  · Alphard·Vellfire: MYR 350 / 편도\n  · 도착홀 피켓 미팅 · 항공편 입력 필수 · 대기 약 1시간 안내\n\n· KKday · Pelago 등 OTA\n  · 라사 리아(투아란) 프라이빗: 대략 MYR 120~160대 안내가 많음\n  · 야간(대략 20:00~08:00) 할증·차종에 따라 더 비쌀 수 있음\n  · 한국어 앱·바우처로 예약하기 편함 · 숙소명에 Shangri-La Rasa Ria / Tuaran 확인\n\n· Grab (앱 호출)\n  · 공항→라사 리아: 대략 MYR 60~80 (앱 표시 요금 · 성수기·심야 할증 가능)\n  · 사전 예약이 아니라 도착 후 호출 · 23:35 도착 심야는 배차·대기 불확실\n  · 한국에서 앱·결제 수단 미리 등록 · Gate(출구) 번호 지정\n\n· 공항 쿠폰 택시\n  · 시내·근거리용 정찰제 · 라사 리아(외곽)는 사실상 비권장\n\n한눈에 비교 (편도·참고)\nGrab MYR 60~80 · OTA 프라이빗 MYR 120~160대 · 현지 투어사 밴 MYR 250 · 호텔 Innova MYR 230 (심야 00:00~06:00 +50% → 약 MYR 345)\nKE5761 야간 도착이면 써드파티/호텔 사전 픽업이 Grab보다 마음이 편합니다. 귀국(리조트→공항)도 같은 요금대를 편도로 잡으면 됩니다.',
+      links: [
+        { url: 'https://www.tyhborneotours.com/Kota-Kinabalu-Airport-Transfer', label: 'TYH 공항 트랜스퍼' },
+        { url: 'https://www.kkday.com/ko/productlist/product?keyword=Kota%20Kinabalu%20Airport%20Transfer', label: 'KKday 공항 픽업 검색', tone: 'soft' },
+        { url: 'https://www.pelago.com/en/activity/p7zyliydu-private-transfer-kota-kinabalu-international-airport-to-from-hotel-kota-kinabalu/', label: 'Pelago 프라이빗', tone: 'soft' },
+        { url: 'https://www.grab.com/my/transport/', label: 'Grab 안내', tone: 'review' }
+      ],
+      imageUrl: ''
+    },
+    {
+      id: 'resort-shuttle',
+      tag: '시내 이동',
+      title: '리조트 셔틀버스 시간표',
+      body: '라사 리아 ↔ 시내(제셀톤 · 이마고몰 코스) 셔틀이 하루 몇 회 운행합니다.\n· 타기 전 프론트 예약 필수 · 정원 약 40명(만석이면 탑승 불가)\n· 후기 기준: 낮 출발 → 저녁 이마고몰 막차(약 19:30)로 복귀하는 경우가 많음\n· 야시장 등으로 늦으면 그랩(시내↔리조트 약 MYR 45~50 참고)',
+      imageUrl: './images/rasa-ria-shuttle.jpg',
+      imageFit: 'contain',
+      imageCaption: '시간표 사진 출처: mestone 블로그 · 현장 스케줄은 변경될 수 있으니 프론트에서 한번 더 확인하세요.',
+      linkUrl: 'https://mestone.tistory.com/entry/%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%EC%86%8C%EC%86%8C%ED%95%9C-%EC%97%AC%ED%96%89-%EC%83%B9%EA%B7%B8%EB%A6%B4%EB%9D%BC-%EB%9D%BC%EC%82%AC%EB%A6%AC%EC%95%84feat%EC%9D%B4%EB%8F%99',
+      linkLabel: '원문 보기'
+    },
+    {
+      id: 'blog-links',
+      tag: '',
+      title: '공항·픽업 관련 블로거 / 가이드',
+      body: '',
+      links: [
+        {
+          url: 'https://www.tripstore.kr/blog/%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%EA%B3%B5%ED%95%AD-%EC%8B%9C%EB%82%B4%EC%9D%B4%EB%8F%99-%EC%9E%85%EA%B5%AD-%EA%BF%80%ED%8C%81',
+          label: '공항 완벽 정리 · 이동 3가지',
+          note: '트립스토어 · 그랩 Gate 지정·픽업·택시 비교'
+        },
+        {
+          url: 'https://ribotour.tistory.com/entry/%EB%A7%90%EB%A0%88%EC%9D%B4%EC%8B%9C%EC%95%84-%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD-%EC%99%84%EC%A0%84-%EC%A0%95%EB%B3%B5',
+          label: 'KKIA 도착 후 1시간 동선',
+          note: 'ribotour · 입국·수하물·유심·환전·Grab'
+        },
+        {
+          url: 'https://lyntour.com/posts/malaysia-kota-kinabalu-airport-grab-taxi-guide',
+          label: '공항 그랩 사용법·후기',
+          note: 'Lyntour · 앱 설치부터 픽업까지'
+        },
+        {
+          url: 'https://ineffable-hj.tistory.com/38',
+          label: '공항 환전·유심·그랩 가입',
+          note: '김지블 · 도착 직후 실전 순서'
+        },
+        {
+          url: 'https://m.blog.naver.com/art_food_travel/223547908394',
+          label: '라사 리아 · 공항→리조트 이동',
+          note: '네이버 블로그 · 약 50분·써드파티 픽업 경험'
+        },
+        {
+          url: 'https://mestone.tistory.com/entry/%EC%BD%94%ED%83%80%ED%82%A4%EB%82%98%EB%B0%9C%EB%A3%A8-%EC%86%8C%EC%86%8C%ED%95%9C-%EC%97%AC%ED%96%89-%EC%83%B9%EA%B7%B8%EB%A6%B4%EB%9D%BC-%EB%9D%BC%EC%82%AC%EB%A6%AC%EC%95%84feat%EC%9D%B4%EB%8F%99',
+          label: '라사 리아 이동·그랩 요금',
+          note: 'mestone · 공항/시내↔리조트 · 셔틀 참고'
+        },
+        {
+          url: 'https://lovely-days.co.kr/4691',
+          label: '공항 픽업/드랍 비용 정리',
+          note: 'lovely-days · 심야 픽업 선택 팁'
+        }
+      ],
+      imageUrl: ''
+    },
+    {
+      id: 'return-transfer',
+      tag: '',
+      title: '귀국 시 공항 이동',
+      body: 'KE5762(00:35) 기준이면 16일 저녁에 시내를 보고, 밤늦게 리조트 또는 공항 인근에서 대기 후 이동하는 동선이 됩니다.\n리조트 → 공항도 약 45분 + 여유 포함해 출발 3시간 전 공항 도착을 목표로 리무진/그랩을 잡아 두세요.',
+      imageUrl: ''
+    }
+  ]
+};
+
 let ctx = null;
 let unsub = null;
 let heroTimer = null;
@@ -164,7 +272,8 @@ let state = {
   hero: deepClone(DEFAULT_HERO),
   food: deepClone(DEFAULT_FOOD),
   alternatives: deepClone(DEFAULT_ALTERNATIVES),
-  flights: deepClone(DEFAULT_FLIGHTS)
+  flights: deepClone(DEFAULT_FLIGHTS),
+  resort: deepClone(DEFAULT_RESORT)
 };
 
 function esc(s) {
@@ -219,7 +328,8 @@ function cloneDefaults() {
     hero: deepClone(DEFAULT_HERO),
     food: deepClone(DEFAULT_FOOD),
     alternatives: deepClone(DEFAULT_ALTERNATIVES),
-    flights: deepClone(DEFAULT_FLIGHTS)
+    flights: deepClone(DEFAULT_FLIGHTS),
+    resort: deepClone(DEFAULT_RESORT)
   };
 }
 
@@ -355,11 +465,91 @@ function renderFlights() {
   }).join('');
 }
 
+function normalizeResortLinks(links) {
+  if (!Array.isArray(links)) return [];
+  return links.slice(0, 16).map(l => ({
+    url: String(l?.url || '').trim().slice(0, 500),
+    label: String(l?.label || '').slice(0, 80),
+    note: String(l?.note || '').slice(0, 120),
+    tone: ['soft', 'review'].includes(l?.tone) ? l.tone : ''
+  })).filter(l => l.url && l.label);
+}
+
+function renderResortPhoto(it) {
+  if (!it.imageUrl) return '';
+  if (it.imageFit === 'contain') {
+    return `
+      <div class="day-photo" style="aspect-ratio:auto;max-height:none">
+        <img src="${esc(it.imageUrl)}" alt="${esc(it.title || '')}" loading="lazy"
+          style="height:auto;object-fit:contain;background:#fff"
+          onerror="this.style.display='none'">
+      </div>
+      ${it.imageCaption ? `<p class="photo-credit">${esc(it.imageCaption)}</p>` : ''}`;
+  }
+  const photo = photoBlockHtml(it.imageUrl, it.title || '');
+  const credit = it.imageCaption ? `<p class="photo-credit">${esc(it.imageCaption)}</p>` : '';
+  return `${photo}${credit}`;
+}
+
+function renderResortLinks(it) {
+  const actionLinks = [];
+  if (it.mapsUrl) {
+    actionLinks.push(`<a href="${esc(it.mapsUrl)}" target="_blank" rel="noopener">구글지도</a>`);
+  }
+  if (it.siteUrl) {
+    actionLinks.push(`<a class="soft" href="${esc(it.siteUrl)}" target="_blank" rel="noopener">사이트</a>`);
+  }
+  if (it.linkUrl) {
+    actionLinks.push(`<a class="soft" href="${esc(it.linkUrl)}" target="_blank" rel="noopener">${esc(it.linkLabel || '링크 열기')}</a>`);
+  }
+  const multi = Array.isArray(it.links) ? it.links : [];
+  const noted = multi.filter(l => l.note);
+  const plain = multi.filter(l => !l.note);
+  for (const l of plain) {
+    const cls = l.tone ? ` class="${esc(l.tone)}"` : '';
+    actionLinks.push(`<a${cls} href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`);
+  }
+  const actions = actionLinks.length
+    ? `<div class="food-actions">${actionLinks.join('')}</div>`
+    : '';
+  const list = noted.length
+    ? `<ul class="link-list" style="margin-top:8px">${noted.map(l => `
+        <li>
+          <a href="${esc(l.url)}" target="_blank" rel="noopener">
+            <strong>${esc(l.label)}</strong>
+            <span>${esc(l.note)}</span>
+          </a>
+        </li>`).join('')}</ul>`
+    : '';
+  return `${list}${actions}`;
+}
+
+function renderResort() {
+  const root = document.getElementById('resortEditable');
+  if (!root) return;
+  const items = state.resort?.items || [];
+  root.innerHTML = items.map(it => {
+    const photo = renderResortPhoto(it);
+    const links = renderResortLinks(it);
+    const body = it.body ? `<p>${nl2br(it.body)}</p>` : '';
+    return `
+      <div class="info-card" id="${esc(it.id)}" data-resort-id="${esc(it.id)}">
+        ${photo}
+        ${it.tag ? `<span class="tag ok">${esc(it.tag)}</span>` : ''}
+        <b>${esc(it.title)}</b>
+        ${body}
+        ${links}
+        ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
 function renderAll() {
   renderHero();
   renderFood();
   renderAlternatives();
   renderFlights();
+  renderResort();
 }
 
 function normalizeHero(data) {
@@ -423,11 +613,32 @@ function normalizeFlights(data) {
   };
 }
 
+function normalizeResort(data) {
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return {
+    items: items.slice(0, 20).map((it, i) => ({
+      id: String(it.id || `resort${i + 1}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `resort${i + 1}`,
+      tag: String(it.tag || '').slice(0, 40),
+      title: String(it.title || it.name || '').slice(0, 120),
+      body: String(it.body || it.desc || '').slice(0, 2500),
+      imageUrl: normalizeImageUrl(it.imageUrl),
+      imageFit: it.imageFit === 'contain' ? 'contain' : '',
+      imageCaption: String(it.imageCaption || '').slice(0, 200),
+      mapsUrl: String(it.mapsUrl || '').trim().slice(0, 500),
+      siteUrl: String(it.siteUrl || '').trim().slice(0, 500),
+      linkUrl: String(it.linkUrl || '').trim().slice(0, 500),
+      linkLabel: String(it.linkLabel || '').slice(0, 40),
+      links: normalizeResortLinks(it.links)
+    })).filter(it => it.title)
+  };
+}
+
 function normalizeSectionData(section, data) {
   if (section === 'hero') return normalizeHero(data);
   if (section === 'food') return normalizeFood(data);
   if (section === 'alternatives') return normalizeAlts(data);
   if (section === 'flights') return normalizeFlights(data);
+  if (section === 'resort') return normalizeResort(data);
   return data;
 }
 
@@ -542,6 +753,51 @@ function applyAltPatch(items, proposal) {
   return next;
 }
 
+function applyResortPatch(items, proposal) {
+  const next = items.map(it => ({ ...it, links: Array.isArray(it.links) ? it.links.map(l => ({ ...l })) : [] }));
+  if (proposal.action === 'add') {
+    const id = String(proposal.itemId || `resort-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    if (next.some(it => it.id === id)) throw new Error('이미 있는 숙소 카드 id예요.');
+    next.push({
+      id,
+      tag: proposal.tag || '',
+      title: proposal.title || proposal.name || '',
+      body: proposal.body || proposal.desc || '',
+      imageUrl: proposal.imageUrl || '',
+      imageFit: proposal.imageFit === 'contain' ? 'contain' : '',
+      imageCaption: proposal.imageCaption || '',
+      mapsUrl: proposal.mapsUrl || '',
+      siteUrl: proposal.siteUrl || '',
+      linkUrl: proposal.linkUrl || '',
+      linkLabel: proposal.linkLabel || '링크 열기',
+      links: normalizeResortLinks(proposal.links)
+    });
+    return next;
+  }
+  const idx = next.findIndex(it => it.id === proposal.itemId);
+  if (idx < 0) throw new Error('숙소 카드 id를 찾지 못했어요. get_editable_content(resort)로 확인하세요.');
+  if (proposal.action === 'delete') {
+    next.splice(idx, 1);
+    return next;
+  }
+  const cur = next[idx];
+  next[idx] = {
+    ...cur,
+    tag: proposal.tag != null ? proposal.tag : cur.tag,
+    title: proposal.title != null ? proposal.title : (proposal.name != null ? proposal.name : cur.title),
+    body: proposal.body != null || proposal.desc != null ? (proposal.body || proposal.desc) : cur.body,
+    imageUrl: proposal.imageUrl != null ? proposal.imageUrl : cur.imageUrl,
+    imageFit: proposal.imageFit != null ? (proposal.imageFit === 'contain' ? 'contain' : '') : cur.imageFit,
+    imageCaption: proposal.imageCaption != null ? proposal.imageCaption : cur.imageCaption,
+    mapsUrl: proposal.mapsUrl != null ? proposal.mapsUrl : cur.mapsUrl,
+    siteUrl: proposal.siteUrl != null ? proposal.siteUrl : cur.siteUrl,
+    linkUrl: proposal.linkUrl != null ? proposal.linkUrl : cur.linkUrl,
+    linkLabel: proposal.linkLabel != null ? proposal.linkLabel : cur.linkLabel,
+    links: proposal.links != null ? normalizeResortLinks(proposal.links) : cur.links
+  };
+  return next;
+}
+
 function applyFlightPatch(items, proposal) {
   const next = items.map(it => ({ ...it }));
   const buildTitle = (it) => {
@@ -613,6 +869,7 @@ export async function attachGuideContentRoom(nextCtx) {
     if (section === 'food') state.food = normalizeFood(data?.items ? data : DEFAULT_FOOD);
     if (section === 'alternatives') state.alternatives = normalizeAlts(data?.items ? data : DEFAULT_ALTERNATIVES);
     if (section === 'flights') state.flights = normalizeFlights(data?.items ? data : DEFAULT_FLIGHTS);
+    if (section === 'resort') state.resort = normalizeResort(data?.items ? data : DEFAULT_RESORT);
     renderAll();
   };
 
@@ -652,14 +909,15 @@ export function getGuideContentApi() {
         food: state.food,
         alternatives: state.alternatives,
         flights: state.flights,
+        resort: state.resort,
         localImages: listLocalImages(),
-        hint: '항공은 flights.outbound / flights.return. 사진 imageUrl은 localImages의 ./images/... 를 우선 사용. 지도·부킹·후기 페이지 URL은 사진으로 쓰지 말 것.'
+        hint: '숙소·픽업·셔틀은 resort (id: hotel|airport-pickup|limousine|third-party-pickup|resort-shuttle|blog-links|return-transfer). 항공은 flights.outbound / flights.return. 사진 imageUrl은 localImages의 ./images/... 를 우선 사용. 지도·부킹·후기 페이지 URL은 사진으로 쓰지 말 것.'
       };
     },
     async applyProposal(proposal) {
       if (!canEdit()) throw new Error('여행방에 입장해야 적용할 수 있어요.');
       const section = proposal.section;
-      if (!SECTIONS.includes(section)) throw new Error('section은 hero|food|alternatives|flights 중 하나여야 해요.');
+      if (!SECTIONS.includes(section)) throw new Error('section은 hero|food|alternatives|flights|resort 중 하나여야 해요.');
 
       await ensureSection(section);
       const act = ({ add: '추가', update: '수정', delete: '삭제' })[proposal.action] || proposal.action;
@@ -749,6 +1007,23 @@ export function getGuideContentApi() {
           itemId: proposal.itemId || hit?.id || '',
           summary: `항공 ${act}: ${label} ${hit?.departTime || ''}→${hit?.arriveTime || ''}`.trim(),
           detail: reason || `AI · 항공 ${act}`
+        });
+      }
+
+      if (section === 'resort') {
+        if (proposal.action === 'add' && !(proposal.title || proposal.name)) {
+          throw new Error('숙소 카드 추가에는 title이 필요해요.');
+        }
+        const items = applyResortPatch(state.resort.items || [], proposal);
+        const title = proposal.title || proposal.name
+          || items.find(it => it.id === proposal.itemId)?.title
+          || proposal.itemId
+          || '숙소';
+        return saveSection('resort', { items }, {
+          kind: 'resort',
+          itemId: proposal.itemId || '',
+          summary: `숙소 ${act}: ${title}`,
+          detail: reason || `AI · 숙소 ${act}`
         });
       }
       return null;
