@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validCode(code) {
+      return code is string && code.matches('^[A-Z2-9]{6}$');
+    }
+
+    function validNick(n) {
+      return n is string && n.size() > 0 && n.size() <= 24;
+    }
+
+    function validItemText(t) {
+      return t is string && t.size() > 0 && t.size() <= 200;
+    }
+
+    function validNoteText(t) {
+      return t is string && t.size() > 0 && t.size() <= 500;
+    }
+
+    match /trips/{tripId} {
+      allow read: if signedIn() && validCode(tripId);
+
+      allow create: if signedIn()
+        && validCode(tripId)
+        && request.resource.data.code == tripId
+        && validNick(request.resource.data.createdByNickname)
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.keys().hasAll(['code', 'title', 'createdAt', 'createdByNickname']);
+
+      allow update, delete: if false;
+
+      match /members/{uid} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && uid == request.auth.uid
+          && validNick(request.resource.data.nickname)
+          && request.resource.data.keys().hasAll(['nickname', 'joinedAt']);
+        allow delete: if signedIn() && uid == request.auth.uid;
+      }
+
+      match /packItems/{itemId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && validItemText(request.resource.data.text)
+          && request.resource.data.done is bool
+          && request.resource.data.createdBy is string
+          && request.resource.data.createdBy.size() <= 24
+          && (
+            !('doneBy' in request.resource.data)
+            || request.resource.data.doneBy == null
+            || (request.resource.data.doneBy is string && request.resource.data.doneBy.size() <= 24)
+          );
+        allow delete: if signedIn() && validCode(tripId);
+      }
+
+      match /taskItems/{itemId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create, update: if signedIn()
+          && validCode(tripId)
+          && validItemText(request.resource.data.text)
+          && request.resource.data.done is bool
+          && request.resource.data.createdBy is string
+          && request.resource.data.createdBy.size() <= 24
+          && (
+            !('doneBy' in request.resource.data)
+            || request.resource.data.doneBy == null
+            || (request.resource.data.doneBy is string && request.resource.data.doneBy.size() <= 24)
+          );
+        allow delete: if signedIn() && validCode(tripId);
+      }
+
+      match /notes/{noteId} {
+        allow read: if signedIn() && validCode(tripId);
+        allow create: if signedIn()
+          && validCode(tripId)
+          && validNoteText(request.resource.data.text)
+          && validNick(request.resource.data.author)
+          && request.resource.data.keys().hasAll(['text', 'author', 'createdAt']);
+        allow update: if false;
+        allow delete: if signedIn() && validCode(tripId);
+      }
+    }
+  }
+}

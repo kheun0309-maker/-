@@ -1,8 +1,10 @@
-const CACHE_NAME = 'kota-kinabalu-guide-v12';
+const CACHE_NAME = 'kota-kinabalu-guide-v13';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './js/firebase-config.js',
+  './js/trip-room.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -27,6 +29,12 @@ const APP_SHELL = [
   './images/kk-jetski.jpg'
 ];
 
+function isFirebaseRequest(url) {
+  return /googleapis\.com|gstatic\.com|firebaseio\.com|firestore\.google/.test(url.hostname)
+    || url.pathname.includes('/js/trip-room.js')
+    || url.pathname.includes('/js/firebase-config.js');
+}
+
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
@@ -45,6 +53,16 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Always network for Firebase / live app scripts
+  if (isFirebaseRequest(url)) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(cached => {

@@ -399,6 +399,86 @@
       background: rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; font-size: 0.74rem; line-height: 1.5;
     }
     .install-help.show { display: block; }
+
+    /* ===== 여행방 공유 ===== */
+    .trip-setup, .trip-gate, .trip-room-panel { margin-top: 4px; }
+    .trip-setup {
+      background: #fff8f0; border: 1px solid #f0d8b8; border-radius: 12px; padding: 12px;
+      font-size: 0.86rem; color: var(--ink);
+    }
+    .trip-setup ol { margin: 8px 0 0 1.1em; padding: 0; }
+    .trip-setup code { font-size: 0.8rem; background: #fff; padding: 1px 5px; border-radius: 6px; }
+    .trip-field { display: grid; gap: 4px; margin-bottom: 10px; }
+    .trip-field label { font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .trip-field input {
+      border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px;
+      font: inherit; font-size: 0.95rem; background: #fff; color: var(--ink);
+    }
+    .trip-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .trip-actions button, .trip-add-row button, .trip-toolbar button {
+      border: 0; border-radius: 12px; padding: 11px 14px; font: inherit; font-weight: 800;
+      font-size: 0.86rem; cursor: pointer;
+    }
+    .trip-actions .primary, .trip-add-row button { background: var(--coral); color: #fff; }
+    .trip-actions .ghost, .trip-toolbar button {
+      background: #fff; color: var(--ocean); border: 1px solid var(--line);
+    }
+    .trip-status {
+      min-height: 1.2em; font-size: 0.8rem; color: var(--teal); margin: 4px 0 8px;
+    }
+    .trip-status.is-error { color: var(--coral); }
+    .trip-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .trip-code-box {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif; font-weight: 800; font-size: 1.35rem;
+      letter-spacing: 0.18em; color: var(--ocean);
+    }
+    .trip-members { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .trip-member {
+      font-size: 0.72rem; font-weight: 700; padding: 5px 9px; border-radius: 999px;
+      background: #e8fffb; color: var(--teal); border: 1px solid var(--line);
+    }
+    .trip-member.is-me { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+    .trip-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .trip-tabs button {
+      flex: 1; border: 1px solid var(--line); background: #fff; color: var(--muted);
+      border-radius: 12px; padding: 10px 8px; font: inherit; font-weight: 800; font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .trip-tabs button.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+    .trip-list { list-style: none; display: grid; gap: 6px; margin: 0 0 10px; padding: 0; }
+    .trip-item, .trip-note {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 11px;
+    }
+    .trip-item label { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; }
+    .trip-item input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--teal); flex: 0 0 auto; }
+    .trip-item.is-done .trip-item-text { text-decoration: line-through; color: var(--muted); }
+    .trip-item-meta {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      margin-top: 6px; padding-left: 24px;
+    }
+    .trip-who { font-size: 0.72rem; font-weight: 700; color: var(--teal); }
+    .trip-del {
+      border: 0; background: transparent; color: var(--muted); font: inherit;
+      font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 0;
+    }
+    .trip-empty { font-size: 0.84rem; color: var(--muted); padding: 8px 2px; list-style: none; }
+    .trip-add-row { display: flex; gap: 6px; }
+    .trip-add-row input, .trip-add-row textarea {
+      flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 10px 11px;
+      font: inherit; font-size: 0.9rem; background: #fff; color: var(--ink);
+    }
+    .trip-add-row textarea { min-height: 64px; resize: vertical; }
+    .trip-note-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.75rem;
+    }
+    .trip-note-head strong { color: var(--ocean); }
+    .trip-note-head span { color: var(--muted); margin-right: auto; }
+    .trip-note p { margin: 0; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; }
+    .trip-hint { font-size: 0.78rem; color: var(--muted); margin: 0 0 8px; }
+
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
   </style>
 </head>
@@ -451,6 +531,7 @@
     </aside>
 
     <nav class="quick-nav" aria-label="바로가기">
+      <a href="#trip" data-open="trip">👥 함께준비</a>
       <a href="#itinerary" data-open="itinerary">📅 일정</a>
       <a href="#hopping" data-open="hopping">🏝 호핑예약</a>
       <a href="#food" data-open="food">🍽 맛집</a>
@@ -462,6 +543,91 @@
       <a href="#tips" data-open="tips">⚠ 주의</a>
       <a href="#pack" data-open="pack">🎒 짐</a>
     </nav>
+
+    <details class="widget fold-widget" id="trip" open>
+      <summary>👥 함께 준비</summary>
+      <div class="fold-body" id="tripRoom">
+        <p class="trip-hint">닉네임으로 여행방에 들어가면 준비물·할 일·메모를 서로 실시간으로 공유할 수 있어요. 방 코드는 카톡 등으로 비공개 공유하세요.</p>
+
+        <div class="trip-setup" id="tripSetup" hidden>
+          <strong>Firebase 연결이 필요합니다</strong>
+          <p style="margin:6px 0 0">관리자가 Firebase 프로젝트를 만들면 바로 사용할 수 있습니다.</p>
+          <ol>
+            <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a>에서 웹 앱 추가</li>
+            <li><code>js/firebase-config.js</code>에 config 값 붙여넣기</li>
+            <li>Authentication → Anonymous 사용 설정</li>
+            <li>Authorized domains에 <code>kheun0309-maker.github.io</code> 추가</li>
+            <li>Firestore 생성 후 <code>firebase/firestore.rules</code> 게시</li>
+          </ol>
+          <p class="tiny" style="margin-top:8px">자세한 순서: <code>firebase/SETUP.md</code></p>
+        </div>
+
+        <div class="trip-gate" id="tripGate" hidden>
+          <div class="trip-field">
+            <label for="tripNickname">닉네임</label>
+            <input id="tripNickname" type="text" maxlength="24" placeholder="예: 은기호" autocomplete="nickname">
+          </div>
+          <div class="trip-actions">
+            <button type="button" class="primary" id="tripCreateBtn">방 만들기</button>
+          </div>
+          <div class="trip-field">
+            <label for="tripJoinCode">여행방 코드 (6자리)</label>
+            <input id="tripJoinCode" type="text" maxlength="6" placeholder="예: AB3K7M" autocomplete="off" autocapitalize="characters">
+          </div>
+          <div class="trip-actions">
+            <button type="button" class="ghost" id="tripJoinBtn">코드로 참여</button>
+          </div>
+        </div>
+
+        <div class="trip-room-panel" id="tripRoomPanel" hidden>
+          <div class="trip-toolbar">
+            <div>
+              <div class="tiny">여행방 코드</div>
+              <div class="trip-code-box" id="tripCodeLabel">------</div>
+            </div>
+            <div class="trip-actions" style="margin:0">
+              <button type="button" class="ghost" id="tripCopyBtn">복사</button>
+              <button type="button" class="ghost" id="tripShareBtn">공유</button>
+              <button type="button" class="ghost" id="tripLeaveBtn">나가기</button>
+            </div>
+          </div>
+          <div class="trip-members" id="tripMembers" aria-label="참가자"></div>
+
+          <div class="trip-tabs" role="tablist">
+            <button type="button" class="active" data-trip-tab="pack">준비물</button>
+            <button type="button" data-trip-tab="tasks">할 일</button>
+            <button type="button" data-trip-tab="notes">메모</button>
+          </div>
+
+          <div data-trip-pane="pack">
+            <ul class="trip-list" id="tripPackList"></ul>
+            <div class="trip-add-row">
+              <input id="tripPackInput" type="text" maxlength="200" placeholder="준비물 추가">
+              <button type="button" id="tripPackAdd">추가</button>
+            </div>
+          </div>
+
+          <div data-trip-pane="tasks" hidden>
+            <ul class="trip-list" id="tripTaskList"></ul>
+            <div class="trip-add-row">
+              <input id="tripTaskInput" type="text" maxlength="200" placeholder="할 일 추가">
+              <button type="button" id="tripTaskAdd">추가</button>
+            </div>
+          </div>
+
+          <div data-trip-pane="notes" hidden>
+            <ul class="trip-list" id="tripNoteList"></ul>
+            <div class="trip-add-row">
+              <textarea id="tripNoteInput" maxlength="500" placeholder="공지·메모를 남겨 보세요"></textarea>
+              <button type="button" id="tripNoteAdd">등록</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="trip-status" id="tripStatus" role="status"></p>
+      </div>
+    </details>
+
 
     <details class="widget fold-widget" id="live">
       <summary>⏱ 지금 시각 · 환율</summary>
@@ -1150,8 +1316,9 @@
     </details>
 
     <details class="widget fold-widget" id="pack">
-      <summary>🎒 챙길 품목</summary>
+      <summary>🎒 챙길 품목 (이 기기만)</summary>
       <div class="fold-body">
+      <p class="tiny">혼자 쓰는 개인 체크입니다. 서로 공유하려면 <b>함께 준비</b>를 사용하세요.</p>
       <ul class="check-list" id="packList">
         <li><input type="checkbox"><span>여권 · 항공 e-티켓 · 숙소 예약 확인서(픽업·입국 대비)</span></li>
         <li><input type="checkbox"><span>국제운전면허(렌트 시) / 여행자보험 증권</span></li>
@@ -1171,8 +1338,9 @@
     </details>
 
     <details class="widget fold-widget" id="booking">
-      <summary>✅ 출발 전 할 일</summary>
+      <summary>✅ 출발 전 할 일 (이 기기만)</summary>
       <div class="fold-body">
+      <p class="tiny">개인용입니다. 공유 체크는 <a href="#trip" data-open="trip">함께 준비</a>에서 하세요.</p>
       <ul class="check-list">
         <li><input type="checkbox"><span>KE5761 좌석·수하물 확인 · 인천 T2 체크인 시간 메모</span></li>
         <li><input type="checkbox"><span>귀국편 예약 (추천: KE5762 8/17 00:35경)</span></li>
@@ -1190,13 +1358,14 @@
   </main>
 
   <nav class="nav" aria-label="빠른 이동">
+    <a href="#trip" data-open="trip"><span>👥</span>함께</a>
     <a href="#itinerary" data-open="itinerary"><span>📅</span>일정</a>
     <a href="#hopping" data-open="hopping"><span>🏝</span>호핑</a>
     <a href="#food" data-open="food"><span>🍽</span>맛집</a>
     <a href="#map" data-open="map"><span>🗺</span>지도</a>
-    <a href="#late-rest" data-open="late-rest"><span>🌙</span>더보기</a>
   </nav>
 
+  <script type="module" src="./js/trip-room.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     (function initHeroSlideshow() {
