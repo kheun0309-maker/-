@@ -446,6 +446,7 @@ function renderFood() {
         <b>${esc(it.name)}</b>
         <p>${nl2br(it.desc)}</p>
         ${links.length ? `<div class="food-actions">${links.join('')}</div>` : ''}
+        ${scheduleButton('food', it.id, '맛집을 일정에 추가')}
         ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
       </div>`;
   }).join('');
@@ -467,6 +468,7 @@ function renderAlternatives() {
         <h3>${esc(it.title)}</h3>
         <p>${nl2br(it.desc)}</p>
         ${link}
+        ${scheduleButton('alternatives', it.id, '휴식 일정을 추가')}
         ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
       </div>`;
   }).join('');
@@ -579,6 +581,21 @@ function tagClass(tagTone) {
   return 'tag';
 }
 
+const SCHEDULE_EXCLUDE = new Set([
+  'hotel',
+  'limousine',
+  'blog-links',
+  'photo-credit',
+  'price-guide',
+  'usage-tips'
+]);
+
+function scheduleButton(section, itemId, label = '일정에 추가') {
+  if (!itemId || SCHEDULE_EXCLUDE.has(itemId)) return '';
+  return `<button type="button" class="guide-schedule-btn"
+    data-schedule-section="${esc(section)}" data-schedule-id="${esc(itemId)}">${esc(label)}</button>`;
+}
+
 function renderGalleryItem(it) {
   const figs = (it.images || []).map(img => `
     <figure${img.wide ? ' class="wide"' : ''}>
@@ -608,6 +625,7 @@ function renderGuideCardItem(it, section) {
       <b>${esc(it.title)}</b>
       ${body}
       ${links}
+      ${scheduleButton(section, it.id, section === 'massage' ? '마사지 일정에 추가' : section === 'hopping' ? '호핑 일정에 추가' : '이동·방문 일정에 추가')}
       ${canEdit() ? `<div class="tiny" style="margin-top:6px;opacity:.65">id: ${esc(it.id)}</div>` : ''}
     </div>`;
 }

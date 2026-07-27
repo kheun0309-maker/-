@@ -16,6 +16,7 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png" sizes="192x192">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="./app-shell.css">
   <title>코타키나발루 · 라사 리아 4일</title>
   <style>
     :root {
@@ -1039,22 +1040,24 @@
         </div>
         <ul class="guide-search-results" id="guideSearchResults" hidden></ul>
       </div>
-      <nav class="quick-nav" aria-label="바로가기" style="position:static;top:auto;margin:0;border:0;padding:0 2px 8px;background:transparent;backdrop-filter:none">
-        <a href="#ai" data-open="ai">✨ 코파일럿</a>
-        <a href="#trip" data-open="trip">👥 함께준비<span class="quick-badge" data-trip-badge>0</span></a>
-        <a href="#itinerary" data-open="itinerary">📅 일정<span class="quick-badge" data-itin-badge>0</span></a>
-        <a href="#flights" data-open="flights">✈️ 항공</a>
-        <a href="#resort" data-open="resort">🏨 리조트</a>
-        <a href="#third-party-pickup" data-open="resort">🚐 픽업</a>
-        <a href="#map" data-open="map">🗺 지도</a>
-        <a href="#hopping" data-open="hopping">🏝 호핑</a>
-        <a href="#food" data-open="food">🍽 맛집</a>
-        <a href="#massage" data-open="massage">💆 마사지</a>
-        <a href="#late-rest" data-open="late-rest">🌙 귀국</a>
-        <a href="#tips" data-open="tips">⚠ 주의</a>
-        <a href="#pack" data-open="pack">🎒 짐</a>
-        <a href="#settings" data-open="settings">⚙️ 설정</a>
+      <nav class="travel-tabs" id="travelTabs" role="tablist" aria-label="주요 여행 메뉴">
+        <button type="button" class="travel-tab" role="tab" data-tab-group="ai" aria-selected="true">
+          <span class="tab-icon" aria-hidden="true">✨</span>코파일럿
+        </button>
+        <button type="button" class="travel-tab" role="tab" data-tab-group="plan" aria-selected="false">
+          <span class="tab-icon" aria-hidden="true">📅</span>일정
+        </button>
+        <button type="button" class="travel-tab" role="tab" data-tab-group="explore" aria-selected="false">
+          <span class="tab-icon" aria-hidden="true">🧭</span>즐길거리
+        </button>
+        <button type="button" class="travel-tab" role="tab" data-tab-group="prepare" aria-selected="false">
+          <span class="tab-icon" aria-hidden="true">🎒</span>준비
+        </button>
+        <button type="button" class="travel-tab" role="tab" data-tab-group="tools" aria-selected="false">
+          <span class="tab-icon" aria-hidden="true">⚙️</span>도구
+        </button>
       </nav>
+      <nav class="travel-subtabs" id="travelSubtabs" role="tablist" aria-label="세부 여행 메뉴"></nav>
     </div>
 
 <details class="widget fold-widget" id="ai" open>
@@ -1461,6 +1464,8 @@
     initCustomSectionsUi();
     initAiGuide();
   </script>
+  <script type="module" src="./js/app-shell.js"></script>
+  <script type="module" src="./js/guide-itinerary.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const FX_CACHE_KEY = 'kk-myr-krw-rate';
@@ -1680,6 +1685,10 @@
     /* day tabs are handled by js/itinerary-editor.js */
 
     const openSection = (id, { closeOthers = true, anchorId = '' } = {}) => {
+      if (window.travelTabs?.open) {
+        window.travelTabs.open(id, { anchorId, scroll: true });
+        return;
+      }
       const target = document.getElementById(id);
       if (!target) return;
       if (closeOthers) {
@@ -1896,6 +1905,9 @@
       el.addEventListener('toggle', () => {
         if (el.open && el.id === 'map' && tripMap) setTimeout(() => tripMap.invalidateSize(), 180);
       });
+    });
+    window.addEventListener('travel:map-visible', () => {
+      if (tripMap) setTimeout(() => tripMap.invalidateSize(), 180);
     });
 
     const PACK_KEY = 'kk-rasaria-pack-checks';

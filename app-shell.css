@@ -1,0 +1,293 @@
+/* 탭형 여행 대시보드 — 기존 details는 no-JS 폴백으로 유지 */
+html, body { overflow-x: hidden; }
+
+.travel-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(64px, 1fr));
+  gap: 5px;
+  padding: 2px 2px 7px;
+}
+
+.travel-tab {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--muted);
+  padding: 8px 3px 7px;
+  font: inherit;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.travel-tab .tab-icon {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 1.02rem;
+  line-height: 1;
+}
+
+.travel-tab[aria-selected="true"] {
+  border-color: var(--ocean);
+  color: #fff;
+  background: linear-gradient(145deg, var(--ocean), var(--teal));
+  box-shadow: 0 6px 14px rgba(6, 122, 138, 0.22);
+}
+
+.travel-subtabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 1px 2px 8px;
+  scrollbar-width: none;
+}
+
+.travel-subtabs::-webkit-scrollbar { display: none; }
+
+.travel-subtab {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ocean);
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.travel-subtab[aria-selected="true"] {
+  background: #e5fffa;
+  border-color: var(--teal);
+  box-shadow: inset 0 0 0 1px rgba(0, 163, 163, 0.12);
+}
+
+.tab-mode .guide-search-wrap {
+  padding-top: max(7px, env(safe-area-inset-top));
+  box-shadow: 0 8px 20px rgba(6, 90, 100, 0.08);
+}
+
+.tab-mode .guide-search { padding-bottom: 5px; }
+.tab-mode .guide-search-chips { display: none; }
+
+.tab-mode details.fold-widget {
+  display: none;
+  scroll-margin-top: 170px;
+}
+
+.tab-mode details.fold-widget.is-tab-active {
+  display: block;
+  min-height: 48vh;
+  animation: panelEnter 0.3s ease both;
+}
+
+.tab-mode details.fold-widget.is-tab-active > summary {
+  pointer-events: none;
+  cursor: default;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 1.08rem;
+}
+
+.tab-mode details.fold-widget.is-tab-active > summary::after { display: none; }
+
+.tab-mode .custom-sections-host { display: contents; }
+.tab-mode .custom-sections-host[hidden] { display: none !important; }
+
+.tab-mode main { min-height: 100vh; }
+.tab-mode .widget { margin-bottom: 0; }
+
+@keyframes panelEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.guide-schedule-btn {
+  width: 100%;
+  margin-top: 9px;
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #fff0e9, #fff7e3);
+  color: #bd462d;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 107, 74, 0.22);
+}
+
+.guide-schedule-btn::before { content: '＋ '; }
+.guide-schedule-btn:active { transform: scale(0.985); }
+
+.schedule-sheet[hidden] { display: none !important; }
+
+.schedule-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  align-items: end;
+  background: rgba(8, 34, 45, 0.46);
+  backdrop-filter: blur(3px);
+}
+
+.schedule-sheet-card {
+  width: min(480px, 100%);
+  max-height: 88vh;
+  margin: 0 auto;
+  overflow-y: auto;
+  border-radius: 24px 24px 0 0;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  background: #f6fffd;
+  box-shadow: 0 -18px 48px rgba(5, 45, 55, 0.24);
+  animation: sheetUp 0.25s ease both;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.schedule-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.schedule-sheet-head small {
+  display: block;
+  color: var(--coral);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.schedule-sheet-head h2 {
+  margin-top: 2px;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.schedule-sheet-close {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #e4f1f2;
+  color: var(--ocean);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.schedule-form { display: grid; gap: 11px; }
+.schedule-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.schedule-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
+.schedule-form input,
+.schedule-form select,
+.schedule-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 10px 11px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.schedule-form textarea { min-height: 76px; resize: vertical; }
+
+.schedule-form-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.schedule-form-actions button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.schedule-cancel { background: #e8f1f2; color: var(--muted); }
+.schedule-save { background: var(--coral); color: #fff; }
+.schedule-save:disabled { opacity: 0.6; cursor: wait; }
+
+.schedule-status {
+  min-height: 1.4em;
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.schedule-status.is-error { color: var(--coral); }
+
+.schedule-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 110;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
+  border-radius: 999px;
+  padding: 10px 15px;
+  background: #123c46;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(8, 34, 45, 0.28);
+}
+
+.schedule-toast[hidden] { display: none !important; }
+
+.tab-mode .nav a.is-active {
+  background: linear-gradient(180deg, #e8fffb, #dff7f4);
+  color: var(--ocean);
+}
+
+@media (min-width: 700px) {
+  body { max-width: 860px; }
+  .nav { width: min(620px, calc(100% - 24px)); }
+  .tab-mode .widget { padding: 20px; }
+  .tab-mode #foodEditable,
+  .tab-mode #massageEditable,
+  .tab-mode #resortEditable {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+  .tab-mode #foodEditable .info-card,
+  .tab-mode #massageEditable .info-card,
+  .tab-mode #resortEditable .info-card { margin-bottom: 0; }
+}
+
+@media (max-width: 370px) {
+  .travel-tabs { gap: 3px; }
+  .travel-tab { font-size: 0.63rem; padding-inline: 1px; }
+  .schedule-form-row { grid-template-columns: 1fr; }
+}

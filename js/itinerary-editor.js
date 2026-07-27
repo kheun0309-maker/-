@@ -974,7 +974,16 @@ export function getItineraryApi() {
         days
       };
     },
-    async addItem({ day, time = '', place = '', task = '', note = '', imageUrl = '', placeMapsUrl = '' }) {
+    async addItem({
+      day,
+      time = '',
+      place = '',
+      task = '',
+      note = '',
+      imageUrl = '',
+      placeMapsUrl = '',
+      source = 'AI 추가'
+    }) {
       if (!canEdit()) throw new Error('여행방에 입장해야 일정을 수정할 수 있어요.');
       const dayId = String(day || '');
       if (!/^day[1-4]$/.test(dayId)) throw new Error('day는 day1~day4 중 하나여야 해요.');
@@ -997,7 +1006,7 @@ export function getItineraryApi() {
         day: dayId,
         itemId: ref.id,
         summary: `${DAY_LABEL[dayId] || dayId} ${kindLabel('add')}: ${itemSummary(payload)}`,
-        detail: `AI 추가 · ${itemSummary(payload)}`
+        detail: `${String(source || 'AI 추가').slice(0, 40)} · ${itemSummary(payload)}`
       });
       return { id: ref.id, ...payload, updatedAt: null };
     },
